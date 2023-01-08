@@ -39,7 +39,6 @@ const Crud = () => {
     const [globalFilter, setGlobalFilter] = useState(null);
     const toast = useRef(null);
     const dt = useRef(null);
-    const contextPath = getConfig().publicRuntimeConfig.contextPath;
 
     useEffect(() => {
         const resultService = new ResultService();
@@ -73,7 +72,7 @@ const Crud = () => {
     const saveResult = () => {
         setSubmitted(true);
 
-        if (result.semester.trim()) {
+        if (result.semester.trim()&& result.year) {
             let _results = [...results];
             let _result = { ...result };
             if (result.id) {
@@ -158,16 +157,6 @@ const Crud = () => {
 
         setResult(_result);
     };
-    
-    
-
-    const onInputNumberChange = (e, semester) => {
-        const val = e.value || 0;
-        let _result = { ...result };
-        _result[`${semester}`] = val;
-
-        setResult(_result);
-    };
 
     const leftToolbarTemplate = () => {
         return (
@@ -207,23 +196,12 @@ const Crud = () => {
     };
 
  
-
-
-    const hashBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">Hash</span>
-                {rowData.hash}
-            </>
-        );
-    };
-
     const actionBodyTemplate = (rowData) => {
         return (
             <> 
-                <Button icon="pi pi-arrow-down" className="p-button-rounded p-button-success mr-2"/>
-                <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editResult(rowData)} />
-                <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteResult(rowData)} />
+                <Button icon="pi pi-arrow-down" className="p-button-rounded p-button-success mr-2" onClick={exportCSV}/>
+                <Button icon="pi pi-pencil" className="p-button-rounded p-button-warning mr-2" onClick={() => editResult(rowData)} />
+                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => confirmDeleteResult(rowData)} />
             </>
         );
     };
@@ -282,8 +260,7 @@ const Crud = () => {
                         responsiveLayout="scroll"
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '4rem' }}></Column>
-                        <Column field="hash" header="Hash" body={hashBodyTemplate} sortable headerStyle={{ minWidth: '15rem' }}></Column>
-                        <Column field="semester" header="Semester" sortable body={semesterBodyTemplate} headerStyle={{ minWidth: '15rem' }}></Column>
+                        <Column field="semester" header="Semester Name" sortable body={semesterBodyTemplate} headerStyle={{ minWidth: '15rem' }}></Column>
                         <Column field="year" header="Year" sortable body={yearBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
                         
 
@@ -296,24 +273,19 @@ const Crud = () => {
                     <Dialog visible={resultDialog} style={{ width: '450px' }} header="Result Details" modal className="p-fluid" footer={resultDialogFooter} onHide={hideDialog}>
                         
                         <div className="field">
-                            <label htmlFor="semester">Name</label>
+                            <label htmlFor="semester">Semeter Name</label>
                             <InputText id="semester" value={result.semester} onChange={(e) => onInputChange(e, 'semester')} required autoFocus className={classNames({ 'p-invalid': submitted && !result.semester })} />
-                            {submitted && !result.semester && <small className="p-invalid">Name is required.</small>}
+                            {submitted && !result.semester && <small className="p-invalid">Semester is required.</small>}
                         </div>
                         <div className="field">
                             <label htmlFor="year">Year</label>
                             <InputText id="year" value={result.year} onChange={(e) => onInputChange(e, 'year')} required autoFocus className={classNames({ 'p-invalid': submitted && !result.year })} />
                             {submitted && !result.year && <small className="p-invalid">Year is required.</small>}
                         </div>
-                        <div className="field">
-                            <label htmlFor="hash">Hash</label>
-                            <InputText id="hash" value={result.hash} onChange={(e) => onInputChange(e, 'hash')} required autoFocus className={classNames({ 'p-invalid': submitted && !result.hash })} />
-                            {submitted && !result.hash && <small className="p-invalid">Hash is required.</small>}
-                        </div>
 
                         <div className="field">
                         <label htmlFor="file">File</label>
-                        <FileUpload name="demo[]" url="./upload.php" onUpload={onUpload} multiple accept="image/*" maxFileSize={1000000} />
+                        <FileUpload chooseOptions={{ label: 'import', icon: 'pi pi-download' }} mode="basic" name="demo[]" auto url="/api/upload" accept=".csv" className="mr-2" onUpload={onUpload} />
                         </div>
 
                     </Dialog>

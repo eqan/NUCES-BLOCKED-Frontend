@@ -3,12 +3,7 @@ import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { Dialog } from 'primereact/dialog';
-import { FileUpload } from 'primereact/fileupload';
-import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
-import { InputTextarea } from 'primereact/inputtextarea';
-import { RadioButton } from 'primereact/radiobutton';
-import { Rating } from 'primereact/rating';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
@@ -34,7 +29,6 @@ const Crud = () => {
     const [globalFilter, setGlobalFilter] = useState(null);
     const toast = useRef(null);
     const dt = useRef(null);
-    const contextPath = getConfig().publicRuntimeConfig.contextPath;
 
     useEffect(() => {
         const degreeService = new DegreeService();
@@ -65,7 +59,7 @@ const Crud = () => {
     const saveDegree = () => {
         setSubmitted(true);
 
-        if (degree.name.trim()) {
+        if (degree.name.trim() && degree.hash && degree.rollno) {
             let _degrees = [...degrees];
             let _degree = { ...degree };
             if (degree.id) {
@@ -150,16 +144,6 @@ const Crud = () => {
 
         setDegree(_degree);
     };
-    
-    
-
-    const onInputNumberChange = (e, name) => {
-        const val = e.value || 0;
-        let _degree = { ...degree };
-        _degree[`${name}`] = val;
-
-        setDegree(_degree);
-    };
 
     const leftToolbarTemplate = () => {
         return (
@@ -214,8 +198,8 @@ const Crud = () => {
         return (
             <> 
                 <Button icon="pi pi-arrow-down" className="p-button-rounded p-button-success mr-2"/>
-                <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editDegree(rowData)} />
-                <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteDegree(rowData)} />
+                <Button icon="pi pi-pencil" className="p-button-rounded p-button-warning mr-2" onClick={() => editDegree(rowData)} />
+                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => confirmDeleteDegree(rowData)} />
             </>
         );
     };

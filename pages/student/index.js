@@ -66,7 +66,7 @@ const Crud = () => {
     const saveStudent = () => {
         setSubmitted(true);
 
-        if (student.name.trim()) {
+        if (student.name.trim() && (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email)) && student.email && student.rollno && student.batch) {
             let _students = [...students];
             let _student = { ...student };
             if (student.id) {
@@ -151,16 +151,6 @@ const Crud = () => {
 
         setStudent(_student);
     };
-    
-    
-
-    const onInputNumberChange = (e, name) => {
-        const val = e.value || 0;
-        let _student = { ...student };
-        _student[`${name}`] = val;
-
-        setStudent(_student);
-    };
 
     const leftToolbarTemplate = () => {
         return (
@@ -173,10 +163,64 @@ const Crud = () => {
         );
     };
 
+    const toCapitalize = (s) => {
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    const importCSV = (e) => {
+        const file = e.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const csv = e.target.result;
+            const data = csv.split('\n');
+
+            // Prepare DataTable
+            const cols = data[0].replace(/['"]+/g, '').split(',');
+            data.shift();
+
+            let _importedCols = cols.map(col => ({ field: col, header: toCapitalize(col.replace(/['"]+/g, '')) }));
+            let _importedData = data.map(d => {
+                d = d.split(',');
+                return cols.reduce((obj, c, i) => {
+                    if (c=="Full Name")
+                    {
+                        c="name";
+                    }
+                    if (c=="Roll No.")
+                    {
+                        c="rollno";
+                    }
+                    if (c=="Email")
+                    {
+                        c="email";
+                    }
+                    if (c=="Batch")
+                    {
+                        c="batch";
+                    }
+                    obj[c] = d[i].replace(/['"]+/g, '');
+                    return obj;
+                }, {});
+            });
+
+            let _students = [...students];
+            console.log(_students); 
+            for(let i=0;i<_importedData.length;i++)
+            {
+                _importedData[i].id = createId();
+                _students.push(_importedData[i]);
+            }
+            setStudents(_students);
+            toast.current.show({ severity: 'info', summary: 'Success', detail: 'File Uploaded', life: 3000 });
+        };
+
+        reader.readAsText(file, 'UTF-8');
+    }
+
     const rightToolbarTemplate = () => {
         return (
             <React.Fragment>
-                <FileUpload mode="basic" accept="image/*" maxFileSize={1000000} label="Import" chooseLabel="Import" className="mr-2 inline-block" />
+                <FileUpload chooseOptions={{ label: 'import', icon: 'pi pi-download' }} mode="basic" name="demo[]" auto url="/api/upload" accept=".csv" className="mr-2" onUpload={importCSV} />
                <Button label="Export" icon="pi pi-upload" className="p-button-help" onClick={exportCSV} />
             </React.Fragment>
         );
@@ -223,7 +267,7 @@ const Crud = () => {
         return (
             <>
                 <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editStudent(rowData)} />
-                <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteStudent(rowData)} />
+                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => confirmDeleteStudent(rowData)} />
             </>
         );
     };
@@ -306,8 +350,9 @@ const Crud = () => {
                         </div>
                         <div className="field">
                             <label htmlFor="email">Email</label>
-                            <InputText id="email" value={student.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.email })} />
-                            {submitted && !student.email && <small className="p-invalid">Email is required.</small>}
+                            <InputText id="email" value={student.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.email } , { 'p-invalid': submitted && student.email })} />
+                            {submitted && !student.email && <small className="p-invalid">Email is required.</small> || 
+                            submitted && student.email && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email) && <small className="p-invalid">Invalid email address. E.g. example@email.com</small>)}
                         </div>
                         <div className="field">
                             <label htmlFor="batch">Batch</label>
