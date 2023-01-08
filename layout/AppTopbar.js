@@ -76,7 +76,7 @@ const AppTopbar = forwardRef((props, ref) => {
                 </Link>
                 <Menu ref={menu} model={overlayMenuItems} popup />
                 <button type="button" className="p-link layout-topbar-button" onClick={toggleMenu}>
-                    <Avatar image={`${contextPath}/demo/images/avatar/asiyajavayant.png`} size="large" shape="circle"></Avatar> 
+                    <Avatar image={`${contextPath}/demo/images/avatar/admin.png`} size="large" shape="circle"></Avatar> 
                     <span>Profile</span>
                 </button>
                    
