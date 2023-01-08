@@ -26,24 +26,21 @@ const AppTopbar = forwardRef((props, ref) => {
 
     const overlayMenuItems = [
         {
-            label: 'Profile',
-            icon: 'pi pi-user',
-            onclick: '/users' 
-
-        },
-        {
-            label: 'Log out',
-            icon: () => (<Phone/>)
-          
-          
+            label: 'Home',
+            icon: 'pi pi-home',
+            onClick:'/'
         },
         {
             separator: true
         },
         {
-            label: 'Home',
-            icon: 'pi pi-home'
-        }
+            label: 'Log out',
+            icon: 'pi pi-sign-out',
+            href:'/auth/login'
+          
+          
+        },
+        
     ];
      
     const toggleMenu = (event) => {
@@ -70,6 +67,13 @@ const AppTopbar = forwardRef((props, ref) => {
 
             <div ref={topbarmenuRef} className={classNames('layout-topbar-menu', { 'layout-topbar-menu-mobile-active': layoutState.profileSidebarVisible })}>
                
+
+            <Link href="/">
+                    <button type="button" className="p-link layout-topbar-button">
+                    <i className="pi pi-cog"></i>
+                        <span>Settings</span>
+                    </button>
+                </Link>
                 <Menu ref={menu} model={overlayMenuItems} popup />
                 <button type="button" className="p-link layout-topbar-button" onClick={toggleMenu}>
                     <Avatar image={`${contextPath}/demo/images/avatar/asiyajavayant.png`} size="large" shape="circle"></Avatar> 
@@ -78,12 +82,7 @@ const AppTopbar = forwardRef((props, ref) => {
                    
 
                 
-                <Link href="/documentation">
-                    <button type="button" className="p-link layout-topbar-button">
-                        <Phone/>
-                        <span>Settings</span>
-                    </button>
-                </Link>
+                
             </div>
         </div>
     );

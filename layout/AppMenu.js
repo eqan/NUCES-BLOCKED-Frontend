@@ -22,7 +22,7 @@ const AppMenu = () => {
                 },
                 {
                     label: 'User Profiles',
-                    icon: 'pi pi-fw pi-users',
+                    icon: 'pi pi-fw pi-user',
                     to: '/users'  
                 },
                 {
@@ -32,28 +32,28 @@ const AppMenu = () => {
                 },
                 {
                     label: 'Academic Profile',
-                    icon: () => (<Phone/>),
+                    icon: 'pi pi-fw pi-book',
                     to: '/academic'
                 },
                 {
                     label: 'Academic Certificates',
-                    icon: 'pi pi-fw pi-users',
+                    icon: 'pi pi-fw pi-bookmark',
                     items: [
                         {
                             label: 'Add Academic Certificate',
-                            icon: 'pi pi-fw pi-sign-in',
+                            icon: 'pi pi-fw pi-plus',
                             to: '/degree/manage/add'
                         },
                         {
                             label: 'Manage Academic Certificates',
-                            icon: 'pi pi-fw pi-times-circle',
+                            icon: 'pi pi-fw pi-pencil',
                             to: '/degree/manage'
                         },
                     ]
                 },
                 {
                     label: 'Semester Results',
-                    icon: 'pi pi-fw pi-users',
+                    icon: 'pi pi-fw pi-chart-line',
                     to: '/results'
                 },
                 
