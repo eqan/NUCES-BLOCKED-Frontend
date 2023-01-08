@@ -65,7 +65,7 @@ const Crud = () => {
     const saveUser = () => {
         setSubmitted(true);
 
-        if (user.name.trim()) {
+        if (user.name.trim()&& (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email)) && user.email && user.role && user.password) {
             let _users = [...users];
             let _user = { ...user };
             if (user.id) {
@@ -152,15 +152,6 @@ const Crud = () => {
     };
     
     
-
-    const onInputNumberChange = (e, name) => {
-        const val = e.value || 0;
-        let _user = { ...user };
-        _user[`${name}`] = val;
-
-        setUser(_user);
-    };
-
     const leftToolbarTemplate = () => {
         return (
             <React.Fragment>
@@ -221,7 +212,7 @@ const Crud = () => {
         return (
             <>
                 <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editUser(rowData)} />
-                <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteUser(rowData)} />
+                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => confirmDeleteUser(rowData)} />
             </>
         );
     };
@@ -299,8 +290,9 @@ const Crud = () => {
                         </div>
                         <div className="field">
                             <label htmlFor="email">Email</label>
-                            <InputText id="email" value={user.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.email })} />
-                            {submitted && !user.email && <small className="p-invalid">Email is required.</small>}
+                            <InputText id="email" value={user.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.email } , { 'p-invalid': submitted && user.email })} />
+                            {submitted && !user.email && <small className="p-invalid">Email is required.</small> || 
+                            submitted && user.email && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) && <small className="p-invalid">Invalid email address. E.g. example@email.com</small>)}
                         </div>
                         <div className="field">
                             <label htmlFor="password">Password</label>

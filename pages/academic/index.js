@@ -67,7 +67,7 @@ const Crud = () => {
     const saveAcademic = () => {
         setSubmitted(true);
 
-        if (academic.name.trim()) {
+        if (academic.name.trim() && academic.rollno && academic.date && academic.description && academic.detail) {
             let _academics = [...academics];
             let _academic = { ...academic };
             if (academic.id) {
@@ -75,12 +75,7 @@ const Crud = () => {
 
                 _academics[index] = _academic;
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Profile Updated', life: 3000 });
-            } else {
-                _academic.id = createId();
-
-                _academics.push(_academic);
-                toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Profile Created', life: 3000 });
-            }
+            } 
 
             setAcademics(_academics);
             setAcademicDialog(false);
@@ -118,15 +113,6 @@ const Crud = () => {
         return index;
     };
 
-    const createId = () => {
-        let id = '';
-        let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
-    };
-
     const exportCSV = () => {
         dt.current.exportCSV();
     };
@@ -153,21 +139,12 @@ const Crud = () => {
         setAcademic(_academic);
     };
     
-    
 
-    const onInputNumberChange = (e, name) => {
-        const val = e.value || 0;
-        let _academic = { ...academic };
-        _academic[`${name}`] = val;
-
-        setAcademic(_academic);
-    };
 
     const leftToolbarTemplate = () => {
         return (
             <React.Fragment>
                 <div className="my-2">
-                   
                     <Button label="Delete" icon="pi pi-trash" className="p-button-danger" onClick={confirmDeleteSelected} disabled={!selectedAcademics || !selectedAcademics.length} />
                 </div>
             </React.Fragment>
@@ -231,7 +208,7 @@ const Crud = () => {
         return (
             <>
                 <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editAcademic(rowData)} />
-                <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteAcademic(rowData)} />
+                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => confirmDeleteAcademic(rowData)} />
             </>
         );
     };
