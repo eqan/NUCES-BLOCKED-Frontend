@@ -10,7 +10,7 @@ const AppFooter = () => {
         <div className="layout-footer">
             <img src={`${contextPath}/layout/images/logo-${layoutConfig.colorScheme === 'light' ? 'dark' : 'white'}.svg`} alt="Logo" height="20" className="mr-2" />
             
-            <span className="font-medium ml-2"></span>
+            <span className="font-medium ml-2">NUCES BLOCKED ©️ BLOCKED Devs</span>
         </div>
     );
 };
