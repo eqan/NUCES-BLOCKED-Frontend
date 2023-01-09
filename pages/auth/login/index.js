@@ -34,6 +34,7 @@ const LoginPage = () => {
         if(data)
         {
            console.log(data) 
+           router.push('/')
         }
     })
 

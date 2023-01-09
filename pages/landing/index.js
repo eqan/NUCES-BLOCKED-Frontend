@@ -15,12 +15,12 @@ const LandingPage = () => {
                 <div
                     id="hero"
                     className="flex flex-column pt-4 px-4 lg:px-8 overflow-hidden"
-                    style={{ background: 'linear-gradient(0deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), radial-gradient(77.36% 256.97% at 77.36% 57.52%, #FFFFFF 5%, #515354 100%)', clipPath: 'ellipse(150% 87% at 93% 13%)' ,width:1730}}>
+                    style={{ background: 'linear-gradient(0deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), radial-gradient(77.36% 256.97% at 77.36% 57.52%, #FFFFFF 5%, #515354 100%)', clipPath: 'ellipse(150% 87% at 93% 13%)' ,width:1640}}>
                     <div className="mx-4 md:mx-8 mt-0 md:mt-4">
                         <span className="text-6xl font-bold text-gray-900 line-height-2" >
-                            <h1 style={{fontSize: 120, color:'##D7FCFF',margin:168,textAlign:'center'}}>NUCES BLOCKED</h1>
+                            <h1 style={{fontSize: 120, color:'##D7FCFF',margin:100,textAlign:'center'}}>NUCES BLOCKED</h1>
                         </span>
-                    <div  style={{position:'absolute',left: 200,top: 520}}>
+                    <div  style={{position:'absolute',left: 200,top: 420}}>
                     <div >
                             
                             <InputText inputid="email1" type="text" placeholder="Enter Hash" className="w-full md:w-30rem mb-5" style={{ padding: '1rem' }} />
@@ -44,13 +44,7 @@ const LandingPage = () => {
 
                 <div>
                             
-                        </div>
-
-                
-
-                
-
-                
+                </div>
             </div>
         </div>
     );
