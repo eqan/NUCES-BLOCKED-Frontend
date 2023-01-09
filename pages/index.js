@@ -1,8 +1,38 @@
 import { Button } from 'primereact/button';
 import { Menu } from 'primereact/menu';
-import React, { useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { gql, useQuery } from "@apollo/client";
+import client from "../apollo-client";
+import { LayoutContext } from '../layout/context/layoutcontext';
+import Link from 'next/link';
 
-const Dashboard = () => {
+const lineData = {
+    labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+    datasets: [
+        {
+            label: 'First Dataset',
+            data: [65, 59, 80, 81, 56, 55, 40],
+            fill: false,
+            backgroundColor: '#2f4860',
+            borderColor: '#2f4860',
+            tension: 0.4
+        },
+        {
+            label: 'Second Dataset',
+            data: [28, 48, 40, 19, 86, 27, 90],
+            fill: false,
+            backgroundColor: '#00bb7e',
+            borderColor: '#00bb7e',
+            tension: 0.4
+        }
+    ]
+};
+
+export default function Dashboard(){
+    // console.log('launches', launches)
+    // const { loading, error, data } = useQuery(GET_DOGS);
+    // console.log(data);
+    const [products, setProducts] = useState(null);
     const menu1 = useRef(null);
     const menu2 = useRef(null);
 
@@ -162,5 +192,3 @@ const Dashboard = () => {
         </div>
     );
 };
-
-export default Dashboard;

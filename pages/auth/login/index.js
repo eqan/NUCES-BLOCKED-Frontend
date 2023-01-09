@@ -1,20 +1,41 @@
 import getConfig from 'next/config';
 import { useRouter } from 'next/router';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import AppConfig from '../../../layout/AppConfig';
 import { Checkbox } from 'primereact/checkbox';
 import { Button } from 'primereact/button';
 import { LayoutContext } from '../../../layout/context/layoutcontext';
 import { InputText } from 'primereact/inputtext';
 import { classNames } from 'primereact/utils';
+import { gql, useMutation, useQuery } from '@apollo/client';
+const GET_ACCESS_TOKEN = gql`
+mutation LoginUser ($email: String!, $password: String!){
+    LoginUser(LoginUserInput: {
+        email: $email,
+        password: $password
+    })
+    {
+        access_token
+    }
+}
+`;
+
 
 const LoginPage = () => {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [checked, setChecked] = useState(false);
     const { layoutConfig } = useContext(LayoutContext);
     const contextPath = getConfig().publicRuntimeConfig.contextPath;
     const router = useRouter();
     const containerClassName = classNames('surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden', {'p-input-filled': layoutConfig.inputStyle === 'filled'});
+    const [createAccessToken ,{loading, error, data }] = useMutation(GET_ACCESS_TOKEN);
+    useEffect(() => {
+        if(data)
+        {
+           console.log(data) 
+        }
+    })
 
     return (
         <div className={containerClassName}>
@@ -26,12 +47,17 @@ const LoginPage = () => {
                             <div className="text-900 text-3xl font-medium mb-3">Welcome to NUCES BLOCKED</div>
                             <span className="text-600 font-medium">Login to continue</span>
                         </div>
-
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            console.log(email)
+                            console.log(password)
+                            createAccessToken({variables: {email: email, password: password}});
+                        }}>
                         <div>
                             <label htmlFor="email1" className="block text-900 text-xl font-medium mb-2">
                                 Email
                             </label>
-                            <InputText inputid="email1" type="text" placeholder="Email address" className="w-full md:w-30rem mb-5" style={{ padding: '1rem' }} />
+                            <InputText inputid="email1" type="text" placeholder="Email address" onChange={(e) => setEmail(e.target.value)}className="w-full md:w-30rem mb-5" style={{ padding: '1rem' }} />
 
                             <label htmlFor="password1" className="block text-900 font-medium text-xl mb-2">
                                 Password
@@ -49,8 +75,10 @@ const LoginPage = () => {
                                     Forgot password?
                                 </a>
                             </div>
-                            <Button label="Login" className="w-full p-3 text-xl" onClick={() => router.push('/')}></Button>
+                            <Button label="Login" className="w-full p-3 text-xl"></Button>
                         </div>
+
+                        </form>
                     </div>
                 </div>
             </div>
