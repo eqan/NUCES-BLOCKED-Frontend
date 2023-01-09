@@ -1,21 +1,13 @@
-import getConfig from 'next/config';
-import React, { useContext } from 'react';
+import React from 'react';
 import AppMenuitem from './AppMenuitem';
-import { LayoutContext } from './context/layoutcontext';
 import { MenuProvider } from './context/menucontext';
-import Link from 'next/link';
-import Phone from 'mdi-material-ui/Phone'
-import AccountCogOutline from 'mdi-material-ui/AccountCogOutline'
 
 const AppMenu = () => {
-    const { layoutConfig } = useContext(LayoutContext);
-    const contextPath = getConfig().publicRuntimeConfig.contextPath;
     const model = [
         {
             
             items: [
                 {
-                    
                     label: 'Home Page',
                     icon: 'pi pi-fw pi-home',
                     to: '/'

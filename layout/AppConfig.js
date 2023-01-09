@@ -1,12 +1,10 @@
 import getConfig from 'next/config';
-import PrimeReact from 'primereact/api';
 import { Sidebar } from 'primereact/sidebar';
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { LayoutContext } from './context/layoutcontext';
 
 const AppConfig = (props) => {
-    const [scales] = useState([12, 13, 14, 15, 16]);
     const { layoutConfig, setLayoutConfig, layoutState, setLayoutState } = useContext(LayoutContext);
     const contextPath = getConfig().publicRuntimeConfig.contextPath;
 
@@ -16,19 +14,6 @@ const AppConfig = (props) => {
 
     const onConfigSidebarHide = () => {
         setLayoutState((prevState) => ({ ...prevState, configSidebarVisible: false }));
-    };
-
-    const changeInputStyle = (e) => {
-        setLayoutConfig((prevState) => ({ ...prevState, inputStyle: e.value }));
-    };
-
-    const changeRipple = (e) => {
-        PrimeReact.ripple = e.value;
-        setLayoutConfig((prevState) => ({ ...prevState, ripple: e.value }));
-    };
-
-    const changeMenuMode = (e) => {
-        setLayoutConfig((prevState) => ({ ...prevState, menuMode: e.value }));
     };
 
     const changeTheme = (theme, colorScheme) => {
@@ -63,14 +48,6 @@ const AppConfig = (props) => {
                 cloneLinkElement.setAttribute('id', id);
                 onComplete && onComplete();
             });
-    };
-
-    const decrementScale = () => {
-        setLayoutConfig((prevState) => ({ ...prevState, scale: prevState.scale - 1 }));
-    };
-
-    const incrementScale = () => {
-        setLayoutConfig((prevState) => ({ ...prevState, scale: prevState.scale + 1 }));
     };
 
     const applyScale = () => {

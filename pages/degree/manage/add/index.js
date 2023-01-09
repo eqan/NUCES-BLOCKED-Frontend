@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProgressBar } from 'primereact/progressbar';
-import getConfig from 'next/config';
+import { Toast } from 'primereact/toast';
 
 const MiscDemo = () => {
     const [value, setValue] = useState(0);
+    const toast = useRef(null);
     const interval = useRef(null);
-    const contextPath = getConfig().publicRuntimeConfig.contextPath;
 
     useEffect(() => {
         let val = value;
         interval.current = setInterval(() => {
-            val += Math.floor(Math.random() * 10) + 1;
+            val += Math.floor(Math.random() * 50) + 1;
 
             if (val >= 100) {
                 val = 100;
+                toast.current.show({ severity: 'info', summary: 'Success', detail: 'Process Completed' });
                 clearInterval(interval.current);
             }
             setValue(val);
@@ -28,19 +29,14 @@ const MiscDemo = () => {
     }, [value]);
 
     return (
-        <div className="grid">
-            <div className="col-12">
-                <div className="card">
-                    <h5>Generating new Academic Certificates</h5>
-                    <div className="grid">
-                        <div className="col">
-                            <ProgressBar value={value} />
-                        </div>
-                        
-                    </div>
+        <div>
+            <Toast ref={toast}></Toast>
+
+            <div className="card">
+                <h5>Collecting Data and Self-Generating Certifcate</h5>
+                <ProgressBar style={{height:20}} value={value}></ProgressBar>
                 </div>
             </div>
-        </div>
     );
 };
 

@@ -1,17 +1,8 @@
 
 {
     "data": [
-        {"id": "1000","rollno": "f230fh0g3","name": "Bamboo Watch","email": "bamboo-watch.jpg","batch": 65},
-        {"id": "1001","rollno": "nvklal433","name": "Black Watch","email": "black-watch.jpg","batch": 72},
-        {"id": "1002","rollno": "zz21cz3c1","name": "Blue Band","email": "blue-band.jpg","batch": 79},
-        {"id": "1003","rollno": "244wgerg2","name": "Blue T-Shirt","email": "blue-t-shirt.jpg","batch": 29},
-        {"id": "1004","rollno": "h456wer53","name": "Bracelet","email": "bracelet.jpg","batch": 15},
-        {"id": "1005","rollno": "av2231fwg","name": "Brown Purse","email": "brown-purse.jpg","batch": 120},
-        {"id": "1006","rollno": "bib36pfvm","name": "Chakra Bracelet","email": "chakra-bracelet.jpg","batch": 32},
-        {"id": "1007","rollno": "mbvjkgip5","name": "Galaxy Earrings","email": "galaxy-earrings.jpg","batch": 34},
-        {"id": "1008","rollno": "vbb124btr","name": "Game Controller","email": "game-controller.jpg","batch": 99},
-        {"id": "1009","rollno": "cm230f032","name": "Gaming Set","email": "gaming-set.jpg","batch": 299},
-        {"id": "1010","rollno": "plb34234v","name": "Gold Phone Case","email": "gold-phone-case.jpg","batch": 24},
-        {"id": "1011","rollno": "4920nnc2d","name": "Green Earbuds","email": "green-earbuds.jpg","batch": 89}
+        {"id": "1000","rollno": "19f0256","name": "Eqan Ahmed","email": "f190256@nu.edu.pk","batch": 19},
+        {"id": "1001","rollno": "19f0217","name": "M Shahid Imran","email": "f190217@nu.edu.pk","batch": 19},
+        {"id": "1002","rollno": "19f0217","name": "Noman Mumtaz","email": "f190204@nu.edu.pk","batch": 19}
     ]
 }

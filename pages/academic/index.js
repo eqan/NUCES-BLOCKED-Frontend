@@ -36,20 +36,12 @@ const Crud = () => {
     const [globalFilter, setGlobalFilter] = useState(null);
     const toast = useRef(null);
     const dt = useRef(null);
-    const contextPath = getConfig().publicRuntimeConfig.contextPath;
 
     useEffect(() => {
         const academicService = new AcademicService();
         academicService.getAcademics().then((data) => setAcademics(data));
     }, []);
 
-
-
-    const openNew = () => {
-        setAcademic(emptyAcademic);
-        setSubmitted(false);
-        setAcademicDialog(true);
-    };
 
     const hideDialog = () => {
         setSubmitted(false);

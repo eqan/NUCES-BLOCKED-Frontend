@@ -7,7 +7,6 @@ import React, { useContext, useEffect, useRef } from 'react';
 import AppFooter from './AppFooter';
 import AppSidebar from './AppSidebar';
 import AppTopbar from './AppTopbar';
-import AppConfig from './AppConfig';
 import { LayoutContext } from './context/layoutcontext';
 import PrimeReact from 'primereact/api';
 
@@ -84,7 +83,7 @@ const Layout = (props) => {
         });
     }, []);
 
-    PrimeReact.ripple = true;
+    PrimeReact.ripple = false;
 
     useUnmountEffect(() => {
         unbindMenuOutsideClickListener();
@@ -128,7 +127,6 @@ const Layout = (props) => {
                     <div className="layout-main">{props.children}</div>
                     <AppFooter />
                 </div>
-                <AppConfig />
                 <div className="layout-mask"></div>
             </div>
         </React.Fragment>

@@ -1,18 +1,11 @@
-import React, { useContext, useRef } from 'react';
-import Link from 'next/link';
+import React, { } from 'react';
 import getConfig from 'next/config';
-import { StyleClass } from 'primereact/styleclass';
 import { Button } from 'primereact/button';
-import { Ripple } from 'primereact/ripple';
-import { Divider } from 'primereact/divider';
 import AppConfig from '../../layout/AppConfig';
-import { LayoutContext } from '../../layout/context/layoutcontext';
 import { InputText } from 'primereact/inputtext';
 
 const LandingPage = () => {
     const contextPath = getConfig().publicRuntimeConfig.contextPath;
-    const { layoutConfig } = useContext(LayoutContext);
-    const menuRef = useRef();
 
     return (
         <div className="surface-0 flex justify-content-center">
