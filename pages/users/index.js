@@ -1,10 +1,13 @@
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
+import { Password } from 'primereact/password';
+import { Divider } from 'primereact/divider';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
+import { Dropdown } from 'primereact/dropdown';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { UserService } from '../../demo/service/UserService';
@@ -23,6 +26,7 @@ const Crud = () => {
     const [deleteUserDialog, setDeleteUserDialog] = useState(false);
     const [deleteUsersDialog, setDeleteUsersDialog] = useState(false);
     const [user, setUser] = useState(emptyUser);
+    const [role, setRole] = useState(null);
     const [selectedUsers, setSelectedUsers] = useState(null);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState(null);
@@ -239,6 +243,29 @@ const Crud = () => {
         </>
     );
 
+    const passwordHeader = <h6>Pick a password</h6>;
+    const passwordFooter = (
+        <React.Fragment>
+            <Divider />
+            <p className="mt-2">Suggestions</p>
+            <ul className="pl-2 ml-2 mt-0" style={{ lineHeight: '1.5' }}>
+                <li>At least one lowercase</li>
+                <li>At least one uppercase</li>
+                <li>At least one numeric</li>
+                <li>Minimum 8 characters</li>
+            </ul>
+        </React.Fragment>
+    );
+
+    const roles = [
+        { name: 'Teacher' },
+        { name: 'Career Counselor' },
+        { name: 'Society Head'}
+    ];
+    const onRoleChange = (e) => {
+        setRole(e.value);
+    }
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -277,25 +304,33 @@ const Crud = () => {
                     <Dialog visible={userDialog} style={{ width: '450px' }} header="User Details" modal className="p-fluid" footer={userDialogFooter} onHide={hideDialog}>
                         
                         <div className="field">
-                            <label htmlFor="name">Full Name</label>
-                            <InputText id="name" value={user.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.name })} />
-                            {submitted && !user.name && <small className="p-invalid">Name is required.</small>}
+                        <label htmlFor="name">Full Name</label>
+                            <span className="p-input-icon-right">
+                                <InputText id="name" value={user.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.name })} />
+                                {submitted && !user.name && <small className="p-invalid">Name is required.</small>}
+                                <i className="pi pi-fw pi-user" />
+                            </span>
                         </div>
                         <div className="field">
                             <label htmlFor="email">Email</label>
-                            <InputText id="email" value={user.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.email } , { 'p-invalid': submitted && user.email })} />
-                            {submitted && !user.email && <small className="p-invalid">Email is required.</small> || 
-                            submitted && user.email && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) && <small className="p-invalid">Invalid email address. E.g. example@email.com</small>)}
+                            <span className="p-input-icon-right">
+                                <InputText id="email" value={user.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.email } , { 'p-invalid1': submitted && user.email })} />
+                                {submitted && !user.email && <small className="p-invalid">Email is required.</small> ||
+                                submitted && user.email && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) && <small className="p-invalid1">Invalid email address. E.g. example@email.com</small>)}
+                                <i className="pi pi-envelope" />
+                            </span>
                         </div>
                         <div className="field">
                             <label htmlFor="password">Password</label>
-                            <InputText id="password" value={user.password} onChange={(e) => onInputChange(e, 'password')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.password })} />
+                            <Password id="password" name="password" value={user.password} onChange={(e) => onInputChange(e, 'password')} toggleMask required autoFocus
+                             className={classNames({ 'p-invalid': submitted && !user.password })} header={passwordHeader} footer={passwordFooter} />
                             {submitted && !user.password && <small className="p-invalid">Password is required.</small>}
                         </div>
                         <div className="field">
                             <label htmlFor="role">Role</label>
-                            <InputText id="role" value={user.role} onChange={(e) => onInputChange(e, 'role')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.role })} />
-                            {submitted && !user.role && <small className="p-invalid">Role is required.</small>}
+                            <Dropdown id="role" value={user.role} options={roles} onChange={(e)=>onInputChange(e,'role')} required autoFocus
+                             optionLabel="name" placeholder="Select a Role" className={classNames({ 'p-invalid': submitted && !user.role })} />
+                             {submitted && !user.role && <small className="p-invalid">Role is required.</small>}
                         </div>
                     </Dialog>
 
