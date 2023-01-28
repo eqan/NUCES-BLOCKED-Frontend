@@ -58,7 +58,7 @@ const Crud = () => {
     const saveDegree = () => {
         setSubmitted(true);
 
-        if (degree.name.trim() && degree.hash && degree.rollno) {
+        if (degree.name.trim() && degree.hash && degree.rollno && validateRollNo()) {
             let _degrees = [...degrees];
             let _degree = { ...degree };
             if (degree.id) {
@@ -134,13 +134,114 @@ const Crud = () => {
         toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Certificate Deleted', life: 3000 });
     };
 
-
+    const validateRollNo=()=>{
+        if(degree.rollno)
+        {
+            let i;
+            let stringbe="";
+            for(i=0;i<degree.rollno.length;i++)
+            {
+                if(i!=2)
+                {
+                    if(i>=1)
+                    {
+                        if(!(degree.rollno[i]>='0'&& degree.rollno[i]<='9'))
+                        {
+                            return 0;
+                        }
+                        stringbe+=degree.rollno[i];
+                    }
+                    else{
+                        if(!(degree.rollno[i]>='1'&& degree.rollno[i]<='9'))
+                        {
+                            return 0;
+                        }
+                        stringbe+=degree.rollno[i];
+                    }
+                }
+                else if(i==2)
+                {
+                    if((degree.rollno[i]>='a'&&degree.rollno[i]<='z')|| (degree.rollno[i]>='A'&&degree.rollno[i]<='Z'))
+                    {
+                        stringbe+=degree.rollno[i].toUpperCase();
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+            }
+            if((stringbe.length!=7))
+            {
+                return 0;
+            }
+            return 1;
+        }
+    }
 
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || '';
         let _degree = { ...degree };
+        if (name=="name")
+        {
+            let i;
+            let stringbe='';
+            for(i=0;i<val.length;i++)
+            {
+                if((val[i]>='a'&&val[i]<='z')|| (val[i]>='A'&&val[i]<='Z')|| (val[i]==' '))
+                {
+                    stringbe+=val[i];
+                }
+            }
+            _degree[`${name}`] = stringbe;
+            setDegree(_degree);
+            return;
+        }
+        else if(name=="rollno")
+        {
+            let i;
+            let stringbe="";
+            for(i=0;i<val.length;i++)
+            {
+                if(i!=2)
+                {
+                    if(i>=1)
+                    {
+                        if(!(val[i]>='0'&& val[i]<='9'))
+                        {
+                            return;
+                        }
+                        stringbe+=val[i];
+                    }
+                    else{
+                        if(!(val[i]>='1'&& val[i]<='9'))
+                        {
+                            return;
+                        }
+                        stringbe+=val[i];
+                    }
+                }
+                else if(i==2)
+                {
+                    if((val[i]>='a'&&val[i]<='z')|| (val[i]>='A'&&val[i]<='Z'))
+                    {
+                        stringbe+=val[i].toUpperCase();
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+            }
+            if((stringbe.length>7))
+            {
+                return;
+            }
+            _degree[`${name}`] = stringbe;
+            setDegree(_degree);
+            return;
+        }
         _degree[`${name}`] = val;
-
         setDegree(_degree);
     };
 
@@ -272,18 +373,28 @@ const Crud = () => {
                         
                         <div className="field">
                             <label htmlFor="name">Name</label>
-                            <InputText id="name" value={degree.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.name })} />
-                            {submitted && !degree.name && <small className="p-invalid">Name is required.</small>}
+                            <span className="p-input-icon-right">
+                                <InputText id="name" value={degree.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.name })} />
+                                {submitted && !degree.name && <small className="p-invalid">Name is required.</small>}
+                                <i className="pi pi-fw pi-user"/>
+                            </span>
                         </div>
                         <div className="field">
                             <label htmlFor="rollno">Roll No.</label>
-                            <InputText id="rollno" value={degree.rollno} onChange={(e) => onInputChange(e, 'rollno')} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.rollno })} />
-                            {submitted && !degree.rollno && <small className="p-invalid">Roll No. is required.</small>}
+                            <span className="p-input-icon-right">
+                                <InputText id="rollno" value={degree.rollno} onChange={(e) => onInputChange(e,"rollno")} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.rollno }, { 'p-invalid1': submitted && degree.rollno })} />
+                                {submitted && !degree.rollno && <small className="p-invalid">Roll No. is required.</small> ||
+                                submitted && degree.rollno && (!(validateRollNo()) && <small className="p-invalid1">Valid Roll no. is like 19F0000</small>)}
+                                <i className="pi pi-fw pi-id-card"/>
+                            </span>
                         </div>
                         <div className="field">
                             <label htmlFor="hash">Hash</label>
-                            <InputText id="hash" value={degree.hash} onChange={(e) => onInputChange(e, 'hash')} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.hash })} />
-                            {submitted && !degree.hash && <small className="p-invalid">Hash is required.</small>}
+                            <span className="p-input-icon-right">
+                                <InputText id="hash" value={degree.hash} onChange={(e) => onInputChange(e, 'hash')} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.hash })} />
+                                {submitted && !degree.hash && <small className="p-invalid">Hash is required.</small>}
+                                <i className="pi pi-fw pi-prime"/>
+                            </span>
                         </div>
 
                     </Dialog>

@@ -6,9 +6,12 @@ import { FileUpload } from 'primereact/fileupload';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
+import { Dropdown } from 'primereact/dropdown';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { ResultService } from '../../demo/service/ResultService';
+import { empty } from '@apollo/client';
+import { string } from 'prop-types';
 
 
 
@@ -29,6 +32,7 @@ const Crud = () => {
     const [deleteResultDialog, setDeleteResultDialog] = useState(false);
     const [deleteResultsDialog, setDeleteResultsDialog] = useState(false);
     const [result, setResult] = useState(emptyResult);
+    const [semester, setSemester] = useState(null);
     const [selectedResults, setSelectedResults] = useState(null);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState(null);
@@ -47,6 +51,7 @@ const Crud = () => {
 
     const openNew = () => {
         setResult(emptyResult);
+        setSemester('');
         setSubmitted(false);
         setResultDialog(true);
     };
@@ -64,12 +69,32 @@ const Crud = () => {
         setDeleteResultsDialog(false);
     };
 
+    const validateYear=()=>{
+        if (result.year) {
+            
+            let temp=parseInt(result.year);
+            let today=new Date;
+            if(!(temp>=1990&&temp<=today.getFullYear()))
+            {
+                return 0;
+            }
+            return 1;
+        }
+    }
+
     const saveResult = () => {
         setSubmitted(true);
 
         if (result.semester.trim()&& result.year) {
             let _results = [...results];
             let _result = { ...result };
+            
+            let temp=parseInt(result.year);
+            let today=new Date;
+            if(!(temp>=1990&&temp<=today.getFullYear()))
+            {
+                return 0;
+            }
             if (result.id) {
                 const index = findIndexById(result.id);
 
@@ -85,11 +110,15 @@ const Crud = () => {
             setResults(_results);
             setResultDialog(false);
             setResult(emptyResult);
+            setSemester(emptyResult.semester);
+            return 1;
         }
     };
 
     const editResult = (result) => {
         setResult({ ...result });
+        console.log(result);
+        setSemester({name: result.semester});
         setResultDialog(true);
     };
 
@@ -145,11 +174,37 @@ const Crud = () => {
 
 
 
-    const onInputChange = (e, semester) => {
+    const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || '';
         let _result = { ...result };
-        _result[`${semester}`] = val;
-
+        if (name =='semester')
+        {    
+            _result[`${name}`] = val.name;
+            setResult(_result);
+            setSemester(val); 
+            return;
+        }
+        else if(name=='year')
+        {
+            let i;
+            let stringbe='';
+            for(i=0;i<val.length;i++)
+            {
+                if(!(val[i]>='0'&&val[i]<='9'))
+                {
+                    return;
+                }
+                stringbe+=val[i];
+            }
+            if(stringbe.length>4)
+            {
+                return;
+            }
+            _result[`${name}`] = stringbe;
+            setResult(_result);
+            return;
+        }
+        _result[`${name}`] = val;
         setResult(_result);
     };
 
@@ -230,6 +285,12 @@ const Crud = () => {
         </>
     );
 
+    const semesters = [
+        { name: 'Fall' },
+        { name: 'Spring' },
+        { name: 'Summer'}
+    ];
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -269,13 +330,18 @@ const Crud = () => {
                         
                         <div className="field">
                             <label htmlFor="semester">Semeter Name</label>
-                            <InputText id="semester" value={result.semester} onChange={(e) => onInputChange(e, 'semester')} required autoFocus className={classNames({ 'p-invalid': submitted && !result.semester })} />
+                            <Dropdown id="semester" value={semester} options={semesters} onChange={(e) => onInputChange(e, 'semester')} required autoFocus
+                             optionLabel="name" placeholder="Select a Semester" className={classNames({ 'p-invalid': submitted && !result.semester })} />
                             {submitted && !result.semester && <small className="p-invalid">Semester is required.</small>}
                         </div>
                         <div className="field">
                             <label htmlFor="year">Year</label>
-                            <InputText id="year" value={result.year} onChange={(e) => onInputChange(e, 'year')} required autoFocus className={classNames({ 'p-invalid': submitted && !result.year })} />
-                            {submitted && !result.year && <small className="p-invalid">Year is required.</small>}
+                            <span className="p-input-icon-right">
+                                <InputText id="year" value={result.year} onChange={(e) => onInputChange(e, 'year')} required autoFocus className={classNames({ 'p-invalid': submitted && !result.year }, { 'p-invalid1': submitted && result.year })} />
+                                {submitted && !result.year && <small className="p-invalid">Year is required.</small> ||
+                                submitted && result.year && (!(validateYear()) && <small className="p-invalid1">Invalid year, range from 1990 to Current Year</small>)}
+                                <i className="pi pi-fw pi-calendar"/>
+                            </span>
                         </div>
 
                         <div className="field">

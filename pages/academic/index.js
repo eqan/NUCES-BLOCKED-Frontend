@@ -1,18 +1,13 @@
-import getConfig from 'next/config';
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { Dialog } from 'primereact/dialog';
-import { FileUpload } from 'primereact/fileupload';
-import { InputNumber } from 'primereact/inputnumber';
 import { InputText } from 'primereact/inputtext';
-import { InputTextarea } from 'primereact/inputtextarea';
-import { RadioButton } from 'primereact/radiobutton';
-import { Rating } from 'primereact/rating';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
+import { Calendar } from 'primereact/calendar';
 import { AcademicService } from '../../demo/service/AcademicService';
 
 const Crud = () => {
@@ -21,8 +16,7 @@ const Crud = () => {
         name: '',
         rollno:'',
         date:'',
-        description: '',
-        contribution: '',
+        cgpa: '',
        
     };
 
@@ -34,6 +28,7 @@ const Crud = () => {
     const [selectedAcademics, setSelectedAcademics] = useState(null);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState(null);
+    const [date, setDate] = useState(null);
     const toast = useRef(null);
     const dt = useRef(null);
 
@@ -59,7 +54,7 @@ const Crud = () => {
     const saveAcademic = () => {
         setSubmitted(true);
 
-        if (academic.name.trim() && academic.rollno && academic.date && academic.description && academic.detail) {
+        if (academic.date && academic.cgpa) {
             let _academics = [...academics];
             let _academic = { ...academic };
             if (academic.id) {
@@ -77,6 +72,8 @@ const Crud = () => {
 
     const editAcademic = (academic) => {
         setAcademic({ ...academic });
+        let _date=new Date(academic.date);
+        setDate(_date);
         setAcademicDialog(true);
     };
 
@@ -126,8 +123,59 @@ const Crud = () => {
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || '';
         let _academic = { ...academic };
+        if(name=='date')
+        {
+            setDate(val);
+            let value=val.toString();
+            value=value.substring(4,16);
+            _academic[`${name}`] = value.substring(4,6)+"/"+value.substring(0,3)+"/"+value.substring(7,11);
+            setAcademic(_academic); 
+            return;
+        }
+        else if(name=='cgpa')
+        {
+            let stringbe='';
+            let i;
+            let value=val.toString();
+            for(i=0;i<value.length;i++)
+            {
+                if(i==0)
+                {
+                    if(((value[i]>='0'&&value[i]<='4')))
+                    {
+                        stringbe+=value[i];
+                    }
+                }
+                else if(i==1)
+                {
+                    if(value[i]=='.')
+                    {
+                        stringbe+=value[i];
+                    }
+                }
+                else{
+                    if(value[0]!=4)
+                    {
+                        if(((value[i]>='0'&&value[i]<='9')))
+                        {
+                            stringbe+=value[i]; 
+                        }
+                    }
+                    else
+                    {
+                        stringbe+='0';
+                    }
+                }
+            }
+            if(stringbe.length>4)
+            {
+                return;
+            }
+            _academic[`${name}`] = stringbe;
+            setAcademic(_academic);
+            return;
+        }
         _academic[`${name}`] = val;
-
         setAcademic(_academic);
     };
     
@@ -177,21 +225,11 @@ const Crud = () => {
         );
     };
 
- 
-
-    const descriptionBodyTemplate = (rowData) => {
+    const cgpaBodyTemplate = (rowData) => {
         return (
             <>
-                <span className="p-column-title">Description</span>
-                {rowData.description}
-            </>
-        );
-    };
-    const contributionBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">Contribution</span>
-                {rowData.contribution}
+                <span className="p-column-title">CGPA</span>
+                {rowData.cgpa}
             </>
         );
     };
@@ -262,8 +300,7 @@ const Crud = () => {
                         <Column field="name" header="Full Name" sortable body={nameBodyTemplate} headerStyle={{ minWidth: '15rem' }}></Column>
                         <Column field="rollno" header="Roll No." sortable body={rollnoBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
                         <Column field="date" header="Date" sortable body={dateBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
-                        <Column field="contribution" header="Contribution" body={contributionBodyTemplate} sortable headerStyle={{ minWidth: '15rem' }}></Column>
-                        <Column field="description" header="Contribution Detail" body={descriptionBodyTemplate} sortable headerStyle={{ minWidth: '20rem' }}></Column>
+                        <Column field="cgpa" header="CGPA" body={cgpaBodyTemplate} sortable headerStyle={{ minWidth: '15rem' }}></Column>
                         
                        
 
@@ -275,18 +312,19 @@ const Crud = () => {
                        
                         <div className="field">
                             <label htmlFor="date">Date</label>
-                            <InputText id="date" value={academic.date} onChange={(e) => onInputChange(e, 'date')} required autoFocus className={classNames({ 'p-invalid': submitted && !academic.date })} />
-                            {submitted && !academic.date && <small className="p-invalid">Date is required.</small>}
+                            <span className="p-input-icon-right">
+                                <Calendar id="date" value={date} onChange={(e) => onInputChange(e, 'date')} required autoFocus className={classNames({ 'p-invalid': submitted && !academic.date })} />
+                                {submitted && !academic.date && <small className="p-invalid">Date is required.</small>}
+                                <i className="pi pi-fw pi-calendar"/>
+                            </span>
                         </div>
                         <div className="field">
-                            <label htmlFor="contribution">Contribution</label>
-                            <InputText id="contribution" value={academic.contribution} onChange={(e) => onInputChange(e, 'contribution')} required autoFocus className={classNames({ 'p-invalid': submitted && !academic.contribution })} />
-                            {submitted && !academic.contribution && <small className="p-invalid">Contribution is required.</small>}
-                        </div>
-                        <div className="field">
-                            <label htmlFor="description">Description</label>
-                            <InputText id="description" value={academic.description} onChange={(e) => onInputChange(e, 'description')} required autoFocus className={classNames({ 'p-invalid': submitted && !academic.description })} />
-                            {submitted && !academic.description && <small className="p-invalid">Description is required.</small>}
+                            <label htmlFor="cgpa">CGPA</label>
+                            <span className="p-input-icon-right">
+                                <InputText id="cgpa" value={academic.cgpa} onChange={(e) => onInputChange(e, 'cgpa')} required autoFocus className={classNames({ 'p-invalid': submitted && !academic.cgpa })} />
+                                {submitted && !academic.cgpa && <small className="p-invalid">CGPA is required.</small>}
+                                <i className="pi pi-fw pi-star"/>
+                            </span>
                         </div>
                     </Dialog>
 
