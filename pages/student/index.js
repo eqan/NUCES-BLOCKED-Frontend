@@ -39,7 +39,8 @@ const Crud = () => {
 
 
     const openNew = () => {
-        setStudent(emptyStudent);
+        let _student=emptyStudent;
+        setStudent(_student);
         setSubmitted(false);
         setStudentDialog(true);
     };
@@ -60,7 +61,7 @@ const Crud = () => {
     const saveStudent = () => {
         setSubmitted(true);
 
-        if (student.name.trim() && (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email)) && student.email && student.rollno && student.batch) {
+        if (student.name.trim() && (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email)) && student.email && student.rollno && student.batch && validateRollNo()) {
             let _students = [...students];
             let _student = { ...student };
             if (student.id) {
@@ -136,13 +137,119 @@ const Crud = () => {
         toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Students Deleted', life: 3000 });
     };
 
-
+    const validateRollNo=()=>{
+        if(student.rollno)
+        {
+            let i;
+            let stringbe="";
+            for(i=0;i<student.rollno.length;i++)
+            {
+                if(i!=2)
+                {
+                    if(i>=1)
+                    {
+                        if(!(student.rollno[i]>='0'&& student.rollno[i]<='9'))
+                        {
+                            return 0;
+                        }
+                        stringbe+=student.rollno[i];
+                    }
+                    else{
+                        if(!(student.rollno[i]>='1'&& student.rollno[i]<='9'))
+                        {
+                            return 0;
+                        }
+                        stringbe+=student.rollno[i];
+                    }
+                }
+                else if(i==2)
+                {
+                    if((student.rollno[i]>='a'&&student.rollno[i]<='z')|| (student.rollno[i]>='A'&&student.rollno[i]<='Z'))
+                    {
+                        stringbe+=student.rollno[i].toUpperCase();
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                }
+            }
+            if((stringbe.length!=7))
+            {
+                return 0;
+            }
+            return 1;
+        }
+    }
 
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || '';
         let _student = { ...student };
+        let stringbe;
+        if (name=="name")
+        {
+            let i;
+            let stringbe='';
+            for(i=0;i<val.length;i++)
+            {
+                if((val[i]>='a'&&val[i]<='z')|| (val[i]>='A'&&val[i]<='Z')|| (val[i]==' '))
+                {
+                    stringbe+=val[i];
+                }
+            }
+            _student[`${name}`] = stringbe;
+            setStudent(_student);
+            return;
+        }
+        else if(name=="rollno")
+        {
+            let i;
+            stringbe="";
+            for(i=0;i<val.length;i++)
+            {
+                if(i!=2)
+                {
+                    if(i>=1)
+                    {
+                        if(!(val[i]>='0'&& val[i]<='9'))
+                        {
+                            return;
+                        }
+                        stringbe+=val[i];
+                    }
+                    else{
+                        if(!(val[i]>='1'&& val[i]<='9'))
+                        {
+                            return;
+                        }
+                        stringbe+=val[i];
+                    }
+                }
+                else if(i==2)
+                {
+                    if((val[i]>='a'&&val[i]<='z')|| (val[i]>='A'&&val[i]<='Z'))
+                    {
+                        stringbe+=val[i].toUpperCase();
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+            }
+            if((stringbe.length>7))
+            {
+                return;
+            }
+            _student[`${name}`] = stringbe;
+            if(stringbe.length>=2)
+            {
+            _student.batch=stringbe[0]+stringbe[1];
+            }
+            setStudent(_student);
+            return;
+        }
         _student[`${name}`] = val;
-
         setStudent(_student);
     };
 
@@ -334,24 +441,29 @@ const Crud = () => {
                         
                         <div className="field">
                             <label htmlFor="name">Name</label>
-                            <InputText id="name" value={student.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.name })} />
-                            {submitted && !student.name && <small className="p-invalid">Name is required.</small>}
+                            <span className="p-input-icon-right">
+                                <InputText id="name" value={student.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.name })} />
+                                {submitted && !student.name && <small className="p-invalid">Name is required.</small>}
+                                <i className="pi pi-fw pi-user"/>
+                            </span>
                         </div>
                         <div className="field">
                             <label htmlFor="rollno">Roll No.</label>
-                            <InputText id="rollno" value={student.rollno} onChange={(e) => onInputChange(e, 'rollno')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.rollno })} />
-                            {submitted && !student.rollno && <small className="p-invalid">Roll No. is required.</small>}
+                            <span className="p-input-icon-right">
+                                <InputText id="rollno" value={student.rollno} onChange={(e) => onInputChange(e,"rollno")} required autoFocus className={classNames({ 'p-invalid': submitted && !student.rollno }, { 'p-invalid1': submitted && student.rollno })} />
+                                {submitted && !student.rollno && <small className="p-invalid">Roll No. is required.</small>||
+                                submitted && student.rollno && (!(validateRollNo()) && <small className="p-invalid1">Valid Roll no. is like 19F0000</small>)}
+                                <i className="pi pi-fw pi-id-card"/>
+                            </span>
                         </div>
                         <div className="field">
-                            <label htmlFor="email">Email</label>
-                            <InputText id="email" value={student.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.email } , { 'p-invalid': submitted && student.email })} />
-                            {submitted && !student.email && <small className="p-invalid">Email is required.</small> || 
-                            submitted && student.email && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email) && <small className="p-invalid">Invalid email address. E.g. example@email.com</small>)}
-                        </div>
-                        <div className="field">
-                            <label htmlFor="batch">Batch</label>
-                            <InputText id="batch" value={student.batch} onChange={(e) => onInputChange(e, 'batch')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.batch })} />
-                            {submitted && !student.batch && <small className="p-invalid">Batch is required.</small>}
+                        <label htmlFor="email">Email</label>
+                            <span className="p-input-icon-right">
+                                <InputText id="email" value={student.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !student.email } , { 'p-invalid1': submitted && student.email })} />
+                                {submitted && !student.email && <small className="p-invalid">Email is required.</small> ||
+                                submitted && student.email && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email) && <small className="p-invalid1">Invalid email address. E.g. example@email.com</small>)}
+                                <i className="pi pi-envelope" />
+                            </span>
                         </div>
                     </Dialog>
 

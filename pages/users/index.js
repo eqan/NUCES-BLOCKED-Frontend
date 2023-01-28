@@ -42,6 +42,7 @@ const Crud = () => {
 
     const openNew = () => {
         setUser(emptyUser);
+        setRole('');
         setSubmitted(false);
         setUserDialog(true);
     };
@@ -80,11 +81,13 @@ const Crud = () => {
             setUsers(_users);
             setUserDialog(false);
             setUser(emptyUser);
+            setRole(''); 
         }
     };
 
     const editUser = (user) => {
         setUser({ ...user });
+        setRole({name:user.role})
         setUserDialog(true);
     };
 
@@ -143,8 +146,29 @@ const Crud = () => {
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || '';
         let _user = { ...user };
+        if (name =='role')
+        {    
+            _user[`${name}`] = val.name;
+            setUser(_user);
+            setRole(val); 
+            return;
+        }
+        else if (name=="name")
+        {
+            let i;
+            let stringbe='';
+            for(i=0;i<val.length;i++)
+            {
+                if((val[i]>='a'&&val[i]<='z')|| (val[i]>='A'&&val[i]<='Z')|| (val[i]==' '))
+                {
+                    stringbe+=val[i];
+                }
+            }
+            _user[`${name}`] = stringbe;
+            setUser(_user);
+            return;
+        }
         _user[`${name}`] = val;
-
         setUser(_user);
     };
     
@@ -165,15 +189,6 @@ const Crud = () => {
             <React.Fragment>
                <Button label="Export" icon="pi pi-upload" className="p-button-help" onClick={exportCSV} />
             </React.Fragment>
-        );
-    };
-
-    const passwordBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">Roll No.</span>
-                {rowData.password}
-            </>
         );
     };
 
@@ -258,13 +273,11 @@ const Crud = () => {
     );
 
     const roles = [
+        { name: 'Admin' },
         { name: 'Teacher' },
         { name: 'Career Counselor' },
         { name: 'Society Head'}
     ];
-    const onRoleChange = (e) => {
-        setRole(e.value);
-    }
 
     return (
         <div className="grid crud-demo">
@@ -293,7 +306,6 @@ const Crud = () => {
                         <Column selectionMode="multiple" headerStyle={{ width: '4rem' }}></Column>
                         <Column field="name" header="Full Name" sortable body={nameBodyTemplate} headerStyle={{ minWidth: '15rem' }}></Column>
                         <Column field="email" header="Email" body={emailBodyTemplate} sortable headerStyle={{ minWidth: '15rem' }}></Column>
-                        <Column field="password" header="Password" sortable body={passwordBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
                         <Column field="role" header="Role" body={roleBodyTemplate} sortable></Column>
                         
                        
@@ -304,7 +316,7 @@ const Crud = () => {
                     <Dialog visible={userDialog} style={{ width: '450px' }} header="User Details" modal className="p-fluid" footer={userDialogFooter} onHide={hideDialog}>
                         
                         <div className="field">
-                        <label htmlFor="name">Full Name</label>
+                        <label htmlFor="name">Name</label>
                             <span className="p-input-icon-right">
                                 <InputText id="name" value={user.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.name })} />
                                 {submitted && !user.name && <small className="p-invalid">Name is required.</small>}
@@ -328,7 +340,7 @@ const Crud = () => {
                         </div>
                         <div className="field">
                             <label htmlFor="role">Role</label>
-                            <Dropdown id="role" value={user.role} options={roles} onChange={(e)=>onInputChange(e,'role')} required autoFocus
+                            <Dropdown id="role" value={role} options={roles} onChange={(e)=>onInputChange(e,'role')} required autoFocus
                              optionLabel="name" placeholder="Select a Role" className={classNames({ 'p-invalid': submitted && !user.role })} />
                              {submitted && !user.role && <small className="p-invalid">Role is required.</small>}
                         </div>
