@@ -5,7 +5,7 @@ import { Toast } from 'primereact/toast';
 const MiscDemo = () => {
     const [value, setValue] = useState<number>(0);
     const toast = useRef<Toast|null>(null);
-    const interval = useRef<number|null|undefined>(null);
+    const interval = useRef<any|null|undefined>(null);
 
     useEffect(() => {
         let val = value;
