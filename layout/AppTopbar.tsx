@@ -6,6 +6,7 @@ import { LayoutContext } from './context/layoutcontext';
 import { Menu } from 'primereact/menu';
 import { Avatar } from 'primereact/avatar';
 import { Dropdown } from 'primereact/dropdown';
+import { typeOf } from 'react-is';
 
 interface Theme {
   name: string;
@@ -19,7 +20,7 @@ interface AppTopbarProps {
   toggleMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onThemeChange: (e: { value: Theme }) => void;
   changeTheme: (theme: string, colorScheme: string) => void;
-  replaceLink: (linkElement: HTMLLinkElement, href: string, onComplete: () => void) => void;
+  replaceLink: (linkElement: any, href: string, onComplete: () => void) => void;
   applyScale: () => void;
   menu: React.RefObject<Menu>;
 }
@@ -80,10 +81,12 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
         replaceLink(themeLink, newHref, () => {
             setLayoutConfig((prevState) => ({ ...prevState, theme, colorScheme }));
         });
-        console.log(layoutConfig);
     };
     
     const replaceLink = (linkElement, href, onComplete) => {
+        if (!linkElement || !href) {
+            return;
+        }
         const id = linkElement.getAttribute('id');
         const cloneLinkElement = linkElement.cloneNode(true);
     
@@ -92,11 +95,15 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     
         linkElement.parentNode.insertBefore(cloneLinkElement, linkElement.nextSibling);
     
-        onComplete();
-    
-        setTimeout(() => {
+        cloneLinkElement.addEventListener('load', () => {
             linkElement.remove();
-        }, 100);
+
+            const element = document.getElementById(id); // re-check
+            element && element.remove();
+
+            cloneLinkElement.setAttribute('id', id);
+            onComplete && onComplete();
+        });
     };
 
     const applyScale = () => {

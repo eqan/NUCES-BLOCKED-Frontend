@@ -1,6 +1,8 @@
 import { Button } from 'primereact/button';
 import { Menu } from 'primereact/menu';
 import React, {useRef } from 'react';
+import { GetServerSideProps } from 'next';
+import { requireAuthentication } from '../layout/context/requireAuthetication';
 
 
 export default function Dashboard(){
@@ -168,3 +170,10 @@ export default function Dashboard(){
         </div>
     );
 };
+export const getServerSideProps:GetServerSideProps=requireAuthentication(
+    async (ctx)=>{
+        return{
+            props:{},
+        };
+    }
+);

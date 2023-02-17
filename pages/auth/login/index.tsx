@@ -8,8 +8,7 @@ mutation LoginUser ($email: String!, $password: String!){
     {
         access_token
     }
-}
-`;
+}`;
 import getConfig from 'next/config';
 import { useRouter } from 'next/router';
 import React, { useContext, useEffect, useState } from 'react';
@@ -18,6 +17,7 @@ import { Button } from 'primereact/button';
 import { LayoutContext,LayoutContextValue } from '../../../layout/context/layoutcontext';
 import { InputText } from 'primereact/inputtext';
 import { classNames } from 'primereact/utils';
+import Cookies from 'js-cookie';
 
 const LoginPage= () => {
     const [email, setEmail] = useState('');
@@ -31,8 +31,11 @@ const LoginPage= () => {
 
     useEffect(() => {
         if (data) {
-           console.log(data);
+           Cookies.set('access_token', data['LoginUser']['access_token'], { expires: 7 });
            router.push('/');
+        }
+        else{
+            router.push('/auth/login');
         }
     }, [data, router]);
 

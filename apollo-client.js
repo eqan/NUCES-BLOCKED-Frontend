@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 let apolloClient = new ApolloClient({
     uri: "http://localhost:3001/graphql",
+    credentials:"same-origin",
     cache: new InMemoryCache(),
 });
 
