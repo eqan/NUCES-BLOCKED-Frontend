@@ -1,4 +1,4 @@
-import { gql, useMutation } from '@apollo/client';
+import { gql, useMutation, useQuery } from '@apollo/client';
 const GET_ACCESS_TOKEN = gql`
 mutation LoginUser ($email: String!, $password: String!){
     LoginUser(LoginUserInput: {
@@ -18,6 +18,7 @@ import { LayoutContext,LayoutContextValue } from '../../../layout/context/layout
 import { InputText } from 'primereact/inputtext';
 import { classNames } from 'primereact/utils';
 import Cookies from 'js-cookie';
+import { typeOf } from 'react-is';
 
 const LoginPage= () => {
     const [email, setEmail] = useState('');
@@ -28,10 +29,13 @@ const LoginPage= () => {
     const router = useRouter();
     const containerClassName = classNames('surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden', {'p-input-filled': layoutConfig.inputStyle === 'filled'});
     const [createAccessToken ,{data }] = useMutation(GET_ACCESS_TOKEN);
+    
+    
 
     useEffect(() => {
         if (data) {
-           Cookies.set('access_token', data['LoginUser']['access_token'], { expires: 7 });
+            const token=data['LoginUser'];
+           Cookies.set('access_token', token['access_token'], { expires: 1 });
            router.push('/');
         }
         else{
