@@ -7,10 +7,10 @@ import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, {  useEffect, useRef, useState } from 'react';
-import { Calendar } from 'primereact/calendar';
-import { AcademicService } from '../../demo/service/AcademicService';
+import {   returnFetchContributionsHook } from './queries/getStudentContributions';
+import { useRouter } from 'next/router';
 
-interface emptyAcedamic{
+interface AcademicContributionInterface{
     id:string;
     name:string|null;
     rollno:string|null;
@@ -24,7 +24,9 @@ interface sAcademic{
 }
 
 const Crud = () => {
-    let emptyAcademic = {
+    const router = useRouter();
+
+    let AcademicRecordInterface = {
         id: '',
         name: '',
         rollno:'',
@@ -38,23 +40,61 @@ const Crud = () => {
         length:null,
     };
 
+    const mapContributionToAcademicRecord = (contribution: AcademicContributionInterface) => {
+        return {
+          id: contribution.id,
+          name: contribution?.student?.name,
+          rollno: contribution.id,
+          date: contribution.updatedAt,
+          cgpa: contribution.contribution
+        }
+      }
 
-    const [academics, setAcademics] = useState<emptyAcedamic[]>([]);
+
+    const [academics, setAcademics] = useState<AcademicContributionInterface[]>([]);
     const [academicDialog, setAcademicDialog] = useState(false);
     const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false);
     const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false);
-    const [academic, setAcademic] = useState(emptyAcademic);
+    const [academic, setAcademic] = useState(AcademicRecordInterface);
     const [selectedAcademics, setSelectedAcademics] = useState<sAcademic>();
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState<string>();
-    const [date, setDate] = useState<Date | null>(null);
+    const [page, setPage] = useState(1);
+    const [pageLimit, setPageLimit] = useState(10);
+    const [totalRecords, setTotalRecords] = useState(0);
+  
     const toast = useRef<Toast>(null);
     const dt = useRef <DataTable>(null);
+    const [contributionsData, contributionsLoading, contributionsFetchingError, contributionsRefetchHook] = returnFetchContributionsHook('ADMIN', page, pageLimit);
+    
 
     useEffect(() => {
-        const academicService = new AcademicService();
-        academicService.getAcademics().then((data) => setAcademics(data));
-    }, []);
+        const fetchData = async () => {
+          if(!contributionsLoading)
+          {
+            console.log(contributionsData)
+            const academicRecords = contributionsData?.GetAllContributions.adminContributions?.map(mapContributionToAcademicRecord) || [];
+            const total = contributionsData?.GetAllContributions?.total;
+            
+            setAcademic(academicRecords);
+            setTotalRecords(total);
+          }
+        };
+      
+        fetchData();
+      }, [contributionsLoading]);
+    
+    useEffect(() => {
+        const handleRouteChange = () => {
+          contributionsRefetchHook();
+        };
+    
+        router.events.on('routeChangeComplete', handleRouteChange);
+    
+        return () => {
+          router.events.off('routeChangeComplete', handleRouteChange);
+        };
+      }, [contributionsRefetchHook, router.events]);
 
 
     const hideDialog = () => {
@@ -87,7 +127,7 @@ const Crud = () => {
 
             setAcademics(_academics);
             setAcademicDialog(false);
-            setAcademic(emptyAcademic);
+            setAcademic(AcademicRecordInterface);
         }
     };
 
@@ -105,7 +145,7 @@ const Crud = () => {
         let _academics = academics.filter((val) => val.id !== academic.id);
         setAcademics(_academics);
         setDeleteAcademicDialog(false);
-        setAcademic(emptyAcademic);
+        setAcademic(AcademicRecordInterface);
         if(toast.current){
             toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Profile Deleted', life: 3000 });
         }
@@ -147,8 +187,12 @@ const Crud = () => {
             toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Profile Deleted', life: 3000 });
         }
     };
-
-
+    
+    const onPageChange = (event) => {
+        setPage(event.first / event.rows);
+        setPageLimit(event.rows);
+      };
+    
 
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || '';
@@ -299,7 +343,6 @@ const Crud = () => {
                 <div className="card">
                     <Toast ref={toast} />
                     <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate}></Toolbar>
-
                     <DataTable
                         ref={dt} 
                         value={academics}
@@ -307,7 +350,9 @@ const Crud = () => {
                         onSelectionChange={(e) => setSelectedAcademics(e.value)}
                         dataKey="id"
                         paginator
-                        rows={10}
+                        rows={pageLimit}
+                        first={page * pageLimit}
+                        onPage={onPageChange}
                         rowsPerPageOptions={[5, 10, 25]}
                         className="datatable-responsive"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
@@ -316,6 +361,7 @@ const Crud = () => {
                         emptyMessage="No academics found."
                         header={header}
                         responsiveLayout="scroll"
+                        totalRecords={totalRecords}
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '4rem' }}></Column>
                         <Column field="name" header="Full Name" sortable body={nameBodyTemplate} headerStyle={{ minWidth: '15rem' }}></Column>
@@ -327,7 +373,6 @@ const Crud = () => {
 
                         <Column body={actionBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
                     </DataTable>
-
                     <Dialog visible={academicDialog} style={{ width: '450px' }} header="Academic Details" modal className="p-fluid" footer={academicDialogFooter} onHide={hideDialog}>
                         
                        

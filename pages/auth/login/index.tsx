@@ -33,7 +33,7 @@ const LoginPage= () => {
     useEffect(() => {
         if (data) {
             const token=data['LoginUser'];
-           Cookies.set('access_token', token['access_token'], { expires: 1 });
+           Cookies.set('access_token', token['access_token'], { expires: 5 });
            router.push('/');
         }
         else{
