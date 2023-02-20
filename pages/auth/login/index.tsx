@@ -1,4 +1,14 @@
-import { gql, useMutation, useQuery } from '@apollo/client';
+import { gql, useMutation } from '@apollo/client';
+import getConfig from 'next/config';
+import { useRouter } from 'next/router';
+import React, { useContext, useEffect, useState } from 'react';
+import { Checkbox } from 'primereact/checkbox';
+import { Button } from 'primereact/button';
+import { LayoutContext,LayoutContextValue } from '../../../layout/context/layoutcontext';
+import { InputText } from 'primereact/inputtext';
+import { classNames } from 'primereact/utils';
+import Cookies from 'js-cookie';
+
 const GET_ACCESS_TOKEN = gql`
 mutation LoginUser ($email: String!, $password: String!){
     LoginUser(LoginUserInput: {
@@ -9,17 +19,6 @@ mutation LoginUser ($email: String!, $password: String!){
         access_token
     }
 }`;
-import getConfig from 'next/config';
-import { useRouter } from 'next/router';
-import React, { useContext, useEffect, useState } from 'react';
-import { Checkbox } from 'primereact/checkbox';
-import { Button } from 'primereact/button';
-import { LayoutContext,LayoutContextValue } from '../../../layout/context/layoutcontext';
-import { InputText } from 'primereact/inputtext';
-import { classNames } from 'primereact/utils';
-import Cookies from 'js-cookie';
-import { typeOf } from 'react-is';
-
 const LoginPage= () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,7 +28,6 @@ const LoginPage= () => {
     const router = useRouter();
     const containerClassName = classNames('surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden', {'p-input-filled': layoutConfig.inputStyle === 'filled'});
     const [createAccessToken ,{data }] = useMutation(GET_ACCESS_TOKEN);
-    
     
 
     useEffect(() => {
@@ -71,7 +69,7 @@ const LoginPage= () => {
                             <div className="flex align-items-center justify-content-between mb-5 gap-5">
                                 <div className="flex align-items-center">
                                     <Checkbox checked={checked} onChange={(e) => setChecked(e.checked)} className="mr-2"></Checkbox>
-                                    <label htmlFor="rememberme1">
+                                    <label htmlFor="rememberme">
                                         Remember me
                                     </label>
                                 </div>
