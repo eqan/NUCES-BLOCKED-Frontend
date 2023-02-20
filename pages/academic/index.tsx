@@ -73,7 +73,7 @@ const Crud = () => {
     const saveAcademic = () => {
         setSubmitted(true);
 
-        if (academic.date && academic.cgpa) {
+        if (academic.cgpa) {
             let _academics = [...academics];
             let _academic = { ...academic };
             if (academic.id) {
@@ -93,8 +93,6 @@ const Crud = () => {
 
     const editAcademic = (academic) => {
         setAcademic({ ...academic });
-        let _date=new Date(academic.date);
-        setDate(_date);
         setAcademicDialog(true);
     };
 
@@ -155,16 +153,7 @@ const Crud = () => {
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || '';
         let _academic = { ...academic };
-        if(name=='date')
-        {
-            setDate(val);
-            let value=val.toString();
-            value=value.substring(4,16);
-            _academic[`${name}`] = value.substring(4,6)+"/"+value.substring(0,3)+"/"+value.substring(7,11);
-            setAcademic(_academic); 
-            return;
-        }
-        else if(name=='cgpa')
+        if(name=='cgpa')
         {
             let stringbe='';
             let i;
@@ -342,14 +331,6 @@ const Crud = () => {
                     <Dialog visible={academicDialog} style={{ width: '450px' }} header="Academic Details" modal className="p-fluid" footer={academicDialogFooter} onHide={hideDialog}>
                         
                        
-                        <div className="field">
-                            <label htmlFor="date">Date</label>
-                            <span className="p-input-icon-right">
-                                <Calendar id="date" value={date} onChange={(e) => onInputChange(e, 'date')} required className={classNames({ 'p-invalid': submitted && !academic.date })} />
-                                {submitted && !academic.date && <small className="p-invalid">Date is required.</small>}
-                                <i className="pi pi-fw pi-calendar"/>
-                            </span>
-                        </div>
                         <div className="field">
                             <label htmlFor="cgpa">CGPA</label>
                             <span className="p-input-icon-right">
