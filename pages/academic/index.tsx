@@ -51,7 +51,7 @@ const Crud = () => {
       }
 
 
-    const [academics, setAcademics] = useState<AcademicContributionInterface[]>([]);
+    const [academics, setAcademics] = useState<AcademicContributionInterface[]>([] as AcademicContributionInterface[]);
     const [academicDialog, setAcademicDialog] = useState(false);
     const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false);
     const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false);
