@@ -1,10 +1,8 @@
-import React from 'react';
-import AppMenu from './AppMenu';
+import React from 'react'
+import AppMenu from './AppMenu'
 
 const AppSidebar: React.FC = () => {
-    return (
-    <AppMenu />
-    );
-};
+    return <AppMenu />
+}
 
-export default AppSidebar;
+export default AppSidebar

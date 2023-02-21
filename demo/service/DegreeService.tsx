@@ -1,26 +1,28 @@
-import getConfig from 'next/config';
+import getConfig from 'next/config'
 
 interface Degree {
-  id: string;
-  name: string;
-  rollno: string;
-  hash:string;
+    id: string
+    name: string
+    rollno: string
+    hash: string
 }
 
 interface DegreeData {
-  data: Degree[];
+    data: Degree[]
 }
 
 export class DegreeService {
-  private contextPath: string;
+    private contextPath: string
 
-  constructor() {
-    this.contextPath = getConfig().publicRuntimeConfig.contextPath;
-  }
+    constructor() {
+        this.contextPath = getConfig().publicRuntimeConfig.contextPath
+    }
 
-  getDegrees = (): Promise<Degree[]> => {
-    return fetch(`${this.contextPath}/demo/data/degree.json`, { headers: { 'Cache-Control': 'no-cache' } })
-      .then(res => res.json())
-      .then((d: DegreeData) => d.data);
-  }
+    getDegrees = (): Promise<Degree[]> => {
+        return fetch(`${this.contextPath}/demo/data/degree.json`, {
+            headers: { 'Cache-Control': 'no-cache' },
+        })
+            .then((res) => res.json())
+            .then((d: DegreeData) => d.data)
+    }
 }

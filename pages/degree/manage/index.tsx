@@ -1,294 +1,320 @@
-import { Button } from 'primereact/button';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { Dialog } from 'primereact/dialog';
-import { InputText } from 'primereact/inputtext';
-import { Toast } from 'primereact/toast';
-import { Toolbar } from 'primereact/toolbar';
-import { classNames } from 'primereact/utils';
-import React, { useEffect, useRef, useState } from 'react';
-import { DegreeService } from '../../../demo/service/DegreeService';
+import { Button } from 'primereact/button'
+import { Column } from 'primereact/column'
+import { DataTable } from 'primereact/datatable'
+import { Dialog } from 'primereact/dialog'
+import { InputText } from 'primereact/inputtext'
+import { Toast } from 'primereact/toast'
+import { Toolbar } from 'primereact/toolbar'
+import { classNames } from 'primereact/utils'
+import React, { useEffect, useRef, useState } from 'react'
+import { DegreeService } from '../../../demo/service/DegreeService'
 
-interface emptyDegree{
-    id:string;
-    name:string|null;
-    rollno:string|null;
-    hash:string|null;
+interface emptyDegree {
+    id: string
+    name: string | null
+    rollno: string | null
+    hash: string | null
 }
 
-interface sDegree{
-    includes?:any;
-    length?:any;
+interface sDegree {
+    includes?: any
+    length?: any
 }
 
 const Crud = () => {
     let emptyDegree = {
         id: '',
         name: '',
-        rollno:'',
+        rollno: '',
         hash: '',
-       
-    };
+    }
 
-    let eDegree={
-        includes:null,
-        length:null,
-    };
+    let eDegree = {
+        includes: null,
+        length: null,
+    }
 
-    const [degrees, setDegrees] = useState<emptyDegree[]>([]);
-    const [degreeDialog, setDegreeDialog] = useState(false);
-    const [deleteDegreeDialog, setDeleteDegreeDialog] = useState(false);
-    const [deleteDegreesDialog, setDeleteDegreesDialog] = useState(false);
-    const [degree, setDegree] = useState(emptyDegree);
-    const [selectedDegrees, setSelectedDegrees] = useState<sDegree>();
-    const [submitted, setSubmitted] = useState(false);
-    const [globalFilter, setGlobalFilter] = useState<string>();
-    const toast = useRef<Toast>(null);
-    const dt = useRef<DataTable>(null);
+    const [degrees, setDegrees] = useState<emptyDegree[]>([])
+    const [degreeDialog, setDegreeDialog] = useState(false)
+    const [deleteDegreeDialog, setDeleteDegreeDialog] = useState(false)
+    const [deleteDegreesDialog, setDeleteDegreesDialog] = useState(false)
+    const [degree, setDegree] = useState(emptyDegree)
+    const [selectedDegrees, setSelectedDegrees] = useState<sDegree>()
+    const [submitted, setSubmitted] = useState(false)
+    const [globalFilter, setGlobalFilter] = useState<string>()
+    const toast = useRef<Toast>(null)
+    const dt = useRef<DataTable>(null)
 
     useEffect(() => {
-        const degreeService = new DegreeService();
-        degreeService.getDegrees().then((data) => setDegrees(data));
-    }, []);
-
-
+        const degreeService = new DegreeService()
+        degreeService.getDegrees().then((data) => setDegrees(data))
+    }, [])
 
     const openNew = () => {
-        setDegree(emptyDegree);
-        setSubmitted(false);
-        setDegreeDialog(true);
-    };
+        setDegree(emptyDegree)
+        setSubmitted(false)
+        setDegreeDialog(true)
+    }
 
     const hideDialog = () => {
-        setSubmitted(false);
-        setDegreeDialog(false);
-    };
+        setSubmitted(false)
+        setDegreeDialog(false)
+    }
 
     const hideDeleteDegreeDialog = () => {
-        setDeleteDegreeDialog(false);
-    };
+        setDeleteDegreeDialog(false)
+    }
 
     const hideDeleteDegreesDialog = () => {
-        setDeleteDegreesDialog(false);
-    };
+        setDeleteDegreesDialog(false)
+    }
 
     const saveDegree = () => {
-        setSubmitted(true);
+        setSubmitted(true)
 
-        if (degree.name.trim() && degree.hash && degree.rollno && validateRollNo()) {
-            let _degrees = [...degrees];
-            let _degree = { ...degree };
+        if (
+            degree.name.trim() &&
+            degree.hash &&
+            degree.rollno &&
+            validateRollNo()
+        ) {
+            let _degrees = [...degrees]
+            let _degree = { ...degree }
             if (degree.id) {
-                const index = findIndexById(degree.id);
+                const index = findIndexById(degree.id)
 
-                _degrees[index] = _degree;
-                if(toast.current)
-                    toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Certificate Updated', life: 3000 });
+                _degrees[index] = _degree
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Academic Certificate Updated',
+                        life: 3000,
+                    })
             } else {
-                _degree.id = createId();
+                _degree.id = createId()
 
-                _degrees.push(_degree);
-                if(toast.current)
-                    toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Certificate Created', life: 3000 });
+                _degrees.push(_degree)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Academic Certificate Created',
+                        life: 3000,
+                    })
             }
 
-            setDegrees(_degrees);
-            setDegreeDialog(false);
-            setDegree(emptyDegree);
+            setDegrees(_degrees)
+            setDegreeDialog(false)
+            setDegree(emptyDegree)
         }
-    };
+    }
 
     const editDegree = (degree) => {
-        setDegree({ ...degree });
-        setDegreeDialog(true);
-    };
+        setDegree({ ...degree })
+        setDegreeDialog(true)
+    }
 
     const confirmDeleteDegree = (degree) => {
-        setDegree(degree);
-        setDeleteDegreeDialog(true);
-    };
+        setDegree(degree)
+        setDeleteDegreeDialog(true)
+    }
 
     const deleteDegree = () => {
-        let _degrees = degrees.filter((val) => val.id !== degree.id);
-        setDegrees(_degrees);
-        setDeleteDegreeDialog(false);
-        setDegree(emptyDegree);
-        if(toast.current)
-            toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Certificate Deleted', life: 3000 });
-    };
+        let _degrees = degrees.filter((val) => val.id !== degree.id)
+        setDegrees(_degrees)
+        setDeleteDegreeDialog(false)
+        setDegree(emptyDegree)
+        if (toast.current)
+            toast.current.show({
+                severity: 'success',
+                summary: 'Successful',
+                detail: 'Academic Certificate Deleted',
+                life: 3000,
+            })
+    }
 
     const findIndexById = (id) => {
-        let index = -1;
+        let index = -1
         for (let i = 0; i < degrees.length; i++) {
             if (degrees[i].id === id) {
-                index = i;
-                break;
+                index = i
+                break
             }
         }
 
-        return index;
-    };
+        return index
+    }
 
     const createId = () => {
-        let id = '';
-        let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let id = ''
+        let chars =
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
+            id += chars.charAt(Math.floor(Math.random() * chars.length))
         }
-        return id;
-    };
+        return id
+    }
 
     const exportCSV = () => {
-        if(dt.current)
-            dt.current.exportCSV();
-    };
+        if (dt.current) dt.current.exportCSV()
+    }
 
     const confirmDeleteSelected = () => {
-        setDeleteDegreesDialog(true);
-    };
+        setDeleteDegreesDialog(true)
+    }
 
     const deleteSelectedDegrees = () => {
-        let _degrees = degrees.filter((val) => 
-        {
-            if(selectedDegrees)
-                !selectedDegrees.includes(val);
-        });
-        setDegrees(_degrees);
-        setDeleteDegreesDialog(false);
-        setSelectedDegrees(eDegree);
-        if(toast.current)
-            toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Certificate Deleted', life: 3000 });
-    };
+        let _degrees = degrees.filter((val) => {
+            if (selectedDegrees) !selectedDegrees.includes(val)
+        })
+        setDegrees(_degrees)
+        setDeleteDegreesDialog(false)
+        setSelectedDegrees(eDegree)
+        if (toast.current)
+            toast.current.show({
+                severity: 'success',
+                summary: 'Successful',
+                detail: 'Academic Certificate Deleted',
+                life: 3000,
+            })
+    }
 
-    const validateRollNo=()=>{
-        if(degree.rollno)
-        {
-            let i;
-            let stringbe="";
-            for(i=0;i<degree.rollno.length;i++)
-            {
-                if(i!=2)
-                {
-                    if(i>=1)
-                    {
-                        if(!(degree.rollno[i]>='0'&& degree.rollno[i]<='9'))
-                        {
-                            return 0;
+    const validateRollNo = () => {
+        if (degree.rollno) {
+            let i
+            let stringbe = ''
+            for (i = 0; i < degree.rollno.length; i++) {
+                if (i != 2) {
+                    if (i >= 1) {
+                        if (
+                            !(
+                                degree.rollno[i] >= '0' &&
+                                degree.rollno[i] <= '9'
+                            )
+                        ) {
+                            return 0
                         }
-                        stringbe+=degree.rollno[i];
-                    }
-                    else{
-                        if(!(degree.rollno[i]>='1'&& degree.rollno[i]<='9'))
-                        {
-                            return 0;
+                        stringbe += degree.rollno[i]
+                    } else {
+                        if (
+                            !(
+                                degree.rollno[i] >= '1' &&
+                                degree.rollno[i] <= '9'
+                            )
+                        ) {
+                            return 0
                         }
-                        stringbe+=degree.rollno[i];
+                        stringbe += degree.rollno[i]
                     }
-                }
-                else if(i==2)
-                {
-                    if((degree.rollno[i]>='a'&&degree.rollno[i]<='z')|| (degree.rollno[i]>='A'&&degree.rollno[i]<='Z'))
-                    {
-                        stringbe+=degree.rollno[i].toUpperCase();
-                    }
-                    else
-                    {
-                        return 0;
+                } else if (i == 2) {
+                    if (
+                        (degree.rollno[i] >= 'a' && degree.rollno[i] <= 'z') ||
+                        (degree.rollno[i] >= 'A' && degree.rollno[i] <= 'Z')
+                    ) {
+                        stringbe += degree.rollno[i].toUpperCase()
+                    } else {
+                        return 0
                     }
                 }
             }
-            if((stringbe.length!=7))
-            {
-                return 0;
+            if (stringbe.length != 7) {
+                return 0
             }
-            return 1;
+            return 1
         }
     }
 
     const onInputChange = (e, name) => {
-        const val = (e.target && e.target.value) || '';
-        let _degree = { ...degree };
-        if (name=="name")
-        {
-            let i;
-            let stringbe='';
-            for(i=0;i<val.length;i++)
-            {
-                if((val[i]>='a'&&val[i]<='z')|| (val[i]>='A'&&val[i]<='Z')|| (val[i]==' '))
-                {
-                    stringbe+=val[i];
+        const val = (e.target && e.target.value) || ''
+        let _degree = { ...degree }
+        if (name == 'name') {
+            let i
+            let stringbe = ''
+            for (i = 0; i < val.length; i++) {
+                if (
+                    (val[i] >= 'a' && val[i] <= 'z') ||
+                    (val[i] >= 'A' && val[i] <= 'Z') ||
+                    val[i] == ' '
+                ) {
+                    stringbe += val[i]
                 }
             }
-            _degree[`${name}`] = stringbe;
-            setDegree(_degree);
-            return;
-        }
-        else if(name=="rollno")
-        {
-            let i;
-            let stringbe="";
-            for(i=0;i<val.length;i++)
-            {
-                if(i!=2)
-                {
-                    if(i>=1)
-                    {
-                        if(!(val[i]>='0'&& val[i]<='9'))
-                        {
-                            return;
+            _degree[`${name}`] = stringbe
+            setDegree(_degree)
+            return
+        } else if (name == 'rollno') {
+            let i
+            let stringbe = ''
+            for (i = 0; i < val.length; i++) {
+                if (i != 2) {
+                    if (i >= 1) {
+                        if (!(val[i] >= '0' && val[i] <= '9')) {
+                            return
                         }
-                        stringbe+=val[i];
-                    }
-                    else{
-                        if(!(val[i]>='1'&& val[i]<='9'))
-                        {
-                            return;
+                        stringbe += val[i]
+                    } else {
+                        if (!(val[i] >= '1' && val[i] <= '9')) {
+                            return
                         }
-                        stringbe+=val[i];
+                        stringbe += val[i]
                     }
-                }
-                else if(i==2)
-                {
-                    if((val[i]>='a'&&val[i]<='z')|| (val[i]>='A'&&val[i]<='Z'))
-                    {
-                        stringbe+=val[i].toUpperCase();
-                    }
-                    else
-                    {
-                        return;
+                } else if (i == 2) {
+                    if (
+                        (val[i] >= 'a' && val[i] <= 'z') ||
+                        (val[i] >= 'A' && val[i] <= 'Z')
+                    ) {
+                        stringbe += val[i].toUpperCase()
+                    } else {
+                        return
                     }
                 }
             }
-            if((stringbe.length>7))
-            {
-                return;
+            if (stringbe.length > 7) {
+                return
             }
-            _degree[`${name}`] = stringbe;
-            setDegree(_degree);
-            return;
+            _degree[`${name}`] = stringbe
+            setDegree(_degree)
+            return
         }
-        _degree[`${name}`] = val;
-        setDegree(_degree);
-    };
+        _degree[`${name}`] = val
+        setDegree(_degree)
+    }
 
     const leftToolbarTemplate = () => {
         return (
             <React.Fragment>
                 <div className="my-2">
-                    <Button label="New" icon="pi pi-plus" className="p-button-success mr-2" onClick={openNew} />
-                    <Button label="Delete" icon="pi pi-trash" className="p-button-danger" onClick={confirmDeleteSelected} disabled={!selectedDegrees || !selectedDegrees.length} />
+                    <Button
+                        label="New"
+                        icon="pi pi-plus"
+                        className="p-button-success mr-2"
+                        onClick={openNew}
+                    />
+                    <Button
+                        label="Delete"
+                        icon="pi pi-trash"
+                        className="p-button-danger"
+                        onClick={confirmDeleteSelected}
+                        disabled={!selectedDegrees || !selectedDegrees.length}
+                    />
                 </div>
             </React.Fragment>
-        );
-    };
+        )
+    }
 
     const rightToolbarTemplate = () => {
         return (
             <React.Fragment>
-               <Button label="Export" icon="pi pi-upload" className="p-button-help" onClick={exportCSV} />
+                <Button
+                    label="Export"
+                    icon="pi pi-upload"
+                    className="p-button-help"
+                    onClick={exportCSV}
+                />
             </React.Fragment>
-        );
-    };
+        )
+    }
 
     const rollnoBodyTemplate = (rowData) => {
         return (
@@ -296,8 +322,8 @@ const Crud = () => {
                 <span className="p-column-title">Roll No.</span>
                 {rowData.rollno}
             </>
-        );
-    };
+        )
+    }
 
     const nameBodyTemplate = (rowData) => {
         return (
@@ -305,11 +331,8 @@ const Crud = () => {
                 <span className="p-column-title">Full Name</span>
                 {rowData.name}
             </>
-        );
-    };
-
- 
-
+        )
+    }
 
     const hashBodyTemplate = (rowData) => {
         return (
@@ -317,54 +340,105 @@ const Crud = () => {
                 <span className="p-column-title">Hash</span>
                 {rowData.hash}
             </>
-        );
-    };
+        )
+    }
 
     const actionBodyTemplate = (rowData) => {
         return (
-            <> 
-                <Button icon="pi pi-arrow-down" className="p-button-rounded p-button-success mr-2"/>
-                <Button icon="pi pi-pencil" className="p-button-rounded p-button-warning mr-2" onClick={() => editDegree(rowData)} />
-                <Button icon="pi pi-trash" className="p-button-rounded p-button-danger" onClick={() => confirmDeleteDegree(rowData)} />
+            <>
+                <Button
+                    icon="pi pi-arrow-down"
+                    className="p-button-rounded p-button-success mr-2"
+                />
+                <Button
+                    icon="pi pi-pencil"
+                    className="p-button-rounded p-button-warning mr-2"
+                    onClick={() => editDegree(rowData)}
+                />
+                <Button
+                    icon="pi pi-trash"
+                    className="p-button-rounded p-button-danger"
+                    onClick={() => confirmDeleteDegree(rowData)}
+                />
             </>
-        );
-    };
+        )
+    }
 
     const header = (
         <div className="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
             <h5 className="m-0">Manage Academic Certificate</h5>
             <span className="block mt-2 md:mt-0 p-input-icon-left">
                 <i className="pi pi-search" />
-                <InputText type="search" onInput={(e) => setGlobalFilter((e.target as HTMLInputElement).value)} placeholder="Search..." />
+                <InputText
+                    type="search"
+                    onInput={(e) =>
+                        setGlobalFilter((e.target as HTMLInputElement).value)
+                    }
+                    placeholder="Search..."
+                />
             </span>
         </div>
-    );
+    )
 
     const degreeDialogFooter = (
         <>
-            <Button label="Cancel" icon="pi pi-times" className="p-button-text" onClick={hideDialog} />
-            <Button label="Save" icon="pi pi-check" className="p-button-text" onClick={saveDegree} />
+            <Button
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideDialog}
+            />
+            <Button
+                label="Save"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={saveDegree}
+            />
         </>
-    );
+    )
     const deleteDegreeDialogFooter = (
         <>
-            <Button label="No" icon="pi pi-times" className="p-button-text" onClick={hideDeleteDegreeDialog} />
-            <Button label="Yes" icon="pi pi-check" className="p-button-text" onClick={deleteDegree} />
+            <Button
+                label="No"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideDeleteDegreeDialog}
+            />
+            <Button
+                label="Yes"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={deleteDegree}
+            />
         </>
-    );
+    )
     const deleteDegreesDialogFooter = (
         <>
-            <Button label="No" icon="pi pi-times" className="p-button-text" onClick={hideDeleteDegreesDialog} />
-            <Button label="Yes" icon="pi pi-check" className="p-button-text" onClick={deleteSelectedDegrees} />
+            <Button
+                label="No"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideDeleteDegreesDialog}
+            />
+            <Button
+                label="Yes"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={deleteSelectedDegrees}
+            />
         </>
-    );
+    )
 
     return (
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
                     <Toast ref={toast} />
-                    <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate}></Toolbar>
+                    <Toolbar
+                        className="mb-4"
+                        left={leftToolbarTemplate}
+                        right={rightToolbarTemplate}
+                    ></Toolbar>
 
                     <DataTable
                         ref={dt}
@@ -383,69 +457,173 @@ const Crud = () => {
                         header={header}
                         responsiveLayout="scroll"
                     >
-                        <Column selectionMode="multiple" headerStyle={{ width: '4rem' }}></Column>
-                        <Column field="hash" header="Hash" body={hashBodyTemplate} sortable headerStyle={{ minWidth: '15rem' }}></Column>
-                        <Column field="name" header="Full Name" sortable body={nameBodyTemplate} headerStyle={{ minWidth: '15rem' }}></Column>
-                        <Column field="rollno" header="Roll No." sortable body={rollnoBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
-                        
+                        <Column
+                            selectionMode="multiple"
+                            headerStyle={{ width: '4rem' }}
+                        ></Column>
+                        <Column
+                            field="hash"
+                            header="Hash"
+                            body={hashBodyTemplate}
+                            sortable
+                            headerStyle={{ minWidth: '15rem' }}
+                        ></Column>
+                        <Column
+                            field="name"
+                            header="Full Name"
+                            sortable
+                            body={nameBodyTemplate}
+                            headerStyle={{ minWidth: '15rem' }}
+                        ></Column>
+                        <Column
+                            field="rollno"
+                            header="Roll No."
+                            sortable
+                            body={rollnoBodyTemplate}
+                            headerStyle={{ minWidth: '10rem' }}
+                        ></Column>
 
-                        
-                       
-
-                        <Column body={actionBodyTemplate} headerStyle={{ minWidth: '10rem' }}></Column>
+                        <Column
+                            body={actionBodyTemplate}
+                            headerStyle={{ minWidth: '10rem' }}
+                        ></Column>
                     </DataTable>
 
-                    <Dialog visible={degreeDialog} style={{ width: '450px' }} header="Degree Details" modal className="p-fluid" footer={degreeDialogFooter} onHide={hideDialog}>
-                        
+                    <Dialog
+                        visible={degreeDialog}
+                        style={{ width: '450px' }}
+                        header="Degree Details"
+                        modal
+                        className="p-fluid"
+                        footer={degreeDialogFooter}
+                        onHide={hideDialog}
+                    >
                         <div className="field">
                             <label htmlFor="name">Name</label>
                             <span className="p-input-icon-right">
-                                <InputText id="name" value={degree.name} onChange={(e) => onInputChange(e, 'name')} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.name })} />
-                                {submitted && !degree.name && <small className="p-invalid">Name is required.</small>}
-                                <i className="pi pi-fw pi-user"/>
+                                <InputText
+                                    id="name"
+                                    value={degree.name}
+                                    onChange={(e) => onInputChange(e, 'name')}
+                                    required
+                                    autoFocus
+                                    className={classNames({
+                                        'p-invalid': submitted && !degree.name,
+                                    })}
+                                />
+                                {submitted && !degree.name && (
+                                    <small className="p-invalid">
+                                        Name is required.
+                                    </small>
+                                )}
+                                <i className="pi pi-fw pi-user" />
                             </span>
                         </div>
                         <div className="field">
                             <label htmlFor="rollno">Roll No.</label>
                             <span className="p-input-icon-right">
-                                <InputText id="rollno" value={degree.rollno} onChange={(e) => onInputChange(e,"rollno")} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.rollno }, { 'p-invalid1': submitted && degree.rollno })} />
-                                {submitted && !degree.rollno && <small className="p-invalid">Roll No. is required.</small> ||
-                                submitted && degree.rollno && (!(validateRollNo()) && <small className="p-invalid1">Valid Roll no. is like 19F0000</small>)}
-                                <i className="pi pi-fw pi-id-card"/>
+                                <InputText
+                                    id="rollno"
+                                    value={degree.rollno}
+                                    onChange={(e) => onInputChange(e, 'rollno')}
+                                    required
+                                    autoFocus
+                                    className={classNames(
+                                        {
+                                            'p-invalid':
+                                                submitted && !degree.rollno,
+                                        },
+                                        {
+                                            'p-invalid1':
+                                                submitted && degree.rollno,
+                                        }
+                                    )}
+                                />
+                                {(submitted && !degree.rollno && (
+                                    <small className="p-invalid">
+                                        Roll No. is required.
+                                    </small>
+                                )) ||
+                                    (submitted &&
+                                        degree.rollno &&
+                                        !validateRollNo() && (
+                                            <small className="p-invalid1">
+                                                Valid Roll no. is like 19F0000
+                                            </small>
+                                        ))}
+                                <i className="pi pi-fw pi-id-card" />
                             </span>
                         </div>
                         <div className="field">
                             <label htmlFor="hash">Hash</label>
                             <span className="p-input-icon-right">
-                                <InputText id="hash" value={degree.hash} onChange={(e) => onInputChange(e, 'hash')} required autoFocus className={classNames({ 'p-invalid': submitted && !degree.hash })} />
-                                {submitted && !degree.hash && <small className="p-invalid">Hash is required.</small>}
-                                <i className="pi pi-fw pi-prime"/>
+                                <InputText
+                                    id="hash"
+                                    value={degree.hash}
+                                    onChange={(e) => onInputChange(e, 'hash')}
+                                    required
+                                    autoFocus
+                                    className={classNames({
+                                        'p-invalid': submitted && !degree.hash,
+                                    })}
+                                />
+                                {submitted && !degree.hash && (
+                                    <small className="p-invalid">
+                                        Hash is required.
+                                    </small>
+                                )}
+                                <i className="pi pi-fw pi-prime" />
                             </span>
                         </div>
-
                     </Dialog>
 
-                    <Dialog visible={deleteDegreeDialog} style={{ width: '450px' }} header="Confirm" modal footer={deleteDegreeDialogFooter} onHide={hideDeleteDegreeDialog}>
+                    <Dialog
+                        visible={deleteDegreeDialog}
+                        style={{ width: '450px' }}
+                        header="Confirm"
+                        modal
+                        footer={deleteDegreeDialogFooter}
+                        onHide={hideDeleteDegreeDialog}
+                    >
                         <div className="flex align-items-center justify-content-center">
-                            <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
+                            <i
+                                className="pi pi-exclamation-triangle mr-3"
+                                style={{ fontSize: '2rem' }}
+                            />
                             {degree && (
                                 <span>
-                                    Are you sure you want to delete <b>{degree.name}</b>?
+                                    Are you sure you want to delete{' '}
+                                    <b>{degree.name}</b>?
                                 </span>
                             )}
                         </div>
                     </Dialog>
 
-                    <Dialog visible={deleteDegreesDialog} style={{ width: '450px' }} header="Confirm" modal footer={deleteDegreesDialogFooter} onHide={hideDeleteDegreesDialog}>
+                    <Dialog
+                        visible={deleteDegreesDialog}
+                        style={{ width: '450px' }}
+                        header="Confirm"
+                        modal
+                        footer={deleteDegreesDialogFooter}
+                        onHide={hideDeleteDegreesDialog}
+                    >
                         <div className="flex align-items-center justify-content-center">
-                            <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
-                            {degree && <span>Are you sure you want to delete the selected academic certificate</span>}
+                            <i
+                                className="pi pi-exclamation-triangle mr-3"
+                                style={{ fontSize: '2rem' }}
+                            />
+                            {degree && (
+                                <span>
+                                    Are you sure you want to delete the selected
+                                    academic certificate
+                                </span>
+                            )}
                         </div>
                     </Dialog>
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default Crud;
+export default Crud

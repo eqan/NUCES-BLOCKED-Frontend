@@ -1,39 +1,39 @@
-import React from 'react';
-import AppMenuitem from './AppMenuitem';
-import { MenuProvider } from './context/menucontext';
+import React from 'react'
+import AppMenuitem from './AppMenuitem'
+import { MenuProvider } from './context/menucontext'
 
 interface Item {
-  label: string;
-  icon: string;
-  to?: string;
-  items?: Item[];
+    label: string
+    icon: string
+    to?: string
+    items?: Item[]
 }
 
 const AppMenu: React.FC = () => {
     const model: Item[] = [
         {
             label: '',
-            icon:'',
+            icon: '',
             items: [
                 {
                     label: 'Home Page',
                     icon: 'pi pi-fw pi-home',
-                    to: '/'
+                    to: '/',
                 },
                 {
                     label: 'User Profiles',
                     icon: 'pi pi-fw pi-user',
-                    to: '/users'  
+                    to: '/users',
                 },
                 {
                     label: 'Students',
                     icon: 'pi pi-fw pi-users',
-                    to: '/student'
+                    to: '/student',
                 },
                 {
                     label: 'Academic Profile',
                     icon: 'pi pi-fw pi-book',
-                    to: '/academic'
+                    to: '/academic',
                 },
                 {
                     label: 'Academic Certificates',
@@ -42,36 +42,40 @@ const AppMenu: React.FC = () => {
                         {
                             label: 'Add Academic Certificate',
                             icon: 'pi pi-fw pi-plus',
-                            to: '/degree/manage/add'
+                            to: '/degree/manage/add',
                         },
                         {
                             label: 'Manage Academic Certificates',
                             icon: 'pi pi-fw pi-pencil',
-                            to: '/degree/manage'
+                            to: '/degree/manage',
                         },
-                    ]
+                    ],
                 },
                 {
                     label: 'Semester Results',
                     icon: 'pi pi-fw pi-chart-line',
-                    to: '/results'
+                    to: '/results',
                 },
-                
-            ]
+            ],
         },
-      
-       
-    ];
+    ]
 
     return (
         <MenuProvider>
             <ul className="layout-menu">
                 {model.map((item, i) => {
-                    return <AppMenuitem item={item} root={true} index={i} key={item.label} />;
+                    return (
+                        <AppMenuitem
+                            item={item}
+                            root={true}
+                            index={i}
+                            key={item.label}
+                        />
+                    )
                 })}
             </ul>
         </MenuProvider>
-    );
-};
+    )
+}
 
-export default AppMenu;
+export default AppMenu
