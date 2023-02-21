@@ -121,9 +121,7 @@ return (
                 <a className="layout-topbar-logo">
                     <>
                         <img
-                            src={`${contextPath}/layout/images/logo-${
-                                layoutConfig.colorScheme !== 'light' ? 'white' : 'dark'
-                            }.svg`} width="47.22px" height={'35px'} alt="logo"/>
+                            src={`${contextPath}/layout/images/logo.png`} alt="logo"/>
                         <span>NUCES BLOCKED</span>
                     </>
                 </a>

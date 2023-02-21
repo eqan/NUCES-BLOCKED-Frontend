@@ -132,7 +132,7 @@ const unblockBodyScroll = (element = document.body) => {
                 <meta property="og:type" content="website"></meta>
                 <meta property="og:title" content="NUCES BLOCKED"></meta>
                 <meta property="og:description" content="" />
-                <meta property="og:image" content="https://live.staticflickr.com/65535/52614592212_fb13a2974f_n.jpg"></meta>
+                <meta property="og:image" content="https://live.staticflickr.com/65535/52701824785_51bdbe03fd_h.jpg"></meta>
                 <meta property="og:ttl" content="604800"></meta>
                 <link rel="icon" href={`${contextPath}/logo.png`} type="image/x-icon"></link>
             </Head>

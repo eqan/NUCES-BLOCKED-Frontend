@@ -14,13 +14,6 @@ export function requireAuthentication(gssp: GetServerSideProps){
         if(req.headers.cookie){
             const tokens=req.headers.cookie.split(';');
             const token=tokens.find((token)=>token.includes('access_token'));
-            const userEmail=((jwt.decode((tokens[1].split('='))[1].toString())).email.toString());
-            apolloClient.query({
-                query:GET_USER_TYPE,
-                variables:{userEmail},
-            }).then((result)=>{
-                console.log(result.data.GetUserTypeByUserEmail);
-            });
             if(!token){
                 return{
                     redirect:{
@@ -28,6 +21,15 @@ export function requireAuthentication(gssp: GetServerSideProps){
                         destination:'/auth/login',
                     },
                 };
+            }
+            else{  
+                const userEmail=((jwt.decode((token.split('='))[1].toString())).email.toString());
+                apolloClient.query({
+                    query:GET_USER_TYPE,
+                    variables:{userEmail},
+                }).then((result)=>{
+                    console.log(result.data.GetUserTypeByUserEmail);
+                });
             }
         }
         return await gssp(ctx);
