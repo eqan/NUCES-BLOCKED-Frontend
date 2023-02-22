@@ -55,6 +55,7 @@ const Crud = () => {
         [] as AcademicContributionInterface[]
     )
     const [academicDialog, setAcademicDialog] = useState(false)
+    const [contributionLoading, setContributionsLoading] = useState(false)
     const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false)
     const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false)
     const [academic, setAcademic] = useState(AcademicRecordInterface)
@@ -74,23 +75,31 @@ const Crud = () => {
         contributionsRefetchHook,
     ] = returnFetchContributionsHook('ADMIN', page, pageLimit)
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!contributionsLoading) {
-                console.log(contributionsData)
+    const fetchData = async () => {
+        if (!contributionsLoading) {
+            setContributionsLoading(true)
+            try {
                 const academicRecords =
                     contributionsData?.GetAllContributions.adminContributions?.map(
                         mapContributionToAcademicRecord
                     ) || []
                 const total = contributionsData?.GetAllContributions?.total
-
-                setAcademic(academicRecords)
+                setAcademics(academicRecords)
                 setTotalRecords(total)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setContributionsLoading(false)
             }
         }
-
+    }
+    useEffect(() => {
         fetchData()
-    }, [contributionsLoading])
+    }, [])
+
+    // useEffect(() => {
+    //     fetchData()
+    // }, [contributionsLoading])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -302,7 +311,7 @@ const Crud = () => {
     const dateBodyTemplate = (rowData) => {
         return (
             <>
-                <span className="p-column-title">Date</span>
+                <span className="p-column-title">Last Updated</span>
                 {rowData.date}
             </>
         )
@@ -449,7 +458,7 @@ const Crud = () => {
                         ></Column>
                         <Column
                             field="date"
-                            header="Date"
+                            header="Last Updated"
                             sortable
                             body={dateBodyTemplate}
                             headerStyle={{ minWidth: '10rem' }}
