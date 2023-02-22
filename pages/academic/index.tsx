@@ -6,9 +6,10 @@ import { InputText } from 'primereact/inputtext'
 import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { lazy, useEffect, useRef, useState } from 'react'
 import { returnFetchContributionsHook } from './queries/getStudentContributions'
 import { useRouter } from 'next/router'
+import { Skeleton } from 'primereact/skeleton'
 
 interface AcademicContributionInterface {
     id: string
@@ -23,7 +24,7 @@ interface sAcademic {
     length?: any
 }
 
-const Crud = () => {
+const AcademicRecords = () => {
     const router = useRouter()
 
     let AcademicRecordInterface = {
@@ -55,16 +56,16 @@ const Crud = () => {
         [] as AcademicContributionInterface[]
     )
     const [academicDialog, setAcademicDialog] = useState(false)
-    const [contributionLoading, setContributionsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false)
     const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false)
     const [academic, setAcademic] = useState(AcademicRecordInterface)
     const [selectedAcademics, setSelectedAcademics] = useState<sAcademic>()
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>()
-    const [page, setPage] = useState(1)
+    const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
-    const [totalRecords, setTotalRecords] = useState(0)
+    const [totalRecords, setTotalRecords] = useState(1)
 
     const toast = useRef<Toast>(null)
     const dt = useRef<DataTable>(null)
@@ -73,11 +74,11 @@ const Crud = () => {
         contributionsLoading,
         contributionsFetchingError,
         contributionsRefetchHook,
-    ] = returnFetchContributionsHook('ADMIN', page, pageLimit)
+    ] = returnFetchContributionsHook('ADMIN', page + 1, pageLimit)
 
     const fetchData = async () => {
+        setIsLoading(true)
         if (!contributionsLoading) {
-            setContributionsLoading(true)
             try {
                 const academicRecords =
                     contributionsData?.GetAllContributions.adminContributions?.map(
@@ -89,17 +90,16 @@ const Crud = () => {
             } catch (error) {
                 console.log(error)
             } finally {
-                setContributionsLoading(false)
+                setIsLoading(false)
             }
         }
     }
-    useEffect(() => {
-        fetchData()
-    }, [])
 
-    // useEffect(() => {
-    //     fetchData()
-    // }, [contributionsLoading])
+    useEffect(() => {
+        if (!contributionsLoading && contributionsData) {
+            fetchData()
+        }
+    }, [contributionsData, contributionsLoading])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -407,7 +407,36 @@ const Crud = () => {
             />
         </>
     )
-
+    const LoadingTemplate = ({ w, h }: { w: string; h: string }) => {
+        return (
+            <div
+                className="flex align-items-center"
+                style={{ height: '17px', flexGrow: '1', overflow: 'hidden' }}
+            >
+                <Skeleton width={w} height={h} />
+            </div>
+        )
+    }
+    const SingleRowTable = () => {
+        return (
+            <>
+                {/* {[1, 2, 3, 4, 5].map((v) => ( */}
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        margin: '10px',
+                    }}
+                >
+                    <LoadingTemplate h="40px" w="40px" />
+                    <LoadingTemplate h="10px" w="100px" />
+                    <LoadingTemplate h="10px" w="80px" />
+                    <LoadingTemplate h="10px" w="40px" />
+                </div>
+                {/* ))} */}
+            </>
+        )
+    }
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -418,64 +447,78 @@ const Crud = () => {
                         left={leftToolbarTemplate}
                         right={rightToolbarTemplate}
                     ></Toolbar>
-                    <DataTable
-                        ref={dt}
-                        value={academics}
-                        selection={selectedAcademics}
-                        onSelectionChange={(e) => setSelectedAcademics(e.value)}
-                        dataKey="id"
-                        paginator
-                        rows={pageLimit}
-                        first={page * pageLimit}
-                        onPage={onPageChange}
-                        rowsPerPageOptions={[5, 10, 25]}
-                        className="datatable-responsive"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} academics"
-                        globalFilter={globalFilter}
-                        emptyMessage="No academics found."
-                        header={header}
-                        responsiveLayout="scroll"
-                        totalRecords={totalRecords}
-                    >
-                        <Column
-                            selectionMode="multiple"
-                            headerStyle={{ width: '4rem' }}
-                        ></Column>
-                        <Column
-                            field="name"
-                            header="Full Name"
-                            sortable
-                            body={nameBodyTemplate}
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="rollno"
-                            header="Roll No."
-                            sortable
-                            body={rollnoBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                        <Column
-                            field="date"
-                            header="Last Updated"
-                            sortable
-                            body={dateBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                        <Column
-                            field="cgpa"
-                            header="CGPA"
-                            body={cgpaBodyTemplate}
-                            sortable
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
+                    {isLoading ? (
+                        <>
+                            {[1, 2, 3, 4, 5].map((v) => (
+                                <SingleRowTable />
+                            ))}
+                        </>
+                    ) : (
+                        <DataTable
+                            ref={dt}
+                            value={academics}
+                            selection={selectedAcademics}
+                            onSelectionChange={(e) => {
+                                setSelectedAcademics(e.value)
+                            }}
+                            dataKey="id"
+                            defaultValue={1}
+                            paginator
+                            rows={pageLimit}
+                            first={page * pageLimit}
+                            onPage={onPageChange}
+                            rowsPerPageOptions={[5, 10, 25]}
+                            className="datatable-responsive"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} academics"
+                            globalFilter={globalFilter}
+                            emptyMessage="No academics found."
+                            header={header}
+                            responsiveLayout="scroll"
+                            totalRecords={totalRecords}
+                            loading={isLoading}
+                            onLoad={SingleRowTable}
+                        >
+                            <Column
+                                selectionMode="multiple"
+                                headerStyle={{ width: '4rem' }}
+                            ></Column>
+                            <Column
+                                field="name"
+                                header="Full Name"
+                                sortable
+                                body={nameBodyTemplate}
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="rollno"
+                                header="Roll No."
+                                sortable
+                                body={rollnoBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                            <Column
+                                field="date"
+                                header="Last Updated"
+                                sortable
+                                body={dateBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                            <Column
+                                field="cgpa"
+                                header="CGPA"
+                                body={cgpaBodyTemplate}
+                                sortable
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
 
-                        <Column
-                            body={actionBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                    </DataTable>
+                            <Column
+                                body={actionBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                        </DataTable>
+                    )}
+
                     <Dialog
                         visible={academicDialog}
                         style={{ width: '450px' }}
@@ -558,4 +601,4 @@ const Crud = () => {
     )
 }
 
-export default Crud
+export default AcademicRecords
