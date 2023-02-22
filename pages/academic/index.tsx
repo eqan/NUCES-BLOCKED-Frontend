@@ -44,7 +44,7 @@ const Crud = () => {
     ) => {
         return {
             id: contribution.id,
-            name: contribution?.student?.name,
+            name: contribution.student.name,
             rollno: contribution.id,
             date: contribution.updatedAt,
             cgpa: contribution.contribution,
