@@ -10,6 +10,9 @@ import React, { lazy, useEffect, useRef, useState } from 'react'
 import { returnFetchContributionsHook } from './queries/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
+import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN } from './queries/createUpdateStudentContributionAdmin'
+import { useMutation } from '@apollo/client'
+import { DELETE_STUDENT_CONTRIBUTION_ADMIN } from './queries/deleteStudentContributionAdmin'
 
 interface AcademicContributionInterface {
     id: string
@@ -76,6 +79,26 @@ const AcademicRecords = () => {
         contributionsRefetchHook,
     ] = returnFetchContributionsHook('ADMIN', page + 1, pageLimit)
 
+    const [
+        adminContributionDeleteFunction,
+        {
+            data: adminContributionDeleteData,
+            loading: adminContributionDeleteLoading,
+            error: adminContributionDeleteError,
+            reset: adminContributionDeleteReset,
+        },
+    ] = useMutation(DELETE_STUDENT_CONTRIBUTION_ADMIN)
+
+    const [
+        adminContributionAddUpdateFunction,
+        {
+            data: adminContributionAddUpdateData,
+            loading: adminContributionAddUpdateLoading,
+            error: adminContributionAddUpdateError,
+            reset: adminContributionAddUpdateReset,
+        },
+    ] = useMutation(CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN)
+
     const fetchData = async () => {
         setIsLoading(true)
         if (!contributionsLoading) {
@@ -126,7 +149,7 @@ const AcademicRecords = () => {
         setDeleteAcademicsDialog(false)
     }
 
-    const saveAcademic = () => {
+    const saveAcademic = async () => {
         setSubmitted(true)
 
         if (academic.cgpa) {
@@ -136,13 +159,43 @@ const AcademicRecords = () => {
                 const index = findIndexById(academic.id)
 
                 _academics[index] = _academic
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Academic Profile Updated',
-                        life: 3000,
+                try {
+                    await adminContributionAddUpdateFunction({
+                        variables: {
+                            CreateUpdateStudentInput: {
+                                contributionType: {
+                                    type: 'ADMIN',
+                                    contributionType: 'ADMIN',
+                                    adminContributionType: 'CGPA',
+                                    teacherContributionType: null,
+                                    societyHeadContributionType: null,
+                                    careerCounsellorContributionType: null,
+                                },
+                                title: 'CGPA',
+                                contributor: 'khalil123@gmail.com',
+                                contribution: _academic.cgpa,
+                                studentId: _academic.rollno,
+                            },
+                        },
                     })
+                    if (toast.current) {
+                        toast.current?.show({
+                            severity: 'success',
+                            summary: 'Successful',
+                            detail: 'Academic Profile Updated',
+                            life: 3000,
+                        })
+                    }
+                } catch (error) {
+                    if (toast.current) {
+                        toast.current?.show({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Academic Profile Not Updated',
+                            life: 3000,
+                        })
+                    }
+                    console.log(error)
                 }
             }
 
@@ -420,7 +473,6 @@ const AcademicRecords = () => {
     const SingleRowTable = () => {
         return (
             <>
-                {/* {[1, 2, 3, 4, 5].map((v) => ( */}
                 <div
                     style={{
                         display: 'flex',
@@ -433,7 +485,6 @@ const AcademicRecords = () => {
                     <LoadingTemplate h="10px" w="80px" />
                     <LoadingTemplate h="10px" w="40px" />
                 </div>
-                {/* ))} */}
             </>
         )
     }
