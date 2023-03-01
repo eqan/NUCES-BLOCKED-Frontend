@@ -136,6 +136,8 @@ const AcademicRecords = () => {
         }
     }, [contributionsRefetchHook, router.events])
 
+    useEffect(() => {}, [globalFilter])
+
     const hideDialog = () => {
         setSubmitted(false)
         setAcademicDialog(false)
@@ -425,8 +427,6 @@ const AcademicRecords = () => {
                     type="search"
                     onInput={async (e) => {
                         setGlobalFilter((e.target as HTMLInputElement).value)
-                        contributionsRefetchHook()
-                        await fetchData()
                     }}
                     placeholder="Search..."
                 />
@@ -549,7 +549,6 @@ const AcademicRecords = () => {
                             responsiveLayout="scroll"
                             totalRecords={totalRecords}
                             loading={isLoading}
-                            onLoad={SingleRowTable}
                         >
                             <Column
                                 selectionMode="multiple"
