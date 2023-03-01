@@ -11,6 +11,20 @@ import { Dropdown } from 'primereact/dropdown';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { UserService } from '../../demo/service/UserService';
+import { GetServerSideProps } from 'next';
+import { requireAuthentication } from '../../layout/context/requireAuthetication';
+import { gql } from '@apollo/client';
+import apolloClient from '../../apollo-client';
+import jwt from 'jsonwebtoken';
+
+const GET_USER_TYPE = gql`
+query   ($userEmail: String!) {
+    GetUserTypeByUserEmail (userEmail: $userEmail)
+}`;
+
+interface Props{
+    userType:String;
+}
 
 interface emptyUsers{
     id: string|null;
@@ -25,7 +39,7 @@ interface sUser{
     length:any;
 }
 
-const Crud = () => {
+const Crud:React.FC<Props> = (userType) => {
     let emptyUser = {
         id: '',
         name: '',
@@ -394,3 +408,25 @@ const Crud = () => {
 };
 
 export default Crud;
+export const getServerSideProps:GetServerSideProps=requireAuthentication(
+    async (ctx)=>{
+        const {req}=ctx;
+        if(req.headers.cookie){
+            const tokens=req.headers.cookie.split(';');
+            const token=tokens.find((token)=>token.includes('access_token'));
+            let userType='';
+            if(token){
+                const userEmail=((jwt.decode((tokens[1].split('='))[1].toString())).email.toString());
+                await apolloClient.query({
+                    query:GET_USER_TYPE,
+                    variables:{userEmail},
+                }).then((result)=>{
+                    userType=result.data.GetUserTypeByUserEmail.toString();
+                });
+            }
+            return{
+                props:{userType},
+            };
+        }
+    }
+);

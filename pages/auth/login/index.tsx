@@ -36,9 +36,6 @@ const LoginPage= () => {
            Cookies.set('access_token', token['access_token'], { expires: 1 });
            router.push('/');
         }
-        else{
-            router.push('/auth/login');
-        }
     }, [data, router]);
 
     return (

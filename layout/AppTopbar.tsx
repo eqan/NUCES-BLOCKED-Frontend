@@ -6,7 +6,6 @@ import { LayoutContext } from './context/layoutcontext';
 import { Menu } from 'primereact/menu';
 import { Avatar } from 'primereact/avatar';
 import { Dropdown } from 'primereact/dropdown';
-import { typeOf } from 'react-is';
 
 interface Theme {
   name: string;
