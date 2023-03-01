@@ -1,59 +1,143 @@
+import { useMutation } from '@apollo/client'
 import { Button } from 'primereact/button'
 import { Column } from 'primereact/column'
 import { DataTable } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { InputText } from 'primereact/inputtext'
+import { Skeleton } from 'primereact/skeleton'
 import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
-import { DegreeService } from '../../../demo/service/DegreeService'
+import { CREATE_CERTIFICATE } from '../queries/addCertificate'
+import { returnFetchCertificatesHook } from '../queries/getCertificates'
+import { DELETE_CERTIFICATE } from '../queries/removeCertificate'
+import { UPDATE_CERTIFICATE } from '../queries/updateCertificate'
+import { useRouter } from 'next/router'
 
-interface DegreeInterface {
+interface CertificateInterface {
     id: string
     name: string | null
     rollno: string | null
     hash: string | null
 }
-
-interface sDegree {
-    includes?: any
-    length?: any
-}
-
-const Crud = () => {
-    let DegreeRecordInterface = {
+const CertificateRecords = () => {
+    const router = useRouter()
+    let CertificateRecordInterface = {
         id: '',
         name: '',
         rollno: '',
         hash: '',
     }
 
-    let eDegree = {
-        includes: null,
-        length: null,
+    const mapCertificateToCertificateRecord = (
+        certificate: CertificateInterface
+    ) => {
+        return {
+            id: certificate.id,
+            name: certificate.student.name,
+            rollno: certificate.id,
+            date: certificate.updatedAt,
+            hash: certificate.url,
+        }
     }
-
-    const [degrees, setDegrees] = useState<DegreeInterface[]>([])
+    const [degrees, setDegrees] = useState<CertificateInterface[]>([])
     const [degreeDialog, setDegreeDialog] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [deleteDegreeDialog, setDeleteDegreeDialog] = useState(false)
     const [deleteDegreesDialog, setDeleteDegreesDialog] = useState(false)
-    const [degree, setDegree] = useState(DegreeRecordInterface)
-    const [selectedDegrees, setSelectedDegrees] = useState<DegreeInterface[]>(
-        []
-    )
+    const [degree, setDegree] = useState(CertificateRecordInterface)
+    const [selectedDegrees, setSelectedDegrees] = useState<
+        CertificateInterface[]
+    >([])
     const [submitted, setSubmitted] = useState(false)
-    const [globalFilter, setGlobalFilter] = useState<string>()
+    const [globalFilter, setGlobalFilter] = useState<string>('')
+    const [page, setPage] = useState(0)
+    const [pageLimit, setPageLimit] = useState(10)
+    const [totalRecords, setTotalRecords] = useState(1)
+
     const toast = useRef<Toast>(null)
     const dt = useRef<DataTable>(null)
 
+    const [
+        certificatesData,
+        certificatesLoading,
+        certificatesFetchingError,
+        certificatesRefetchHook,
+    ] = returnFetchCertificatesHook(globalFilter, page + 1, pageLimit)
+
+    const [
+        deleteCertificateFunction,
+        {
+            data: certificateDeleteData,
+            loading: certificateDeteDataLoading,
+            error: certificateDeleteDataError,
+            reset: certificateDeleteDataReset,
+        },
+    ] = useMutation(DELETE_CERTIFICATE)
+
+    const [
+        createCertificateFunction,
+        {
+            data: certifcateCreateData,
+            loading: certificateCreateDataLoading,
+            error: certificateCreateDataError,
+            reset: certificateCreateDataReset,
+        },
+    ] = useMutation(CREATE_CERTIFICATE)
+
+    const [
+        updateCertificateFunction,
+        {
+            data: certificateUpdateData,
+            loading: certificateUpdateDataLoading,
+            error: certificateUpdateDataError,
+            reset: certificateUpdateDataReset,
+        },
+    ] = useMutation(UPDATE_CERTIFICATE)
+
+    const fetchData = async () => {
+        setIsLoading(true)
+        if (!certificatesLoading) {
+            try {
+                console.log(certificatesData?.GetAllCertificates.items)
+                const certificateRecords =
+                    certificatesData?.GetAllCertificates.items?.map(
+                        mapCertificateToCertificateRecord
+                    ) || []
+                const total = certificatesData?.GetAllCertificates?.total
+                setDegree(certificateRecords)
+                setTotalRecords(total)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+
     useEffect(() => {
-        const degreeService = new DegreeService()
-        degreeService.getDegrees().then((data) => setDegrees(data))
-    }, [])
+        if (!certificatesLoading && certificatesData) {
+            fetchData()
+        }
+    }, [certificatesData, certificatesLoading])
+
+    useEffect(() => {
+        const handleRouteChange = () => {
+            certificatesRefetchHook()
+        }
+
+        router.events.on('routeChangeComplete', handleRouteChange)
+
+        return () => {
+            router.events.off('routeChangeComplete', handleRouteChange)
+        }
+    }, [certificatesRefetchHook, router.events])
+
+    useEffect(() => {}, [globalFilter])
 
     const openNew = () => {
-        setDegree(DegreeRecordInterface)
+        setDegree(CertificateRecordInterface)
         setSubmitted(false)
         setDegreeDialog(true)
     }
@@ -71,21 +155,23 @@ const Crud = () => {
         setDeleteDegreesDialog(false)
     }
 
-    const saveDegree = () => {
+    const saveDegree = async () => {
         setSubmitted(true)
 
-        if (
-            degree.name.trim() &&
-            degree.hash &&
-            degree.rollno &&
-            validateRollNo()
-        ) {
+        if (degree.name.trim() && degree.hash && degree.rollno) {
             let _degrees = [...degrees]
             let _degree = { ...degree }
-            if (degree.id) {
+            try {
                 const index = findIndexById(degree.id)
-
                 _degrees[index] = _degree
+                await updateCertificateFunction({
+                    variables: {
+                        CreateCertificateInput: {
+                            id: _degree.id,
+                            url: _degree.hash,
+                        },
+                    },
+                })
                 if (toast.current)
                     toast.current.show({
                         severity: 'success',
@@ -93,22 +179,21 @@ const Crud = () => {
                         detail: 'Academic Certificate Updated',
                         life: 3000,
                     })
-            } else {
-                _degree.id = createId()
-
-                _degrees.push(_degree)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Academic Certificate Created',
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Academic Profile Not Updated',
                         life: 3000,
                     })
+                }
+                console.log(error)
             }
 
             setDegrees(_degrees)
             setDegreeDialog(false)
-            setDegree(DegreeRecordInterface)
+            setDegree(CertificateRecordInterface)
         }
     }
 
@@ -126,7 +211,7 @@ const Crud = () => {
         let _degrees = degrees.filter((val) => val.id !== degree.id)
         setDegrees(_degrees)
         setDeleteDegreeDialog(false)
-        setDegree(DegreeRecordInterface)
+        setDegree(CertificateRecordInterface)
         if (toast.current)
             toast.current.show({
                 severity: 'success',
@@ -148,16 +233,6 @@ const Crud = () => {
         return index
     }
 
-    const createId = () => {
-        let id = ''
-        let chars =
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length))
-        }
-        return id
-    }
-
     const exportCSV = () => {
         if (dt.current) dt.current.exportCSV()
     }
@@ -170,9 +245,9 @@ const Crud = () => {
         let _degrees = degrees.filter((val) => {
             if (selectedDegrees) !selectedDegrees.includes(val)
         })
+        setSelectedDegrees([])
         setDegrees(_degrees)
         setDeleteDegreesDialog(false)
-        setSelectedDegrees(eDegree)
         if (toast.current)
             toast.current.show({
                 severity: 'success',
@@ -182,105 +257,16 @@ const Crud = () => {
             })
     }
 
-    const validateRollNo = () => {
-        if (degree.rollno) {
-            let i
-            let stringbe = ''
-            for (i = 0; i < degree.rollno.length; i++) {
-                if (i != 2) {
-                    if (i >= 1) {
-                        if (
-                            !(
-                                degree.rollno[i] >= '0' &&
-                                degree.rollno[i] <= '9'
-                            )
-                        ) {
-                            return 0
-                        }
-                        stringbe += degree.rollno[i]
-                    } else {
-                        if (
-                            !(
-                                degree.rollno[i] >= '1' &&
-                                degree.rollno[i] <= '9'
-                            )
-                        ) {
-                            return 0
-                        }
-                        stringbe += degree.rollno[i]
-                    }
-                } else if (i == 2) {
-                    if (
-                        (degree.rollno[i] >= 'a' && degree.rollno[i] <= 'z') ||
-                        (degree.rollno[i] >= 'A' && degree.rollno[i] <= 'Z')
-                    ) {
-                        stringbe += degree.rollno[i].toUpperCase()
-                    } else {
-                        return 0
-                    }
-                }
-            }
-            if (stringbe.length != 7) {
-                return 0
-            }
-            return 1
-        }
-    }
-
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || ''
         let _degree = { ...degree }
-        if (name == 'name') {
-            let i
-            let stringbe = ''
-            for (i = 0; i < val.length; i++) {
-                if (
-                    (val[i] >= 'a' && val[i] <= 'z') ||
-                    (val[i] >= 'A' && val[i] <= 'Z') ||
-                    val[i] == ' '
-                ) {
-                    stringbe += val[i]
-                }
-            }
-            _degree[`${name}`] = stringbe
-            setDegree(_degree)
-            return
-        } else if (name == 'rollno') {
-            let i
-            let stringbe = ''
-            for (i = 0; i < val.length; i++) {
-                if (i != 2) {
-                    if (i >= 1) {
-                        if (!(val[i] >= '0' && val[i] <= '9')) {
-                            return
-                        }
-                        stringbe += val[i]
-                    } else {
-                        if (!(val[i] >= '1' && val[i] <= '9')) {
-                            return
-                        }
-                        stringbe += val[i]
-                    }
-                } else if (i == 2) {
-                    if (
-                        (val[i] >= 'a' && val[i] <= 'z') ||
-                        (val[i] >= 'A' && val[i] <= 'Z')
-                    ) {
-                        stringbe += val[i].toUpperCase()
-                    } else {
-                        return
-                    }
-                }
-            }
-            if (stringbe.length > 7) {
-                return
-            }
-            _degree[`${name}`] = stringbe
-            setDegree(_degree)
-            return
-        }
         _degree[`${name}`] = val
         setDegree(_degree)
+    }
+
+    const onPageChange = (event) => {
+        setPage(event.first / event.rows)
+        setPageLimit(event.rows)
     }
 
     const leftToolbarTemplate = () => {
@@ -431,6 +417,35 @@ const Crud = () => {
         </>
     )
 
+    const LoadingTemplate = ({ w, h }: { w: string; h: string }) => {
+        return (
+            <div
+                className="flex align-items-center"
+                style={{ height: '17px', flexGrow: '1', overflow: 'hidden' }}
+            >
+                <Skeleton width={w} height={h} />
+            </div>
+        )
+    }
+    const SkeletonTable = () => {
+        return (
+            <>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        margin: '10px',
+                    }}
+                >
+                    <LoadingTemplate h="40px" w="40px" />
+                    <LoadingTemplate h="10px" w="100px" />
+                    <LoadingTemplate h="10px" w="80px" />
+                    <LoadingTemplate h="10px" w="40px" />
+                </div>
+            </>
+        )
+    }
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -442,54 +457,68 @@ const Crud = () => {
                         right={rightToolbarTemplate}
                     ></Toolbar>
 
-                    <DataTable
-                        ref={dt}
-                        value={degrees}
-                        selection={selectedDegrees}
-                        onSelectionChange={(e) => setSelectedDegrees(e.value)}
-                        dataKey="id"
-                        paginator
-                        rows={10}
-                        rowsPerPageOptions={[5, 10, 25]}
-                        className="datatable-responsive"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} degrees"
-                        globalFilter={globalFilter}
-                        emptyMessage="No degrees found."
-                        header={header}
-                        responsiveLayout="scroll"
-                    >
-                        <Column
-                            selectionMode="multiple"
-                            headerStyle={{ width: '4rem' }}
-                        ></Column>
-                        <Column
-                            field="hash"
-                            header="Hash"
-                            body={hashBodyTemplate}
-                            sortable
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="name"
-                            header="Full Name"
-                            sortable
-                            body={nameBodyTemplate}
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="rollno"
-                            header="Roll No."
-                            sortable
-                            body={rollnoBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
+                    {isLoading ? (
+                        <>
+                            {[1, 2, 3, 4, 5].map((v) => (
+                                <SkeletonTable />
+                            ))}
+                        </>
+                    ) : (
+                        <DataTable
+                            ref={dt}
+                            value={degrees}
+                            selection={selectedDegrees}
+                            onSelectionChange={(e) =>
+                                setSelectedDegrees(e.value)
+                            }
+                            dataKey="id"
+                            defaultValue={1}
+                            paginator
+                            rows={pageLimit}
+                            first={page * pageLimit}
+                            onPage={onPageChange}
+                            rowsPerPageOptions={[5, 10, 25]}
+                            className="datatable-responsive"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} degrees"
+                            emptyMessage="No degrees found."
+                            header={header}
+                            responsiveLayout="scroll"
+                            totalRecords={totalRecords}
+                            loading={isLoading}
+                        >
+                            <Column
+                                selectionMode="multiple"
+                                headerStyle={{ width: '4rem' }}
+                            ></Column>
+                            <Column
+                                field="hash"
+                                header="Hash"
+                                body={hashBodyTemplate}
+                                sortable
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="name"
+                                header="Full Name"
+                                sortable
+                                body={nameBodyTemplate}
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="rollno"
+                                header="Roll No."
+                                sortable
+                                body={rollnoBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
 
-                        <Column
-                            body={actionBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                    </DataTable>
+                            <Column
+                                body={actionBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                        </DataTable>
+                    )}
 
                     <Dialog
                         visible={degreeDialog}
@@ -500,27 +529,6 @@ const Crud = () => {
                         footer={degreeDialogFooter}
                         onHide={hideDialog}
                     >
-                        <div className="field">
-                            <label htmlFor="name">Name</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="name"
-                                    value={degree.name}
-                                    onChange={(e) => onInputChange(e, 'name')}
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid': submitted && !degree.name,
-                                    })}
-                                />
-                                {submitted && !degree.name && (
-                                    <small className="p-invalid">
-                                        Name is required.
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-user" />
-                            </span>
-                        </div>
                         <div className="field">
                             <label htmlFor="rollno">Roll No.</label>
                             <span className="p-input-icon-right">
@@ -541,18 +549,6 @@ const Crud = () => {
                                         }
                                     )}
                                 />
-                                {(submitted && !degree.rollno && (
-                                    <small className="p-invalid">
-                                        Roll No. is required.
-                                    </small>
-                                )) ||
-                                    (submitted &&
-                                        degree.rollno &&
-                                        !validateRollNo() && (
-                                            <small className="p-invalid1">
-                                                Valid Roll no. is like 19F0000
-                                            </small>
-                                        ))}
                                 <i className="pi pi-fw pi-id-card" />
                             </span>
                         </div>
@@ -628,4 +624,4 @@ const Crud = () => {
     )
 }
 
-export default Crud
+export default CertificateRecords

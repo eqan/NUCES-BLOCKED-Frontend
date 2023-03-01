@@ -6,6 +6,7 @@ export const GET_CERTIFICATES = gql`
             items {
                 id
                 url
+                updatedAt
             }
             total
         }
@@ -20,10 +21,9 @@ export function returnFetchCertificatesHook(
     const { data, loading, error, refetch } = useQuery(GET_CERTIFICATES, {
         variables: {
             FilterContributionsDto: {
-                contributionType,
+                studentId,
                 page,
                 limit,
-                studentId,
             },
         },
     })
