@@ -22,11 +22,6 @@ interface AcademicContributionInterface {
     cgpa: string | null
 }
 
-interface sAcademic {
-    includes?: any
-    length?: any
-}
-
 const AcademicRecords = () => {
     const router = useRouter()
 
@@ -36,11 +31,6 @@ const AcademicRecords = () => {
         rollno: '',
         date: '',
         cgpa: '',
-    }
-
-    let eAcedmic = {
-        includes: null,
-        length: null,
     }
 
     const mapContributionToAcademicRecord = (
@@ -63,7 +53,9 @@ const AcademicRecords = () => {
     const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false)
     const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false)
     const [academic, setAcademic] = useState(AcademicRecordInterface)
-    const [selectedAcademics, setSelectedAcademics] = useState<sAcademic>()
+    const [selectedAcademics, setSelectedAcademics] = useState<
+        AcademicContributionInterface[]
+    >([])
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
@@ -274,15 +266,43 @@ const AcademicRecords = () => {
         setDeleteAcademicsDialog(true)
     }
 
-    const deleteSelectedAcademics = () => {
-        let _academics = academics.filter((val) => {
-            if (selectedAcademics) {
-                !selectedAcademics.includes(val)
+    const deleteSelectedAcademics = async () => {
+        let _academics = academics.filter(
+            (val) => !selectedAcademics.includes(val)
+        )
+        try {
+            selectedAcademics.map(async (academic) => {
+                await adminContributionDeleteFunction({
+                    variables: {
+                        DeleteContributionInput: {
+                            contributionType: 'ADMIN',
+                            studentId: academic.id,
+                        },
+                    },
+                })
+            })
+            if (toast.current && !adminContributionDeleteError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Academic Profile Deleted',
+                    life: 3000,
+                })
             }
-        })
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Academic Profile Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
+        setSelectedAcademics([])
         setAcademics(_academics)
         setDeleteAcademicsDialog(false)
-        setSelectedAcademics(eAcedmic)
         if (toast.current) {
             toast.current.show({
                 severity: 'success',

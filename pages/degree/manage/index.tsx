@@ -9,7 +9,7 @@ import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
 import { DegreeService } from '../../../demo/service/DegreeService'
 
-interface emptyDegree {
+interface DegreeInterface {
     id: string
     name: string | null
     rollno: string | null
@@ -22,7 +22,7 @@ interface sDegree {
 }
 
 const Crud = () => {
-    let emptyDegree = {
+    let DegreeRecordInterface = {
         id: '',
         name: '',
         rollno: '',
@@ -34,11 +34,11 @@ const Crud = () => {
         length: null,
     }
 
-    const [degrees, setDegrees] = useState<emptyDegree[]>([])
+    const [degrees, setDegrees] = useState<DegreeInterface[]>([])
     const [degreeDialog, setDegreeDialog] = useState(false)
     const [deleteDegreeDialog, setDeleteDegreeDialog] = useState(false)
     const [deleteDegreesDialog, setDeleteDegreesDialog] = useState(false)
-    const [degree, setDegree] = useState(emptyDegree)
+    const [degree, setDegree] = useState(DegreeRecordInterface)
     const [selectedDegrees, setSelectedDegrees] = useState<sDegree>()
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>()
@@ -51,7 +51,7 @@ const Crud = () => {
     }, [])
 
     const openNew = () => {
-        setDegree(emptyDegree)
+        setDegree(DegreeRecordInterface)
         setSubmitted(false)
         setDegreeDialog(true)
     }
@@ -106,7 +106,7 @@ const Crud = () => {
 
             setDegrees(_degrees)
             setDegreeDialog(false)
-            setDegree(emptyDegree)
+            setDegree(DegreeRecordInterface)
         }
     }
 
@@ -124,7 +124,7 @@ const Crud = () => {
         let _degrees = degrees.filter((val) => val.id !== degree.id)
         setDegrees(_degrees)
         setDeleteDegreeDialog(false)
-        setDegree(emptyDegree)
+        setDegree(DegreeRecordInterface)
         if (toast.current)
             toast.current.show({
                 severity: 'success',
