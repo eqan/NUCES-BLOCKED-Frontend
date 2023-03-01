@@ -39,7 +39,9 @@ const Crud = () => {
     const [deleteDegreeDialog, setDeleteDegreeDialog] = useState(false)
     const [deleteDegreesDialog, setDeleteDegreesDialog] = useState(false)
     const [degree, setDegree] = useState(DegreeRecordInterface)
-    const [selectedDegrees, setSelectedDegrees] = useState<sDegree>()
+    const [selectedDegrees, setSelectedDegrees] = useState<DegreeInterface[]>(
+        []
+    )
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>()
     const toast = useRef<Toast>(null)

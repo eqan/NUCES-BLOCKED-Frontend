@@ -1,4 +1,4 @@
-import { gql, useMutation, useQuery } from '@apollo/client'
+import { gql } from '@apollo/client'
 
 export const CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN = gql`
     mutation CreateUpdateContribution(

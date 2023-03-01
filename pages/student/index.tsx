@@ -322,6 +322,7 @@ const Crud = () => {
         reader.onload = (e) => {
             const csv = (e.target as FileReader | any).result
             const data = csv.split('\n')
+            console.log(data)
 
             // Prepare DataTable
             const cols = data[0].replace(/['"]+/g, '').split(',')
