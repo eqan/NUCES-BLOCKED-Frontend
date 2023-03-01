@@ -53,7 +53,8 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
 export function returnFetchContributionsHook(
     contributionType: string,
     page: number,
-    limit: number
+    limit: number,
+    studentId: string | null
 ) {
     const { data, loading, error, refetch } = useQuery(
         GET_STUDENT_CONTRIBUTIONS,
@@ -63,6 +64,7 @@ export function returnFetchContributionsHook(
                     contributionType,
                     page,
                     limit,
+                    studentId,
                 },
             },
         }

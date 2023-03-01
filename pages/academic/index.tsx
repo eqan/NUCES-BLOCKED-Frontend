@@ -6,7 +6,7 @@ import { InputText } from 'primereact/inputtext'
 import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
-import React, { lazy, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { returnFetchContributionsHook } from './queries/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
@@ -65,7 +65,7 @@ const AcademicRecords = () => {
     const [academic, setAcademic] = useState(AcademicRecordInterface)
     const [selectedAcademics, setSelectedAcademics] = useState<sAcademic>()
     const [submitted, setSubmitted] = useState(false)
-    const [globalFilter, setGlobalFilter] = useState<string>()
+    const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
@@ -77,7 +77,7 @@ const AcademicRecords = () => {
         contributionsLoading,
         contributionsFetchingError,
         contributionsRefetchHook,
-    ] = returnFetchContributionsHook('ADMIN', page + 1, pageLimit)
+    ] = returnFetchContributionsHook('ADMIN', page + 1, pageLimit, globalFilter)
 
     const [
         adminContributionDeleteFunction,
@@ -215,19 +215,39 @@ const AcademicRecords = () => {
         setDeleteAcademicDialog(true)
     }
 
-    const deleteAcademic = () => {
+    const deleteAcademic = async () => {
         let _academics = academics.filter((val) => val.id !== academic.id)
-        setAcademics(_academics)
-        setDeleteAcademicDialog(false)
-        setAcademic(AcademicRecordInterface)
-        if (toast.current) {
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Academic Profile Deleted',
-                life: 3000,
+        try {
+            await adminContributionDeleteFunction({
+                variables: {
+                    DeleteContributionInput: {
+                        contributionType: 'ADMIN',
+                        studentId: academic.id,
+                    },
+                },
             })
+            if (toast.current && !adminContributionDeleteError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Academic Profile Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Academic Profile Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
         }
+        setAcademic(AcademicRecordInterface)
+        setDeleteAcademicDialog(false)
+        setAcademics(_academics)
     }
 
     const findIndexById = (id) => {
@@ -403,9 +423,11 @@ const AcademicRecords = () => {
                 <i className="pi pi-search" />
                 <InputText
                     type="search"
-                    onInput={(e) =>
+                    onInput={async (e) => {
                         setGlobalFilter((e.target as HTMLInputElement).value)
-                    }
+                        contributionsRefetchHook()
+                        await fetchData()
+                    }}
                     placeholder="Search..."
                 />
             </span>
@@ -522,7 +544,6 @@ const AcademicRecords = () => {
                             className="datatable-responsive"
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Showing {first} to {last} of {totalRecords} academics"
-                            globalFilter={globalFilter}
                             emptyMessage="No academics found."
                             header={header}
                             responsiveLayout="scroll"
