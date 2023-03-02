@@ -9,8 +9,10 @@ import AppSidebar from './AppSidebar';
 import AppTopbar from './AppTopbar';
 import { LayoutContext,LayoutContextValue } from './context/layoutcontext';
 import PrimeReact from 'primereact/api';
+
 interface Props {
     children: React.ReactNode;
+    userType:string|null;
 }
 interface ButtonMenu{
     menubutton:HTMLButtonElement;
@@ -132,7 +134,7 @@ const unblockBodyScroll = (element = document.body) => {
                 <meta property="og:type" content="website"></meta>
                 <meta property="og:title" content="NUCES BLOCKED"></meta>
                 <meta property="og:description" content="" />
-                <meta property="og:image" content="https://live.staticflickr.com/65535/52614592212_fb13a2974f_n.jpg"></meta>
+                <meta property="og:image" content="https://live.staticflickr.com/65535/52701824785_51bdbe03fd_h.jpg"></meta>
                 <meta property="og:ttl" content="604800"></meta>
                 <link rel="icon" href={`${contextPath}/logo.png`} type="image/x-icon"></link>
             </Head>
@@ -143,7 +145,7 @@ const unblockBodyScroll = (element = document.body) => {
                 topbarmenubuttonRef={topbarmenubuttonRef1} selectedTheme={layoutConfig.theme} onThemeChange={null} 
                 toggleMenu={null} changeTheme={null} menu={null} replaceLink={null} applyScale={null} />
                 <div ref={sidebarRef} className="layout-sidebar">
-                    <AppSidebar />
+                    <AppSidebar userType={props.userType} />
                 </div>
                 <div className="layout-main-container">
                     <div className="layout-main">{props.children}</div>
@@ -156,3 +158,4 @@ const unblockBodyScroll = (element = document.body) => {
 };
 
 export default Layout;
+

@@ -9,6 +9,20 @@ import { classNames } from 'primereact/utils';
 import React, {  useEffect, useRef, useState } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { AcademicService } from '../../demo/service/AcademicService';
+import { GetServerSideProps } from 'next';
+import { requireAuthentication } from '../../layout/context/requireAuthetication';
+import { gql } from '@apollo/client';
+import apolloClient from '../../apollo-client';
+import jwt from 'jsonwebtoken';
+
+const GET_USER_TYPE = gql`
+query   ($userEmail: String!) {
+    GetUserTypeByUserEmail (userEmail: $userEmail)
+}`;
+
+interface Props{
+    userType:String;
+}
 
 interface emptyAcedamic{
     id:string;
@@ -18,12 +32,8 @@ interface emptyAcedamic{
     cgpa:string|null;
 }
 
-interface sAcademic{
-    includes?:any;
-    length?:any;
-}
 
-const Crud = () => {
+const Crud:React.FC<Props> = ({userType}) => {
     let emptyAcademic = {
         id: '',
         name: '',
@@ -33,18 +43,13 @@ const Crud = () => {
        
     };
 
-    let eAcedmic={
-        includes:null,
-        length:null,
-    };
-
 
     const [academics, setAcademics] = useState<emptyAcedamic[]>([]);
     const [academicDialog, setAcademicDialog] = useState(false);
     const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false);
     const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false);
     const [academic, setAcademic] = useState(emptyAcademic);
-    const [selectedAcademics, setSelectedAcademics] = useState<sAcademic>();
+    const [selectedAcademics, setSelectedAcademics] = useState<emptyAcedamic[]>([]);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState<string>();
     const [date, setDate] = useState<Date | null>(null);
@@ -136,19 +141,19 @@ const Crud = () => {
     };
 
     const deleteSelectedAcademics = () => {
-        let _academics = academics.filter((val) => 
-        {   
-            if(selectedAcademics){
-                !selectedAcademics.includes(val)
-            }
-        });
+        let _academics = academics.filter((val) => !selectedAcademics.includes(val));
         setAcademics(_academics);
         setDeleteAcademicsDialog(false);
-        setSelectedAcademics(eAcedmic);
+        setSelectedAcademics([]);
         if(toast.current){
             toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Academic Profile Deleted', life: 3000 });
         }
     };
+
+    const setSelectedRecords=(val)=>{
+        setSelectedAcademics(val);
+        console.log(selectedAcademics);
+    }
 
 
 
@@ -315,7 +320,7 @@ const Crud = () => {
                         ref={dt} 
                         value={academics}
                         selection={selectedAcademics}
-                        onSelectionChange={(e) => setSelectedAcademics(e.value)}
+                        onSelectionChange={(e) => setSelectedRecords(e.value)}
                         dataKey="id"
                         paginator
                         rows={10}
@@ -384,3 +389,25 @@ const Crud = () => {
 };
 
 export default Crud;
+export const getServerSideProps:GetServerSideProps=requireAuthentication(
+    async (ctx)=>{
+        const {req}=ctx;
+        if(req.headers.cookie){
+            const tokens=req.headers.cookie.split(';');
+            const token=tokens.find((token)=>token.includes('access_token'));
+            let userType='';
+            if(token){
+                const userEmail=((jwt.decode((tokens[1].split('='))[1].toString())).email.toString());
+                await apolloClient.query({
+                    query:GET_USER_TYPE,
+                    variables:{userEmail},
+                }).then((result)=>{
+                    userType=result.data.GetUserTypeByUserEmail.toString();
+                });
+            }
+            return{
+                props:{userType},
+            };
+        }
+    }
+);
