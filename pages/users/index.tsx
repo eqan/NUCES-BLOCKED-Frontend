@@ -95,7 +95,7 @@ const Crud:React.FC<Props> = (userType) => {
     const saveUser = () => {
         setSubmitted(true);
 
-        if (user.name.trim()&& (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email)) && user.email && user.role && user.password) {
+        if (user.name.trim()&& (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email)) && user.email && user.role && user.password && validatepass(user.password)) {
             let _users = [...users];
             let _user = { ...user };
             if (user.id) {
@@ -210,6 +210,31 @@ const Crud:React.FC<Props> = (userType) => {
         setUser(_user);
     };
     
+    const validatepass=(password:string)=>{
+        if(password.length>6)
+            {
+                let lowerCasecheck=false, upperCasecheck=false, numericCheck=false, symbolCheck=false;
+                let i=0;
+                for(i=0;i<password.length;i++)
+                {
+                    if(password[i]>='0'&&password[i]<='9')
+                        numericCheck=true;
+                    else if(password[i]>='a'&&password[i]<='z')
+                        lowerCasecheck=true;
+                    else if(password[i]>='A'&&password[i]<='Z')
+                        upperCasecheck=true;
+                    else
+                        symbolCheck=true;
+                }
+                if((numericCheck&&lowerCasecheck)||(numericCheck&&upperCasecheck)||(numericCheck&&symbolCheck)||
+                (lowerCasecheck&&upperCasecheck)||(lowerCasecheck&&symbolCheck)||(upperCasecheck&&symbolCheck))
+                {
+                    return true;
+                }
+                return false;
+            }
+            return false;
+    }
     
     const leftToolbarTemplate = () => {
         return (
@@ -366,15 +391,15 @@ const Crud:React.FC<Props> = (userType) => {
                             <span className="p-input-icon-right">
                                 <InputText id="email" value={user.email} onChange={(e) => onInputChange(e, 'email')} required autoFocus className={classNames({ 'p-invalid': submitted && !user.email } , { 'p-invalid1': submitted && user.email })} />
                                 {submitted && !user.email && <small className="p-invalid">Email is required.</small> ||
-                                submitted && user.email && (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) && <small className="p-invalid1">Invalid email address. E.g. example@email.com</small>)}
+                                submitted && user.email && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) && <small className="p-invalid1">Invalid email address. E.g. example@email.com</small>}
                                 <i className="pi pi-envelope" />
                             </span>
                         </div>
                         <div className="field">
                             <label htmlFor="password">Password</label>
                             <Password id="password" name="password" value={user.password} onChange={(e) => onInputChange(e, 'password')} toggleMask required autoFocus
-                             className={classNames({ 'p-invalid': submitted && !user.password })} header={passwordHeader} footer={passwordFooter} />
-                            {submitted && !user.password && <small className="p-invalid">Password is required.</small>}
+                             className={classNames({ 'p-invalid': submitted && !user.password }, { 'p-invalid1': validatepass(user.password)})} header={passwordHeader} footer={passwordFooter} />
+                            {(submitted && !user.password && <small className="p-invalid">Password is required.</small>) || !validatepass(user.password) && <small className="p-invalid1">Password isn't Too Strong.</small>}
                         </div>
                         <div className="field">
                             <label htmlFor="role">Role</label>

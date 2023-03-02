@@ -6,7 +6,6 @@ interface Props {
 }
 
 const AppSidebar: React.FC<Props> = ({userType}) => {
-    console.log(userType);
     return (
     <AppMenu userType={userType}/>
     );
