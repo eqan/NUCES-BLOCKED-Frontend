@@ -27,15 +27,15 @@ interface LayoutContextValue {
   showProfileSidebar: () => void;
 }
 
-interface Props{
-  children?:any;
+interface Props {
+  children?: any;
 }
 
-export const LayoutContext = React.createContext<LayoutContextValue | undefined>(
-  undefined
-);
+export const LayoutContext = React.createContext<
+  LayoutContextValue | undefined
+>(undefined);
 
-export const LayoutProvider: React.FC<Props> = (props:Props)=>{
+export const LayoutProvider: React.FC<Props> = (props: Props) => {
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>({
     ripple: false,
     inputStyle: 'outlined',
@@ -100,7 +100,9 @@ export const LayoutProvider: React.FC<Props> = (props:Props)=>{
   };
 
   return (
-    <LayoutContext.Provider value={value}>{props.children}</LayoutContext.Provider>
+    <LayoutContext.Provider value={value}>
+      {props.children}
+    </LayoutContext.Provider>
   );
 };
 export { type LayoutContextValue };

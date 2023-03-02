@@ -9,7 +9,9 @@ const AppFooter: React.FC = () => {
   return (
     <div className="layout-footer">
       <img
-        src={`${contextPath}/layout/images/logo-${context.layoutConfig.colorScheme === 'light' ? 'dark' : 'white'}.svg`}
+        src={`${contextPath}/layout/images/logo-${
+          context.layoutConfig.colorScheme === 'light' ? 'dark' : 'white'
+        }.svg`}
         alt="Logo"
         height={20}
         className="mr-2"

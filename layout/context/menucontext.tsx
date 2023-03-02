@@ -5,7 +5,9 @@ interface MenuContextValue {
   setActiveMenu: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export const MenuContext = React.createContext<MenuContextValue | undefined>(undefined);
+export const MenuContext = React.createContext<MenuContextValue | undefined>(
+  undefined,
+);
 
 interface Props {
   children: React.ReactNode;

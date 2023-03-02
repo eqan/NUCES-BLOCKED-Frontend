@@ -14,8 +14,15 @@ class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          <link id="theme-css" href={`${contextPath}/themes/saga-blue/theme.css`} rel="stylesheet" />
-          <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+          <link
+            id="theme-css"
+            href={`${contextPath}/themes/saga-blue/theme.css`}
+            rel="stylesheet"
+          />
+          <link
+            href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet"
+          />
         </Head>
         <body>
           <Main />

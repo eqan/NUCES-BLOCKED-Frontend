@@ -15,62 +15,66 @@ import apolloClient from '../apollo-client';
 import jwt from 'jsonwebtoken';
 
 const GET_USER_TYPE = gql`
-query   ($userEmail: String!) {
-    GetUserTypeByUserEmail (userEmail: $userEmail)
-}`;
+  query ($userEmail: String!) {
+    GetUserTypeByUserEmail(userEmail: $userEmail)
+  }
+`;
 
 interface Props {
-    Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode };
-    pageProps: any;
-    usertype: string|null;
+  Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode };
+  pageProps: any;
+  usertype: string | null;
 }
 
-const MyApp: FC<Props> = ({  Component, pageProps, usertype}) => {
-    const apolloClient = useApollo(pageProps.initialApolloState);
-    if (Component.getLayout) {
-        return (
-            <ApolloProvider client={apolloClient}>
-            <LayoutProvider >
-                {Component.getLayout(<Component {...pageProps} />)}
-            </LayoutProvider>
-            </ApolloProvider>
-        );
-    } else {
-        return (
-            <ApolloProvider client={apolloClient}>
-                <LayoutProvider>
-                    <Layout Component {...pageProps} usertype={'usertype'}>
-                        <Component {...pageProps} />
-                    </Layout>
-                </LayoutProvider>
-            </ApolloProvider>
-        );
-    }
+const MyApp: FC<Props> = ({ Component, pageProps, usertype }) => {
+  const apolloClient = useApollo(pageProps.initialApolloState);
+  if (Component.getLayout) {
+    return (
+      <ApolloProvider client={apolloClient}>
+        <LayoutProvider>
+          {Component.getLayout(<Component {...pageProps} />)}
+        </LayoutProvider>
+      </ApolloProvider>
+    );
+  } else {
+    return (
+      <ApolloProvider client={apolloClient}>
+        <LayoutProvider>
+          <Layout Component {...pageProps} usertype={'usertype'}>
+            <Component {...pageProps} />
+          </Layout>
+        </LayoutProvider>
+      </ApolloProvider>
+    );
+  }
 };
 
 export default MyApp;
 
-
-export const getServerSideProps:GetServerSideProps=requireAuthentication(
-    async (ctx)=>{
-        const {req}=ctx;
-        console.log(ctx);
-        if(req.headers.cookie){
-            const tokens=req.headers.cookie.split(';');
-            const token=tokens.find((token)=>token.includes('access_token'));
-            let userType='';
-            if(token){
-                const userEmail=((jwt.decode((tokens[1].split('='))[1].toString())).email.toString());
-                await apolloClient.query({
-                    query:GET_USER_TYPE,
-                    variables:{userEmail},
-                }).then((result)=>{
-                    userType=result.data.GetUserTypeByUserEmail.toString();
-                });
-            }
-            return{
-                props:{userType},
-            };
-        }
+export const getServerSideProps: GetServerSideProps = requireAuthentication(
+  async (ctx) => {
+    const { req } = ctx;
+    console.log(ctx);
+    if (req.headers.cookie) {
+      const tokens = req.headers.cookie.split(';');
+      const token = tokens.find((token) => token.includes('access_token'));
+      let userType = '';
+      if (token) {
+        const userEmail = jwt
+          .decode(tokens[1].split('=')[1].toString())
+          .email.toString();
+        await apolloClient
+          .query({
+            query: GET_USER_TYPE,
+            variables: { userEmail },
+          })
+          .then((result) => {
+            userType = result.data.GetUserTypeByUserEmail.toString();
+          });
+      }
+      return {
+        props: { userType },
+      };
     }
+  },
 );
