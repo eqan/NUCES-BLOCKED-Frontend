@@ -16,10 +16,10 @@ import { DELETE_STUDENT_CONTRIBUTION_ADMIN } from './queries/deleteStudentContri
 
 interface AcademicContributionInterface {
     id: string
-    name: string | null
-    rollno: string | null
-    date: string | null
-    cgpa: string | null
+    name: string
+    rollno: string
+    date: string
+    cgpa: string
 }
 
 const AcademicRecords = () => {
@@ -302,14 +302,6 @@ const AcademicRecords = () => {
         setSelectedAcademics([])
         setAcademics(_academics)
         setDeleteAcademicsDialog(false)
-        if (toast.current) {
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Academic Profile Deleted',
-                life: 3000,
-            })
-        }
     }
 
     const onPageChange = (event) => {

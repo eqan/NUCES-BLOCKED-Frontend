@@ -17,9 +17,10 @@ import { useRouter } from 'next/router'
 
 interface CertificateInterface {
     id: string
-    name: string | null
-    rollno: string | null
-    hash: string | null
+    name: string
+    rollno: string
+    date: string
+    hash: string
 }
 const CertificateRecords = () => {
     const router = useRouter()
@@ -27,6 +28,7 @@ const CertificateRecords = () => {
         id: '',
         name: '',
         rollno: '',
+        date: '',
         hash: '',
     }
 
@@ -42,7 +44,8 @@ const CertificateRecords = () => {
         }
     }
     const [degrees, setDegrees] = useState<CertificateInterface[]>([])
-    const [degreeDialog, setDegreeDialog] = useState(false)
+    const [degreeAddDialog, setAddDegreeDialog] = useState(false)
+    const [degreeUpdateDialog, setUpdateDegreeDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [deleteDegreeDialog, setDeleteDegreeDialog] = useState(false)
     const [deleteDegreesDialog, setDeleteDegreesDialog] = useState(false)
@@ -100,13 +103,14 @@ const CertificateRecords = () => {
         setIsLoading(true)
         if (!certificatesLoading) {
             try {
-                console.log(certificatesData?.GetAllCertificates.items)
+                let _degrees =
+                    certificatesData?.GetAllCertificates.items.filter(
+                        (val) => val.id != ''
+                    )
                 const certificateRecords =
-                    certificatesData?.GetAllCertificates.items?.map(
-                        mapCertificateToCertificateRecord
-                    ) || []
+                    _degrees.map(mapCertificateToCertificateRecord) || []
                 const total = certificatesData?.GetAllCertificates?.total
-                setDegree(certificateRecords)
+                setDegrees(certificateRecords)
                 setTotalRecords(total)
             } catch (error) {
                 console.log(error)
@@ -136,15 +140,20 @@ const CertificateRecords = () => {
 
     useEffect(() => {}, [globalFilter])
 
-    const openNew = () => {
+    const openNewAddDegreeDialog = () => {
         setDegree(CertificateRecordInterface)
         setSubmitted(false)
-        setDegreeDialog(true)
+        setAddDegreeDialog(true)
     }
 
-    const hideDialog = () => {
+    const hideAddDegreeDialog = () => {
         setSubmitted(false)
-        setDegreeDialog(false)
+        setAddDegreeDialog(false)
+    }
+
+    const hideUpdateDegreeDialog = () => {
+        setSubmitted(false)
+        setUpdateDegreeDialog(false)
     }
 
     const hideDeleteDegreeDialog = () => {
@@ -155,18 +164,62 @@ const CertificateRecords = () => {
         setDeleteDegreesDialog(false)
     }
 
-    const saveDegree = async () => {
+    const addDegree = async () => {
         setSubmitted(true)
 
-        if (degree.name.trim() && degree.hash && degree.rollno) {
+        if (degree.hash && degree.rollno) {
             let _degrees = [...degrees]
             let _degree = { ...degree }
+            console.log(_degree)
             try {
                 const index = findIndexById(degree.id)
                 _degrees[index] = _degree
-                await updateCertificateFunction({
+                await createCertificateFunction({
                     variables: {
                         CreateCertificateInput: {
+                            id: _degree.rollno,
+                            url: _degree.hash,
+                        },
+                    },
+                })
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Academic Certificate Updated',
+                        life: 3000,
+                    })
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Academic Profile Not Updated',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
+            }
+
+            setDegrees(_degrees)
+            setAddDegreeDialog(false)
+            setDegree(CertificateRecordInterface)
+        }
+    }
+
+    const updateDegree = async () => {
+        setSubmitted(true)
+
+        if (degree.hash) {
+            let _degrees = [...degrees]
+            let _degree = { ...degree }
+            console.log(_degree)
+            try {
+                const index = findIndexById(_degree.id)
+                _degrees[index] = _degree
+                await updateCertificateFunction({
+                    variables: {
+                        UpdateCertificateInput: {
                             id: _degree.id,
                             url: _degree.hash,
                         },
@@ -192,14 +245,14 @@ const CertificateRecords = () => {
             }
 
             setDegrees(_degrees)
-            setDegreeDialog(false)
+            setUpdateDegreeDialog(false)
             setDegree(CertificateRecordInterface)
         }
     }
 
     const editDegree = (degree) => {
         setDegree({ ...degree })
-        setDegreeDialog(true)
+        setUpdateDegreeDialog(true)
     }
 
     const confirmDeleteDegree = (degree) => {
@@ -207,18 +260,38 @@ const CertificateRecords = () => {
         setDeleteDegreeDialog(true)
     }
 
-    const deleteDegree = () => {
+    const deleteDegree = async () => {
         let _degrees = degrees.filter((val) => val.id !== degree.id)
+        try {
+            await deleteCertificateFunction({
+                variables: {
+                    DeleteCertificateInput: {
+                        id: [degree.rollno],
+                    },
+                },
+            })
+            if (toast.current && !certificateDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Academic Profile Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Academic Profile Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
         setDegrees(_degrees)
         setDeleteDegreeDialog(false)
         setDegree(CertificateRecordInterface)
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Academic Certificate Deleted',
-                life: 3000,
-            })
     }
 
     const findIndexById = (id) => {
@@ -241,20 +314,42 @@ const CertificateRecords = () => {
         setDeleteDegreesDialog(true)
     }
 
-    const deleteSelectedDegrees = () => {
-        let _degrees = degrees.filter((val) => {
-            if (selectedDegrees) !selectedDegrees.includes(val)
-        })
+    const deleteSelectedDegrees = async () => {
+        let _degrees = degrees.filter((val) => !selectedDegrees.includes(val))
+        let _toBeDeletedDegrees = degrees
+            .filter((val) => selectedDegrees.includes(val))
+            .map((val) => val.id)
+
+        try {
+            await deleteCertificateFunction({
+                variables: {
+                    DeleteCertificateInput: {
+                        id: _toBeDeletedDegrees,
+                    },
+                },
+            })
+            if (toast.current && !certificateDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Academic Profile Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Academic Profile Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
         setSelectedDegrees([])
         setDegrees(_degrees)
         setDeleteDegreesDialog(false)
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Academic Certificate Deleted',
-                life: 3000,
-            })
     }
 
     const onInputChange = (e, name) => {
@@ -277,7 +372,7 @@ const CertificateRecords = () => {
                         label="New"
                         icon="pi pi-plus"
                         className="p-button-success mr-2"
-                        onClick={openNew}
+                        onClick={openNewAddDegreeDialog}
                     />
                     <Button
                         label="Delete"
@@ -368,19 +463,36 @@ const CertificateRecords = () => {
         </div>
     )
 
-    const degreeDialogFooter = (
+    const addDegreeDialogFooter = (
         <>
             <Button
                 label="Cancel"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideDialog}
+                onClick={hideAddDegreeDialog}
             />
             <Button
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={saveDegree}
+                onClick={addDegree}
+            />
+        </>
+    )
+
+    const updateDegreeDialogFooter = (
+        <>
+            <Button
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideAddDegreeDialog}
+            />
+            <Button
+                label="Save"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={updateDegree}
             />
         </>
     )
@@ -521,13 +633,13 @@ const CertificateRecords = () => {
                     )}
 
                     <Dialog
-                        visible={degreeDialog}
+                        visible={degreeAddDialog}
                         style={{ width: '450px' }}
                         header="Degree Details"
                         modal
                         className="p-fluid"
-                        footer={degreeDialogFooter}
-                        onHide={hideDialog}
+                        footer={addDegreeDialogFooter}
+                        onHide={hideAddDegreeDialog}
                     >
                         <div className="field">
                             <label htmlFor="rollno">Roll No.</label>
@@ -552,6 +664,38 @@ const CertificateRecords = () => {
                                 <i className="pi pi-fw pi-id-card" />
                             </span>
                         </div>
+                        <div className="field">
+                            <label htmlFor="hash">Hash</label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="hash"
+                                    value={degree.hash}
+                                    onChange={(e) => onInputChange(e, 'hash')}
+                                    required
+                                    autoFocus
+                                    className={classNames({
+                                        'p-invalid': submitted && !degree.hash,
+                                    })}
+                                />
+                                {submitted && !degree.hash && (
+                                    <small className="p-invalid">
+                                        Hash is required.
+                                    </small>
+                                )}
+                                <i className="pi pi-fw pi-prime" />
+                            </span>
+                        </div>
+                    </Dialog>
+
+                    <Dialog
+                        visible={degreeUpdateDialog}
+                        style={{ width: '450px' }}
+                        header="Degree Details"
+                        modal
+                        className="p-fluid"
+                        footer={updateDegreeDialogFooter}
+                        onHide={hideUpdateDegreeDialog}
+                    >
                         <div className="field">
                             <label htmlFor="hash">Hash</label>
                             <span className="p-input-icon-right">
