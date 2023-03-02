@@ -1,14 +1,13 @@
 import { gql, useQuery } from '@apollo/client'
 
-export const GET_CERTIFICATES = gql`
-    query GetAllCertificates($FilterCertificateInput: FilterCertificateInput) {
-        GetAllCertificates(FilterCertificateInput: $FilterCertificateInput) {
+export const GET_RESULTS = gql`
+    query GetAllResults($FilterResultInput: FilterResultInput) {
+        GetAllResults(FilterResultInput: $FilterResultInput) {
             items {
                 id
                 url
-                student {
-                    name
-                }
+                year
+                type
                 updatedAt
             }
             total
@@ -16,17 +15,17 @@ export const GET_CERTIFICATES = gql`
     }
 `
 
-export function returnFetchCertificatesHook(
-    studentId: string,
+export function returnFetchResultsHook(
+    id: string,
     page: number,
     limit: number
 ) {
-    const { data, loading, error, refetch } = useQuery(GET_CERTIFICATES, {
+    const { data, loading, error, refetch } = useQuery(GET_RESULTS, {
         variables: {
-            FilterCertificateInput: {
+            FilterResultInput: {
                 page: page,
                 limit: limit,
-                id: studentId,
+                id: id,
             },
         },
     })

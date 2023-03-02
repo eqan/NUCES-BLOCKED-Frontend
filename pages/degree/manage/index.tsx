@@ -23,7 +23,6 @@ interface CertificateInterface {
     hash: string
 }
 const CertificateRecords = () => {
-    const router = useRouter()
     let CertificateRecordInterface = {
         id: '',
         name: '',
@@ -43,6 +42,7 @@ const CertificateRecords = () => {
             hash: certificate.url,
         }
     }
+    const router = useRouter()
     const [degrees, setDegrees] = useState<CertificateInterface[]>([])
     const [degreeAddDialog, setAddDegreeDialog] = useState(false)
     const [degreeUpdateDialog, setUpdateDegreeDialog] = useState(false)

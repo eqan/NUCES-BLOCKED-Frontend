@@ -1,12 +1,12 @@
 import { gql } from '@apollo/client'
 
-export const DELETE_CERTIFICATE = gql`
-    mutation DeleteCertificate(
-        $DeleteCertificateInput: DeleteCertificatesInput!
-    ) {
-        DeleteCertificate(DeleteCertificateInput: $DeleteCertificateInput) {
+export const DELETE_RESULT = gql`
+    mutation DeleteResult($DeleteResultInput: DeleteResultsInput!) {
+        DeleteResult(DeleteResultInput: $DeleteResultInput) {
             id
             url
+            year
+            type
         }
     }
 `

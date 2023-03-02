@@ -1,13 +1,12 @@
 import { gql } from '@apollo/client'
 
-export const CREATE_CERTIFICATE = gql`
-    mutation CreateCertificate($CreateCertificateInput: CreateCertificateDto!) {
-        CreateCertificate(CreateCertificateInput: $CreateCertificateInput) {
+export const CREATE_RESULT = gql`
+    mutation CreateResult($CreateResultInput: CreateResultDto!) {
+        CreateResult(CreateResultInput: $CreateResultInput) {
             id
             url
-            student {
-                name
-            }
+            year
+            type
         }
     }
 `

@@ -9,50 +9,136 @@ import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
-import { ResultService } from '../../demo/service/ResultService'
-import { string } from 'prop-types'
+import { returnFetchResultsHook } from './queries/getResult'
+import { useMutation } from '@apollo/client'
+import { DELETE_RESULT } from './queries/removeResult'
+import { CREATE_RESULT } from './queries/addResult'
+import { UPDATE_RESULT } from './queries/updateResult'
+import { useRouter } from 'next/router'
+import { Skeleton } from 'primereact/skeleton'
 
-interface emptyResults {
+interface ResultsInterface {
     id: string
-    semester: string | null
-    year: string | null
-    hash: string | null
+    semester: string
+    year: number
+    url: string
+    date: string
 }
 
-interface sResults {
-    includes: any
-    length: any
-}
-
-const Crud = () => {
-    let emptyResult = {
+const SemesterResult = () => {
+    let ResultsRecordInterface = {
         id: '',
         semester: '',
         year: '',
-        hash: '',
+        url: '',
+        date: '',
     }
 
-    let eResult = {
-        includes: null,
-        length: null,
+    const mapSemesterToSemesterRecord = (result: ResultsInterface) => {
+        return {
+            id: result.id,
+            url: result.url,
+            semester: result.type,
+            year: result.year,
+            date: result.updatedAt,
+        }
     }
-
-    const [results, setResults] = useState<emptyResults[]>([])
+    const router = useRouter()
+    const [results, setResults] = useState<ResultsInterface[]>([])
     const [resultDialog, setResultDialog] = useState(false)
     const [deleteResultDialog, setDeleteResultDialog] = useState(false)
     const [deleteResultsDialog, setDeleteResultsDialog] = useState(false)
-    const [result, setResult] = useState(emptyResult)
+    const [isLoading, setIsLoading] = useState(true)
+    const [result, setResult] = useState(ResultsRecordInterface)
     const [semester, setSemester] = useState<any>('')
-    const [selectedResults, setSelectedResults] = useState<sResults>()
+    const [selectedResults, setSelectedResults] = useState<ResultsInterface[]>(
+        []
+    )
     const [submitted, setSubmitted] = useState(false)
-    const [globalFilter, setGlobalFilter] = useState<string>()
+    const [globalFilter, setGlobalFilter] = useState<string>('')
+    const [page, setPage] = useState(0)
+    const [pageLimit, setPageLimit] = useState(10)
+    const [totalRecords, setTotalRecords] = useState(1)
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
 
+    const [
+        resultsData,
+        resultsLoading,
+        resultsFetchingError,
+        resultsRefetchHook,
+    ] = returnFetchResultsHook(globalFilter, page + 1, pageLimit)
+
+    const [
+        deleteResultFunction,
+        {
+            data: rsesultDeleteData,
+            loading: resultDeteDataLoading,
+            error: resultDeleteDataError,
+            reset: resultDeleteDataReset,
+        },
+    ] = useMutation(DELETE_RESULT)
+
+    const [
+        createResultFunction,
+        {
+            data: certifcateCreateData,
+            loading: resultCreateDataLoading,
+            error: resultCreateDataError,
+            reset: resultCreateDataReset,
+        },
+    ] = useMutation(CREATE_RESULT)
+
+    const [
+        updateResultFunction,
+        {
+            data: resultUpdateData,
+            loading: resultUpdateDataLoading,
+            error: resultUpdateDataError,
+            reset: resultUpdateDataReset,
+        },
+    ] = useMutation(UPDATE_RESULT)
+
+    const fetchData = async () => {
+        setIsLoading(true)
+        if (!resultsLoading) {
+            try {
+                let _results = resultsData?.GetAllResults.items.filter(
+                    (val) => val.id != ''
+                )
+                const resultRecords =
+                    _results.map(mapSemesterToSemesterRecord) || []
+                const total = resultsData?.GetAllResults?.total
+                console.log(resultRecords)
+                setResults(resultRecords)
+                setTotalRecords(total)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+
     useEffect(() => {
-        const resultService = new ResultService()
-        resultService.getResults().then((data) => setResults(data))
-    }, [])
+        if (!resultsLoading && resultsData) {
+            fetchData()
+        }
+    }, [resultsData, resultsLoading])
+
+    useEffect(() => {
+        const handleRouteChange = () => {
+            resultsRefetchHook()
+        }
+
+        router.events.on('routeChangeComplete', handleRouteChange)
+
+        return () => {
+            router.events.off('routeChangeComplete', handleRouteChange)
+        }
+    }, [resultsRefetchHook, router.events])
+
+    useEffect(() => {}, [globalFilter])
 
     const onUpload = () => {
         if (toast.current)
@@ -65,7 +151,7 @@ const Crud = () => {
     }
 
     const openNew = () => {
-        setResult(emptyResult)
+        setResult(ResultsRecordInterface)
         setSemester('')
         setSubmitted(false)
         setResultDialog(true)
@@ -88,7 +174,7 @@ const Crud = () => {
         if (result.year) {
             let temp = parseInt(result.year)
             let today = new Date()
-            if (!(temp >= 1990 && temp <= today.getFullYear())) {
+            if (!(temp >= 2014 && temp <= today.getFullYear())) {
                 return 0
             }
             return 1
@@ -99,39 +185,9 @@ const Crud = () => {
         setSubmitted(true)
 
         if (result.semester.trim() && result.year) {
-            let _results = [...results]
-            let _result = { ...result }
-
-            let temp = parseInt(result.year)
-            let today = new Date()
-            if (!(temp >= 1990 && temp <= today.getFullYear())) {
-                return 0
-            }
-            if (result.id) {
-                const index = findIndexById(result.id)
-                _results[index] = _result
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Semester Result Updated',
-                        life: 3000,
-                    })
-            } else {
-                _result.id = createId()
-                _results.push(_result)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Semester Result Created',
-                        life: 3000,
-                    })
-            }
-
-            setResults(_results)
+            // setResults(_results)
             setResultDialog(false)
-            setResult(emptyResult)
+            setResult(ResultsRecordInterface)
             setSemester('')
             return 1
         }
@@ -152,7 +208,7 @@ const Crud = () => {
         let _results = results.filter((val) => val.id !== result.id)
         setResults(_results)
         setDeleteResultDialog(false)
-        setResult(emptyResult)
+        setResult(ResultsRecordInterface)
         if (toast.current)
             toast.current.show({
                 severity: 'success',
@@ -172,16 +228,6 @@ const Crud = () => {
         }
 
         return index
-    }
-
-    const createId = () => {
-        let id = ''
-        let chars =
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length))
-        }
-        return id
     }
 
     const exportCSV = () => {
@@ -233,6 +279,11 @@ const Crud = () => {
         }
         _result[`${name}`] = val
         setResult(_result)
+    }
+
+    const onPageChange = (event) => {
+        setPage(event.first / event.rows)
+        setPageLimit(event.rows)
     }
 
     const leftToolbarTemplate = () => {
@@ -375,7 +426,35 @@ const Crud = () => {
         </>
     )
 
-    const semesters = [{ name: 'Fall' }, { name: 'Spring' }, { name: 'Summer' }]
+    const LoadingTemplate = ({ w, h }: { w: string; h: string }) => {
+        return (
+            <div
+                className="flex align-items-center"
+                style={{ height: '17px', flexGrow: '1', overflow: 'hidden' }}
+            >
+                <Skeleton width={w} height={h} />
+            </div>
+        )
+    }
+    const SkeletonTable = () => {
+        return (
+            <>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        margin: '10px',
+                    }}
+                >
+                    <LoadingTemplate h="40px" w="40px" />
+                    <LoadingTemplate h="10px" w="100px" />
+                    <LoadingTemplate h="10px" w="80px" />
+                    <LoadingTemplate h="10px" w="40px" />
+                </div>
+            </>
+        )
+    }
+    const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
 
     return (
         <div className="grid crud-demo">
@@ -388,47 +467,61 @@ const Crud = () => {
                         right={rightToolbarTemplate}
                     ></Toolbar>
 
-                    <DataTable
-                        ref={dt}
-                        value={results}
-                        selection={selectedResults}
-                        onSelectionChange={(e) => setSelectedResults(e.value)}
-                        dataKey="id"
-                        paginator
-                        rows={10}
-                        rowsPerPageOptions={[5, 10, 25]}
-                        className="datatable-responsive"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} results"
-                        globalFilter={globalFilter}
-                        emptyMessage="No results found."
-                        header={header}
-                        responsiveLayout="scroll"
-                    >
-                        <Column
-                            selectionMode="multiple"
-                            headerStyle={{ width: '4rem' }}
-                        ></Column>
-                        <Column
-                            field="semester"
-                            header="Semester Name"
-                            sortable
-                            body={semesterBodyTemplate}
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="year"
-                            header="Year"
-                            sortable
-                            body={yearBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
+                    {isLoading ? (
+                        <>
+                            {[1, 2, 3, 4, 5].map((v) => (
+                                <SkeletonTable />
+                            ))}
+                        </>
+                    ) : (
+                        <DataTable
+                            ref={dt}
+                            value={results}
+                            selection={selectedResults}
+                            onSelectionChange={(e) =>
+                                setSelectedResults(e.value)
+                            }
+                            dataKey="id"
+                            defaultValue={1}
+                            paginator
+                            rows={pageLimit}
+                            first={page * pageLimit}
+                            onPage={onPageChange}
+                            rowsPerPageOptions={[5, 10, 25]}
+                            className="datatable-responsive"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} results"
+                            emptyMessage="No results found."
+                            header={header}
+                            responsiveLayout="scroll"
+                            totalRecords={totalRecords}
+                            loading={isLoading}
+                        >
+                            <Column
+                                selectionMode="multiple"
+                                headerStyle={{ width: '4rem' }}
+                            ></Column>
+                            <Column
+                                field="semester"
+                                header="Semester Name"
+                                sortable
+                                body={semesterBodyTemplate}
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="year"
+                                header="Year"
+                                sortable
+                                body={yearBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
 
-                        <Column
-                            body={actionBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                    </DataTable>
+                            <Column
+                                body={actionBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                        </DataTable>
+                    )}
 
                     <Dialog
                         visible={resultDialog}
@@ -564,4 +657,4 @@ const Crud = () => {
     )
 }
 
-export default Crud
+export default SemesterResult
