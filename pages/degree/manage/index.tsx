@@ -170,10 +170,8 @@ const CertificateRecords = () => {
         if (degree.hash && degree.rollno) {
             let _degrees = [...degrees]
             let _degree = { ...degree }
-            console.log(_degree)
             try {
-                const index = findIndexById(degree.id)
-                _degrees[index] = _degree
+                _degrees[_degree.rollno] = _degree
                 await createCertificateFunction({
                     variables: {
                         CreateCertificateInput: {
@@ -182,6 +180,7 @@ const CertificateRecords = () => {
                         },
                     },
                 })
+                setDegrees(_degrees)
                 if (toast.current)
                     toast.current.show({
                         severity: 'success',
@@ -201,7 +200,6 @@ const CertificateRecords = () => {
                 console.log(error)
             }
 
-            setDegrees(_degrees)
             setAddDegreeDialog(false)
             setDegree(CertificateRecordInterface)
         }
@@ -225,6 +223,7 @@ const CertificateRecords = () => {
                         },
                     },
                 })
+                setDegrees(_degrees)
                 if (toast.current)
                     toast.current.show({
                         severity: 'success',
@@ -244,7 +243,6 @@ const CertificateRecords = () => {
                 console.log(error)
             }
 
-            setDegrees(_degrees)
             setUpdateDegreeDialog(false)
             setDegree(CertificateRecordInterface)
         }
@@ -270,6 +268,7 @@ const CertificateRecords = () => {
                     },
                 },
             })
+            setDegrees(_degrees)
             if (toast.current && !certificateDeleteDataError) {
                 toast.current.show({
                     severity: 'success',
@@ -289,7 +288,6 @@ const CertificateRecords = () => {
             }
             console.log(error)
         }
-        setDegrees(_degrees)
         setDeleteDegreeDialog(false)
         setDegree(CertificateRecordInterface)
     }
