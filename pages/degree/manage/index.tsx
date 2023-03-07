@@ -172,7 +172,7 @@ const CertificateRecords = () => {
             let _degree = { ...degree }
             try {
                 _degrees[_degree.rollno] = _degree
-                await createCertificateFunction({
+                let newDegree = await createCertificateFunction({
                     variables: {
                         CreateCertificateInput: {
                             id: _degree.rollno,
@@ -180,6 +180,13 @@ const CertificateRecords = () => {
                         },
                     },
                 })
+                newDegree = newDegree.data['CreateCertificate']
+                const mappedData: CertificateInterface =
+                    mapCertificateToCertificateRecord(newDegree)
+                _degrees = _degrees.filter(
+                    (item) => (item.rollno = mappedData.id)
+                )
+                _degrees.push(mappedData)
                 setDegrees(_degrees)
                 if (toast.current)
                     toast.current.show({

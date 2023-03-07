@@ -109,7 +109,6 @@ const SemesterResult = () => {
                 const resultRecords =
                     _results.map(mapSemesterToSemesterRecord) || []
                 const total = resultsData?.GetAllResults?.total
-                console.log(resultRecords)
                 setResults(resultRecords)
                 setTotalRecords(total)
             } catch (error) {
@@ -189,8 +188,8 @@ const SemesterResult = () => {
             setResultDialog(false)
             setResult(ResultsRecordInterface)
             setSemester('')
-            return 1
         }
+        return 1
     }
 
     const editResult = (result) => {
@@ -204,18 +203,38 @@ const SemesterResult = () => {
         setDeleteResultDialog(true)
     }
 
-    const deleteResult = () => {
+    const deleteResult = async () => {
         let _results = results.filter((val) => val.id !== result.id)
-        setResults(_results)
+        try {
+            await deleteResultFunction({
+                variables: {
+                    DeleteCertificateInput: {
+                        id: [result.id],
+                    },
+                },
+            })
+            setResults(_results)
+            if (toast.current && !resultDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Academic Profile Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Academic Profile Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
         setDeleteResultDialog(false)
         setResult(ResultsRecordInterface)
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Semester Result Deleted',
-                life: 3000,
-            })
     }
 
     const findIndexById = (id) => {

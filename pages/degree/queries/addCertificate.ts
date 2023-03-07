@@ -8,6 +8,7 @@ export const CREATE_CERTIFICATE = gql`
             student {
                 name
             }
+            updatedAt
         }
     }
 `
