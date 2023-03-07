@@ -10,62 +10,146 @@ import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
-import { UserService } from '../../demo/service/UserService'
+import { useRouter } from 'next/router'
+import { returnFetchUsersHook } from './queries/getUsers'
+import { DELETE_USER } from './queries/removeUsers'
+import { CREATE_USER } from './queries/addUser'
+import { useMutation } from '@apollo/client'
+import { UPDATE_USER } from './queries/updateUsers'
 
-interface emptyUsers {
-    id: string | null
-    name: string | null
-    password: string | null
-    role: string | null
-    email: string | null
+interface UserInterface {
+    id: string
+    name: string
+    password: string
+    role: string
+    email: string
+    imgUrl: string
 }
 
-interface sUser {
-    includes: any
-    length: any
-}
-
-const Crud = () => {
-    let emptyUser = {
+const UserRecords = () => {
+    let UserRecordInterface = {
         id: '',
         name: '',
         password: '',
         role: '',
         email: '',
+        imgUrl: '',
     }
 
-    let eUser = {
-        includes: null,
-        length: null,
+    const mapUserToUserRecord = (user: UserInterface) => {
+        return {
+            id: user.id,
+            name: user.name,
+            password: user.password,
+            role: user.role,
+            email: user.email,
+            imgUrl: user.imgUrl,
+        }
     }
-
-    const [users, setUsers] = useState<emptyUsers[]>([])
-    const [userDialog, setUserDialog] = useState(false)
+    const router = useRouter()
+    const [users, setUsers] = useState<UserInterface[]>([])
+    const [userAddDialog, setUserAddDialog] = useState(false)
+    const [userUpdateDialog, setUpdateUserDialog] = useState(false)
     const [deleteUserDialog, setDeleteUserDialog] = useState(false)
     const [deleteUsersDialog, setDeleteUsersDialog] = useState(false)
-    const [user, setUser] = useState(emptyUser)
+    const [isLoading, setIsLoading] = useState(true)
+    const [user, setUser] = useState(UserRecordInterface)
     const [role, setRole] = useState<any>('')
-    const [selectedUsers, setSelectedUsers] = useState<sUser>()
+    const [selectedUsers, setSelectedUsers] = useState<UserInterface[]>([])
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>()
+    const [page, setPage] = useState(0)
+    const [pageLimit, setPageLimit] = useState(10)
+    const [totalRecords, setTotalRecords] = useState(1)
+
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable>(null)
 
-    useEffect(() => {
-        const userService = new UserService()
-        userService.getUsers().then((data) => setUsers(data))
-    }, [])
+    const [usersData, usersLoading, usersFetchingError, usersRefetchHook] =
+        returnFetchUsersHook(globalFilter, page + 1, pageLimit)
 
-    const openNew = () => {
-        setUser(emptyUser)
+    const [
+        deleteuserFunction,
+        {
+            data: userDeleteData,
+            loading: userDeteDataLoading,
+            error: userDeleteDataError,
+            reset: userDeleteDataReset,
+        },
+    ] = useMutation(DELETE_USER)
+
+    const [
+        createuserFunction,
+        {
+            data: certifcateCreateData,
+            loading: userCreateDataLoading,
+            error: userCreateDataError,
+            reset: userCreateDataReset,
+        },
+    ] = useMutation(CREATE_USER)
+
+    const [
+        updateuserFunction,
+        {
+            data: userUpdateData,
+            loading: userUpdateDataLoading,
+            error: userUpdateDataError,
+            reset: userUpdateDataReset,
+        },
+    ] = useMutation(UPDATE_USER)
+
+    const fetchData = async () => {
+        setIsLoading(true)
+        if (!usersLoading) {
+            try {
+                let _users = usersData?.GetAllusers.items.filter(
+                    (val) => val.id != ''
+                )
+                const total = usersData?.GetAllusers?.total
+                setUsers(users)
+                setTotalRecords(total)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+    useEffect(() => {
+        if (!usersLoading && usersData) {
+            fetchData()
+        }
+    }, [usersData, usersLoading])
+
+    useEffect(() => {
+        const handleRouteChange = () => {
+            usersRefetchHook()
+        }
+
+        router.events.on('routeChangeComplete', handleRouteChange)
+
+        return () => {
+            router.events.off('routeChangeComplete', handleRouteChange)
+        }
+    }, [usersRefetchHook, router.events])
+
+    useEffect(() => {}, [globalFilter])
+
+    const openNewAddUserDialog = () => {
+        setUser(UserRecordInterface)
         setRole('')
         setSubmitted(false)
-        setUserDialog(true)
+        setUserAddDialog(true)
     }
 
-    const hideDialog = () => {
+    const hideAddUserDialog = () => {
         setSubmitted(false)
-        setUserDialog(false)
+        setUserAddDialog(false)
+    }
+
+    const hideUpdateUserDialog = () => {
+        setSubmitted(false)
+        setUpdateUserDialog(false)
     }
 
     const hideDeleteUserDialog = () => {
@@ -74,6 +158,91 @@ const Crud = () => {
 
     const hideDeleteUsersDialog = () => {
         setDeleteUsersDialog(false)
+    }
+
+    const addUser = async () => {
+        setSubmitted(true)
+
+        if (user.name && user.email) {
+            let _users = [...users]
+            let _user = { ...user }
+            try {
+                _users[_user.id] = _user
+                let newUser = await createuserFunction({
+                    variables: {
+                        CreateuserInput: {
+                            id: _user.id,
+                        },
+                    },
+                })
+                newUser = newUser.data['Createuser']
+                const mappedData: UserInterface = mapUserToUserRecord(newUser)
+                _users = _users.filter((item) => (item.id = mappedData.id))
+                _users.push(mappedData)
+                setUsers(_users)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'User Added',
+                        life: 3000,
+                    })
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'User Not Added',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
+            }
+
+            setUserAddDialog(false)
+            setUser(UserRecordInterface)
+        }
+    }
+
+    const updateUser = async () => {
+        setSubmitted(true)
+
+        if (user.email) {
+            let _users = [...users]
+            let _user = { ...user }
+            try {
+                const index = findIndexById(_user.id)
+                _users[index] = _user
+                await updateuserFunction({
+                    variables: {
+                        UpdateuserInput: {
+                            id: _user.id,
+                        },
+                    },
+                })
+                setUsers(_users)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'User Updated',
+                        life: 3000,
+                    })
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'User Not Updated',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
+            }
+
+            setUpdateUserDialog(false)
+            setUser(UserRecordInterface)
+        }
     }
 
     const saveUser = () => {
@@ -99,7 +268,7 @@ const Crud = () => {
                         life: 3000,
                     })
             } else {
-                _user.id = createId()
+                // _user.id = createId()
                 _users.push(_user)
                 if (toast.current)
                     toast.current.show({
@@ -111,8 +280,8 @@ const Crud = () => {
             }
 
             setUsers(_users)
-            setUserDialog(false)
-            setUser(emptyUser)
+            setUserAddDialog(false)
+            setUser(UserRecordInterface)
             setRole('')
         }
     }
@@ -120,7 +289,7 @@ const Crud = () => {
     const editUser = (user) => {
         setUser({ ...user })
         setRole({ name: user.role })
-        setUserDialog(true)
+        setUserAddDialog(true)
     }
 
     const confirmDeleteUser = (user) => {
@@ -132,7 +301,7 @@ const Crud = () => {
         let _users = users.filter((val) => val.id !== user.id)
         setUsers(_users)
         setDeleteUserDialog(false)
-        setUser(emptyUser)
+        setUser(UserRecordInterface)
         if (toast.current)
             toast.current.show({
                 severity: 'success',
@@ -154,16 +323,6 @@ const Crud = () => {
         return index
     }
 
-    const createId = () => {
-        let id = ''
-        let chars =
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length))
-        }
-        return id
-    }
-
     const exportCSV = () => {
         if (dt.current) dt.current.exportCSV()
     }
@@ -172,20 +331,42 @@ const Crud = () => {
         setDeleteUsersDialog(true)
     }
 
-    const deleteSelectedUsers = () => {
-        let _users = users.filter((val) => {
-            if (selectedUsers) !selectedUsers.includes(val)
-        })
+    const deleteSelectedUsers = async () => {
+        let _users = users.filter((val) => !selectedUsers.includes(val))
+        let _toBeDeletedUsers = users
+            .filter((val) => selectedUsers.includes(val))
+            .map((val) => val.id)
+
+        try {
+            await deleteuserFunction({
+                variables: {
+                    DeleteuserInput: {
+                        id: _toBeDeletedUsers,
+                    },
+                },
+            })
+            if (toast.current && !userDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Academic Profile Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Academic Profile Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
+        setSelectedUsers([])
         setUsers(_users)
         setDeleteUsersDialog(false)
-        setSelectedUsers(eUser)
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Users Deleted',
-                life: 3000,
-            })
     }
 
     const onInputChange = (e, name) => {
@@ -224,7 +405,7 @@ const Crud = () => {
                         label="New"
                         icon="pi pi-plus"
                         className="p-button-success mr-2"
-                        onClick={openNew}
+                        onClick={openNewAddUserDialog}
                     />
                     <Button
                         label="Delete"
@@ -310,19 +491,35 @@ const Crud = () => {
         </div>
     )
 
-    const userDialogFooter = (
+    const addUserDialogFooter = (
         <>
             <Button
                 label="Cancel"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideDialog}
+                onClick={hideAddUserDialog}
             />
             <Button
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={saveUser}
+                onClick={addUser}
+            />
+        </>
+    )
+    const updateUserDialogFooter = (
+        <>
+            <Button
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideUpdateUserDialog}
+            />
+            <Button
+                label="Save"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={updateUser}
             />
         </>
     )
@@ -359,6 +556,11 @@ const Crud = () => {
         </>
     )
 
+    const onPageChange = (event) => {
+        setPage(event.first / event.rows)
+        setPageLimit(event.rows)
+    }
+
     const passwordHeader = <h6>Pick a password</h6>
     const passwordFooter = (
         <React.Fragment>
@@ -374,10 +576,10 @@ const Crud = () => {
     )
 
     const roles = [
-        { name: 'Admin' },
-        { name: 'Teacher' },
-        { name: 'Career Counselor' },
-        { name: 'Society Head' },
+        { name: 'ADMIN' },
+        { name: 'TEACHER' },
+        { name: 'CAREER_COUNSELLOR' },
+        { name: 'SOCIETY_HEAD' },
     ]
 
     return (
@@ -397,16 +599,20 @@ const Crud = () => {
                         selection={selectedUsers}
                         onSelectionChange={(e) => setSelectedUsers(e.value)}
                         dataKey="id"
+                        defaultValue={1}
                         paginator
-                        rows={10}
+                        rows={pageLimit}
+                        first={page * pageLimit}
+                        onPage={onPageChange}
                         rowsPerPageOptions={[5, 10, 25]}
                         className="datatable-responsive"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
-                        globalFilter={globalFilter}
                         emptyMessage="No users found."
                         header={header}
                         responsiveLayout="scroll"
+                        totalRecords={totalRecords}
+                        loading={isLoading}
                     >
                         <Column
                             selectionMode="multiple"
@@ -440,13 +646,13 @@ const Crud = () => {
                     </DataTable>
 
                     <Dialog
-                        visible={userDialog}
+                        visible={userAddDialog}
                         style={{ width: '450px' }}
                         header="User Details"
                         modal
                         className="p-fluid"
-                        footer={userDialogFooter}
-                        onHide={hideDialog}
+                        footer={addUserDialogFooter}
+                        onHide={hideAddUserDialog}
                     >
                         <div className="field">
                             <label htmlFor="name">Name</label>
@@ -601,4 +807,4 @@ const Crud = () => {
     )
 }
 
-export default Crud
+export default UserRecords
