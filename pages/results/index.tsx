@@ -29,7 +29,7 @@ const SemesterResult = () => {
     let ResultsRecordInterface = {
         id: '',
         semester: '',
-        year: '',
+        year: 0,
         url: '',
         date: '',
     }
@@ -45,7 +45,8 @@ const SemesterResult = () => {
     }
     const router = useRouter()
     const [results, setResults] = useState<ResultsInterface[]>([])
-    const [resultDialog, setResultDialog] = useState(false)
+    const [resultAddDialog, setAddResultDialog] = useState(false)
+    const [resultUpdateDialog, setUpdateResultDialog] = useState(false)
     const [deleteResultDialog, setDeleteResultDialog] = useState(false)
     const [deleteResultsDialog, setDeleteResultsDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
@@ -149,16 +150,20 @@ const SemesterResult = () => {
             })
     }
 
-    const openNew = () => {
+    const openNewAddResultDialog = () => {
         setResult(ResultsRecordInterface)
-        setSemester('')
         setSubmitted(false)
-        setResultDialog(true)
+        setAddResultDialog(true)
     }
 
-    const hideDialog = () => {
+    const hideAddResultDialog = () => {
         setSubmitted(false)
-        setResultDialog(false)
+        setAddResultDialog(false)
+    }
+
+    const hideUpdateResultDialog = () => {
+        setSubmitted(false)
+        setUpdateResultDialog(false)
     }
 
     const hideDeleteResultDialog = () => {
@@ -171,7 +176,7 @@ const SemesterResult = () => {
 
     const validateYear = () => {
         if (result.year) {
-            let temp = parseInt(result.year)
+            let temp = result.year
             let today = new Date()
             if (!(temp >= 2014 && temp <= today.getFullYear())) {
                 return 0
@@ -180,22 +185,99 @@ const SemesterResult = () => {
         }
     }
 
-    const saveResult = () => {
+    const addResult = async () => {
         setSubmitted(true)
 
-        if (result.semester.trim() && result.year) {
-            // setResults(_results)
-            setResultDialog(false)
+        if (result.semester && result.year) {
+            let _results = [...results]
+            let _result = { ...result }
+            try {
+                _results[_result.id] = _result
+                let newResult = await createResultFunction({
+                    variables: {
+                        CreateResultInput: {
+                            year: result.year,
+                            type: result.semester,
+                            url: result.url,
+                        },
+                    },
+                })
+                newResult = newResult.data['CreateResult']
+                const mappedData: ResultsInterface =
+                    mapSemesterToSemesterRecord(newResult)
+                _results = _results.filter((item) => (item.id = mappedData.id))
+                _results.push(mappedData)
+                setResults(_results)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Academic Certificate Updated',
+                        life: 3000,
+                    })
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Academic Profile Not Updated',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
+            }
+
+            setAddResultDialog(false)
             setResult(ResultsRecordInterface)
-            setSemester('')
         }
-        return 1
+    }
+
+    const updateResult = async () => {
+        setSubmitted(true)
+
+        if (result.url) {
+            let _results = [...results]
+            let _result = { ...result }
+            try {
+                const index = findIndexById(_result.id)
+                _results[index] = _result
+                await updateResultFunction({
+                    variables: {
+                        UpdateResultInput: {
+                            id: '',
+                            url: '',
+                        },
+                    },
+                })
+                setResults(_results)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Academic Certificate Updated',
+                        life: 3000,
+                    })
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Academic Profile Not Updated',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
+            }
+
+            setUpdateResultDialog(false)
+            setResult(ResultsRecordInterface)
+        }
     }
 
     const editResult = (result) => {
         setResult({ ...result })
         setSemester({ name: result.semester })
-        setResultDialog(true)
+        setUpdateResultDialog(true)
     }
 
     const confirmDeleteResult = (result) => {
@@ -208,7 +290,7 @@ const SemesterResult = () => {
         try {
             await deleteResultFunction({
                 variables: {
-                    DeleteCertificateInput: {
+                    DeleteResultInput: {
                         id: [result.id],
                     },
                 },
@@ -218,7 +300,7 @@ const SemesterResult = () => {
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
-                    detail: 'Academic Profile Deleted',
+                    detail: 'Semester Result Deleted',
                     life: 3000,
                 })
             }
@@ -227,7 +309,7 @@ const SemesterResult = () => {
                 toast.current?.show({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Academic Profile Not Deleted',
+                    detail: 'Semester Result Not Deleted',
                     life: 3000,
                 })
             }
@@ -257,19 +339,42 @@ const SemesterResult = () => {
         setDeleteResultsDialog(true)
     }
 
-    const deleteSelectedResults = () => {
-        let _results = results.filter((val) => {
-            if (selectedResults) !selectedResults.includes(val)
-        })
+    const deleteSelectedResults = async () => {
+        let _results = results.filter((val) => !selectedResults.includes(val))
+        let _toBeDeletedResults = results
+            .filter((val) => selectedResults.includes(val))
+            .map((val) => val.id)
+
+        try {
+            await deleteResultFunction({
+                variables: {
+                    DeleteResultInput: {
+                        id: _toBeDeletedResults,
+                    },
+                },
+            })
+            if (toast.current && !resultDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Result Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Result Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
         setResults(_results)
+        setSelectedResults([])
         setDeleteResultsDialog(false)
-        setSelectedResults(null)
-        toast.current.show({
-            severity: 'success',
-            summary: 'Successful',
-            detail: 'Semester Result Deleted',
-            life: 3000,
-        })
     }
 
     const onInputChange = (e, name) => {
@@ -313,7 +418,7 @@ const SemesterResult = () => {
                         label="New"
                         icon="pi pi-plus"
                         className="p-button-success mr-2"
-                        onClick={openNew}
+                        onClick={openNewAddResultDialog}
                     />
                     <Button
                         label="Delete"
@@ -367,7 +472,7 @@ const SemesterResult = () => {
                     onClick={exportCSV}
                 />
                 <Button
-                    icon="pi pi-pencil"
+                    icon="pi pi-arrow-up"
                     className="p-button-rounded p-button-warning mr-2"
                     onClick={() => editResult(rowData)}
                 />
@@ -396,19 +501,36 @@ const SemesterResult = () => {
         </div>
     )
 
-    const resultDialogFooter = (
+    const addResultDialogFooter = (
         <>
             <Button
-                label="Cancel"
+                label="AddResult"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideDialog}
+                onClick={hideAddResultDialog}
             />
             <Button
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={saveResult}
+                onClick={addResult}
+            />
+        </>
+    )
+
+    const updateResultDialogFooter = (
+        <>
+            <Button
+                label="UpdateResult"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideUpdateResultDialog}
+            />
+            <Button
+                label="Save"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={updateResult}
             />
         </>
     )
@@ -543,13 +665,13 @@ const SemesterResult = () => {
                     )}
 
                     <Dialog
-                        visible={resultDialog}
+                        visible={resultAddDialog}
                         style={{ width: '450px' }}
                         header="Result Details"
                         modal
                         className="p-fluid"
-                        footer={resultDialogFooter}
-                        onHide={hideDialog}
+                        footer={addResultDialogFooter}
+                        onHide={hideAddResultDialog}
                     >
                         <div className="field">
                             <label htmlFor="semester">Semeter Name</label>
@@ -624,6 +746,38 @@ const SemesterResult = () => {
                                 className="mr-2"
                                 onUpload={onUpload}
                             />
+                        </div>
+                    </Dialog>
+
+                    <Dialog
+                        visible={resultUpdateDialog}
+                        style={{ width: '450px' }}
+                        header="Result Details"
+                        modal
+                        className="p-fluid"
+                        footer={updateResultDialogFooter}
+                        onHide={hideUpdateResultDialog}
+                    >
+                        <div className="field">
+                            <label htmlFor="hash">Hash</label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="hash"
+                                    value={result.url}
+                                    onChange={(e) => onInputChange(e, 'hash')}
+                                    required
+                                    autoFocus
+                                    className={classNames({
+                                        'p-invalid': submitted && !result.url,
+                                    })}
+                                />
+                                {submitted && !result.url && (
+                                    <small className="p-invalid">
+                                        Hash is required.
+                                    </small>
+                                )}
+                                <i className="pi pi-fw pi-prime" />
+                            </span>
                         </div>
                     </Dialog>
 

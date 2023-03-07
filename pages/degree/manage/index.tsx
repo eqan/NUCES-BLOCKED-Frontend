@@ -218,7 +218,6 @@ const CertificateRecords = () => {
         if (degree.hash) {
             let _degrees = [...degrees]
             let _degree = { ...degree }
-            console.log(_degree)
             try {
                 const index = findIndexById(_degree.id)
                 _degrees[index] = _degree
@@ -439,7 +438,7 @@ const CertificateRecords = () => {
                     className="p-button-rounded p-button-success mr-2"
                 />
                 <Button
-                    icon="pi pi-pencil"
+                    icon="pi pi-refresh"
                     className="p-button-rounded p-button-warning mr-2"
                     onClick={() => editDegree(rowData)}
                 />
@@ -491,7 +490,7 @@ const CertificateRecords = () => {
                 label="Cancel"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideAddDegreeDialog}
+                onClick={hideUpdateDegreeDialog}
             />
             <Button
                 label="Save"
