@@ -41,7 +41,7 @@ const UserRecords = () => {
             id: user.id,
             name: user.name,
             password: user.password,
-            role: user.role,
+            role: user.type,
             email: user.email,
             imgUrl: user.imgUrl,
         }
@@ -57,7 +57,7 @@ const UserRecords = () => {
     const [role, setRole] = useState<any>('')
     const [selectedUsers, setSelectedUsers] = useState<UserInterface[]>([])
     const [submitted, setSubmitted] = useState(false)
-    const [globalFilter, setGlobalFilter] = useState<string>()
+    const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
@@ -102,11 +102,12 @@ const UserRecords = () => {
         setIsLoading(true)
         if (!usersLoading) {
             try {
-                let _users = usersData?.GetAllusers.items.filter(
+                let _users = usersData?.GetAllUsers.items.filter(
                     (val) => val.id != ''
                 )
+                const usersRecord = _users.map(mapUserToUserRecord) || []
                 const total = usersData?.GetAllusers?.total
-                setUsers(users)
+                setUsers(usersRecord)
                 setTotalRecords(total)
             } catch (error) {
                 console.log(error)
@@ -170,8 +171,12 @@ const UserRecords = () => {
                 _users[_user.id] = _user
                 let newUser = await createuserFunction({
                     variables: {
-                        CreateuserInput: {
-                            id: _user.id,
+                        CreateUserInput: {
+                            name: _user.name,
+                            email: _user.email,
+                            password: _user.password,
+                            type: _user.role,
+                            imgUrl: _user.imgUrl,
                         },
                     },
                 })
@@ -215,8 +220,11 @@ const UserRecords = () => {
                 _users[index] = _user
                 await updateuserFunction({
                     variables: {
-                        UpdateuserInput: {
-                            id: _user.id,
+                        UpdateUserInput: {
+                            email: _user.email,
+                            name: _user.name,
+                            password: _user.password,
+                            type: _user.role,
                         },
                     },
                 })
@@ -297,18 +305,39 @@ const UserRecords = () => {
         setDeleteUserDialog(true)
     }
 
-    const deleteUser = () => {
+    const deleteUser = async () => {
         let _users = users.filter((val) => val.id !== user.id)
+        try {
+            await deleteuserFunction({
+                variables: {
+                    DeleteUserInput: {
+                        id: [user.id],
+                    },
+                },
+            })
+            setUsers(_users)
+            if (toast.current && !userDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'User Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'User Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
         setUsers(_users)
         setDeleteUserDialog(false)
         setUser(UserRecordInterface)
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'User Deleted',
-                life: 3000,
-            })
     }
 
     const findIndexById = (id) => {
@@ -340,7 +369,7 @@ const UserRecords = () => {
         try {
             await deleteuserFunction({
                 variables: {
-                    DeleteuserInput: {
+                    DeleteUserInput: {
                         id: _toBeDeletedUsers,
                     },
                 },
@@ -349,7 +378,7 @@ const UserRecords = () => {
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
-                    detail: 'Academic Profile Deleted',
+                    detail: 'User Deleted',
                     life: 3000,
                 })
             }
@@ -358,7 +387,7 @@ const UserRecords = () => {
                 toast.current?.show({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Academic Profile Not Deleted',
+                    detail: 'User Not Deleted',
                     life: 3000,
                 })
             }
