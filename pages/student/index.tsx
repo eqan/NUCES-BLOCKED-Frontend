@@ -1,3 +1,5 @@
+import { useMutation } from '@apollo/client'
+import { useRouter } from 'next/router'
 import { Button } from 'primereact/button'
 import { Column } from 'primereact/column'
 import { DataTable } from 'primereact/datatable'
@@ -8,53 +10,134 @@ import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
-import { StudentService } from '../../demo/service/StudentService'
+import { CREATE_STUDENT } from './queries/addStudent'
+import { returnFetchStudentsHook } from './queries/getStudent'
+import { DELETE_STUDENT } from './queries/removeStudent'
+import { UPDATE_STUDENT } from './queries/updateStudent'
 
-interface emptyStudents {
+interface StudentInterface {
     id: string
-    name: string | null
-    rollno: string | null
-    batch: string | null
-    email: string | null
+    name: string
+    rollno: string
+    email: string
+    date: string
 }
 
-interface sStudent {
-    includes: any
-    length: any
-}
-
-const Crud = () => {
-    let emptyStudent = {
+const StudentRecords = () => {
+    let StudentRecordInterface = {
         id: '',
         name: '',
         rollno: '',
-        batch: '',
         email: '',
+        date: '',
     }
 
-    let eStudent = {
-        includes: null,
-        length: null,
+    const mapStudentToStudentRecord = (student: StudentInterface) => {
+        return {
+            id: student.id,
+            name: student.name,
+            rollno: student.id,
+            email: student.email,
+            date: student.updatedAt,
+        }
     }
-
-    const [students, setStudents] = useState<emptyStudents[]>([])
+    const router = useRouter()
+    const [students, setStudents] = useState<StudentInterface[]>([])
     const [studentDialog, setStudentDialog] = useState(false)
     const [deleteStudentDialog, setDeleteStudentDialog] = useState(false)
     const [deleteStudentsDialog, setDeleteStudentsDialog] = useState(false)
-    const [student, setStudent] = useState(emptyStudent)
-    const [selectedStudents, setSelectedStudents] = useState<sStudent>()
+    const [isLoading, setIsLoading] = useState(true)
+    const [student, setStudent] = useState(StudentRecordInterface)
+    const [selectedStudents, setSelectedStudents] = useState<
+        StudentInterface[]
+    >([])
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>('')
+    const [page, setPage] = useState(0)
+    const [pageLimit, setPageLimit] = useState(10)
+    const [totalRecords, setTotalRecords] = useState(1)
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
 
+    const [
+        studentsData,
+        studentsLoading,
+        studentsFetchingError,
+        studentsRefetchHook,
+    ] = returnFetchStudentsHook(globalFilter, page + 1, pageLimit)
+
+    const [
+        deleteStudentFunction,
+        {
+            data: studentDeleteData,
+            loading: studentDeteDataLoading,
+            error: studentDeleteDataError,
+            reset: studentDeleteDataReset,
+        },
+    ] = useMutation(DELETE_STUDENT)
+
+    const [
+        createStudentFunction,
+        {
+            data: certifcateCreateData,
+            loading: studentCreateDataLoading,
+            error: studentCreateDataError,
+            reset: studentCreateDataReset,
+        },
+    ] = useMutation(CREATE_STUDENT)
+
+    const [
+        updateStudentFunction,
+        {
+            data: studentUpdateData,
+            loading: studentUpdateDataLoading,
+            error: studentUpdateDataError,
+            reset: studentUpdateDataReset,
+        },
+    ] = useMutation(UPDATE_STUDENT)
+
+    const fetchData = async () => {
+        setIsLoading(true)
+        if (!studentsLoading) {
+            try {
+                let _students = studentsData?.GetAllStudents.items.filter(
+                    (val) => val.id != ''
+                )
+                const studentRecords =
+                    _students.map(mapStudentToStudentRecord) || []
+                const total = studentsData?.GetAllStudents?.total
+                setStudents(studentRecords)
+                setTotalRecords(total)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+
     useEffect(() => {
-        const studentService = new StudentService()
-        studentService.getStudents().then((data) => setStudents(data))
-    }, [])
+        if (!studentsLoading && studentsData) {
+            fetchData()
+        }
+    }, [studentsData, studentsLoading])
+
+    useEffect(() => {
+        const handleRouteChange = () => {
+            studentsRefetchHook()
+        }
+
+        router.events.on('routeChangeComplete', handleRouteChange)
+
+        return () => {
+            router.events.off('routeChangeComplete', handleRouteChange)
+        }
+    }, [studentsRefetchHook, router.events])
+
+    useEffect(() => {}, [globalFilter])
 
     const openNew = () => {
-        let _student = emptyStudent
+        let _student = StudentRecordInterface
         setStudent(_student)
         setSubmitted(false)
         setStudentDialog(true)
@@ -73,6 +156,98 @@ const Crud = () => {
         setDeleteStudentsDialog(false)
     }
 
+    const addStudent = async () => {
+        setSubmitted(true)
+
+        if (student.email && student.name && student.rollno) {
+            let _students = [...students]
+            let _student = { ...student }
+            try {
+                _students[_student.rollno] = _student
+                let newStudent = await createStudentFunction({
+                    variables: {
+                        CreateStudentInput: {
+                            id: _student.rollno,
+                            name: _student.name,
+                            email: _student.email,
+                        },
+                    },
+                })
+                newStudent = newStudent.data['CreateStudent']
+                const mappedData: StudentInterface =
+                    mapStudentToStudentRecord(newStudent)
+                _students = _students.filter(
+                    (item) => (item.rollno = mappedData.id)
+                )
+                _students.push(mappedData)
+                setStudents(_students)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Student Updated',
+                        life: 3000,
+                    })
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Student Not Updated',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
+            }
+
+            setStudentDialog(false)
+            setStudent(StudentRecordInterface)
+        }
+    }
+
+    const updateStudent = async () => {
+        setSubmitted(true)
+
+        if (student.email && student.rollno && student.name) {
+            let _students = [...students]
+            let _student = { ...student }
+            try {
+                const index = findIndexById(_student.id)
+                _students[index] = _student
+                await updateStudentFunction({
+                    variables: {
+                        UpdateStudentInput: {
+                            id: _student.rollno,
+                            email: _student.email,
+                            name: _student.name,
+                        },
+                    },
+                })
+                setStudents(_students)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Student Updated',
+                        life: 3000,
+                    })
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Student Not Updated',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
+            }
+
+            setStudentDialog(false)
+            setStudent(StudentRecordInterface)
+        }
+    }
+
     const saveStudent = () => {
         setSubmitted(true)
 
@@ -81,7 +256,6 @@ const Crud = () => {
             /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email) &&
             student.email &&
             student.rollno &&
-            student.batch &&
             validateRollNo()
         ) {
             let _students = [...students]
@@ -97,7 +271,7 @@ const Crud = () => {
                         life: 3000,
                     })
             } else {
-                _student.id = createId()
+                // _student.id = createId()
                 _students.push(_student)
                 if (toast.current)
                     toast.current.show({
@@ -110,7 +284,7 @@ const Crud = () => {
 
             setStudents(_students)
             setStudentDialog(false)
-            setStudent(emptyStudent)
+            setStudent(StudentRecordInterface)
         }
     }
 
@@ -124,18 +298,38 @@ const Crud = () => {
         setDeleteStudentDialog(true)
     }
 
-    const deleteStudent = () => {
+    const deleteStudent = async () => {
         let _students = students.filter((val) => val.id !== student.id)
-        setStudents(_students)
-        setDeleteStudentDialog(false)
-        setStudent(emptyStudent)
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Student Deleted',
-                life: 3000,
+        try {
+            await deleteStudentFunction({
+                variables: {
+                    DeleteStudentInput: {
+                        id: [student.rollno],
+                    },
+                },
             })
+            setStudents(_students)
+            if (toast.current && !studentDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Student Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Student Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
+        setDeleteStudentDialog(false)
+        setStudent(StudentRecordInterface)
     }
 
     const findIndexById = (id) => {
@@ -150,16 +344,6 @@ const Crud = () => {
         return index
     }
 
-    const createId = () => {
-        let id = ''
-        let chars =
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length))
-        }
-        return id
-    }
-
     const exportCSV = () => {
         if (dt.current) dt.current.exportCSV()
     }
@@ -168,20 +352,44 @@ const Crud = () => {
         setDeleteStudentsDialog(true)
     }
 
-    const deleteSelectedStudents = () => {
+    const deleteSelectedStudents = async () => {
         let _students = students.filter((val) => {
             if (selectedStudents) !selectedStudents.includes(val)
         })
+        let _toBeDeletedStudents = students
+            .filter((val) => selectedStudents.includes(val))
+            .map((val) => val.id)
+
+        try {
+            await deleteStudentFunction({
+                variables: {
+                    DeleteStudentInput: {
+                        id: _toBeDeletedStudents,
+                    },
+                },
+            })
+            if (toast.current && !studentDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Student Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Student Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
         setStudents(_students)
         setDeleteStudentsDialog(false)
-        setSelectedStudents(eStudent)
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Students Deleted',
-                life: 3000,
-            })
+        setSelectedStudents([])
     }
 
     const validateRollNo = () => {
@@ -280,14 +488,16 @@ const Crud = () => {
                 return
             }
             _student[`${name}`] = stringbe
-            if (stringbe.length >= 2) {
-                _student.batch = stringbe[0] + stringbe[1]
-            }
             setStudent(_student)
             return
         }
         _student[`${name}`] = val
         setStudent(_student)
+    }
+
+    const onPageChange = (event) => {
+        setPage(event.first / event.rows)
+        setPageLimit(event.rows)
     }
 
     const leftToolbarTemplate = () => {
@@ -344,9 +554,6 @@ const Crud = () => {
                     if (c == 'Email') {
                         c = 'email'
                     }
-                    if (c == 'Batch') {
-                        c = 'batch'
-                    }
                     obj[c] = d[i].replace(/['"]+/g, '')
                     return obj
                 }, {})
@@ -355,7 +562,7 @@ const Crud = () => {
             let _students = [...students]
             console.log(_students)
             for (let i = 0; i < _importedData.length; i++) {
-                _importedData[i].id = createId()
+                // _importedData[i].id = createId()
                 _students.push(_importedData[i])
             }
             setStudents(_students)
@@ -379,7 +586,7 @@ const Crud = () => {
                     mode="basic"
                     name="demo[]"
                     auto
-                    url="/api/upload"
+                    url="/api/upload" // <- Need to check this out
                     accept=".csv"
                     className="mr-2"
                     onUpload={importCSV}
@@ -528,16 +735,20 @@ const Crud = () => {
                         selection={selectedStudents}
                         onSelectionChange={(e) => setSelectedStudents(e.value)}
                         dataKey="id"
+                        defaultValue={1}
                         paginator
-                        rows={10}
+                        rows={pageLimit}
+                        first={page * pageLimit}
+                        onPage={onPageChange}
                         rowsPerPageOptions={[5, 10, 25]}
                         className="datatable-responsive"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
-                        globalFilter={globalFilter}
                         emptyMessage="No students found."
                         header={header}
                         responsiveLayout="scroll"
+                        totalRecords={totalRecords}
+                        loading={isLoading}
                     >
                         <Column
                             selectionMode="multiple"
@@ -731,4 +942,4 @@ const Crud = () => {
     )
 }
 
-export default Crud
+export default StudentRecords
