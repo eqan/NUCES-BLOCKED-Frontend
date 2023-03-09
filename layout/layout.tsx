@@ -9,8 +9,10 @@ import AppSidebar from './AppSidebar'
 import AppTopbar from './AppTopbar'
 import { LayoutContext, LayoutContextValue } from './context/layoutcontext'
 import PrimeReact from 'primereact/api'
+
 interface Props {
     children: React.ReactNode
+    userType: string | null
 }
 interface ButtonMenu {
     menubutton: HTMLButtonElement
@@ -172,7 +174,7 @@ const Layout: React.FC<Props> = (props) => {
                 <meta property="og:description" content="" />
                 <meta
                     property="og:image"
-                    content="https://live.staticflickr.com/65535/52614592212_fb13a2974f_n.jpg"
+                    content="https://live.staticflickr.com/65535/52701824785_51bdbe03fd_h.jpg"
                 ></meta>
                 <meta property="og:ttl" content="604800"></meta>
                 <link
@@ -197,7 +199,7 @@ const Layout: React.FC<Props> = (props) => {
                     applyScale={null}
                 />
                 <div ref={sidebarRef} className="layout-sidebar">
-                    <AppSidebar />
+                    <AppSidebar userType={props.userType} />
                 </div>
                 <div className="layout-main-container">
                     <div className="layout-main">{props.children}</div>

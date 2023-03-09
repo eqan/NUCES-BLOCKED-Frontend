@@ -9,7 +9,11 @@ interface Item {
     items?: Item[]
 }
 
-const AppMenu: React.FC = () => {
+interface Props {
+    userType: string
+}
+
+const AppMenu: React.FC<Props> = (userType) => {
     const model: Item[] = [
         {
             label: '',
@@ -70,6 +74,7 @@ const AppMenu: React.FC = () => {
                             root={true}
                             index={i}
                             key={item.label}
+                            userType={userType['userType']}
                         />
                     )
                 })}

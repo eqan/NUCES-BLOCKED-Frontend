@@ -1,8 +1,12 @@
 import React from 'react'
 import AppMenu from './AppMenu'
 
-const AppSidebar: React.FC = () => {
-    return <AppMenu />
+interface Props {
+    userType: string | null
+}
+
+const AppSidebar: React.FC<Props> = ({ userType }) => {
+    return <AppMenu userType={userType} />
 }
 
 export default AppSidebar

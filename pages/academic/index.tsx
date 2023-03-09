@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Button } from 'primereact/button'
 import { Column } from 'primereact/column'
 import { DataTable } from 'primereact/datatable'
@@ -684,3 +685,560 @@ const AcademicRecords = () => {
 }
 
 export default AcademicRecords
+=======
+import { Button } from 'primereact/button';
+import { Column } from 'primereact/column';
+import { DataTable } from 'primereact/datatable';
+import { Dialog } from 'primereact/dialog';
+import { InputText } from 'primereact/inputtext';
+import { Toast } from 'primereact/toast';
+import { Toolbar } from 'primereact/toolbar';
+import { classNames } from 'primereact/utils';
+import React, { useEffect, useRef, useState } from 'react';
+import { Calendar } from 'primereact/calendar';
+import { AcademicService } from '../../demo/service/AcademicService';
+import { GetServerSideProps } from 'next';
+import { requireAuthentication } from '../../layout/context/requireAuthetication';
+import { gql } from '@apollo/client';
+import apolloClient from '../../apollo-client';
+import jwt from 'jsonwebtoken';
+
+const GET_USER_TYPE = gql`
+  query ($userEmail: String!) {
+    GetUserTypeByUserEmail(userEmail: $userEmail)
+  }
+`;
+
+interface Props {
+  userType: String;
+}
+
+interface emptyAcedamic {
+  id: string;
+  name: string | null;
+  rollno: string | null;
+  date: string | null;
+  cgpa: string | null;
+}
+
+const Crud: React.FC<Props> = ({ userType }) => {
+  let emptyAcademic = {
+    id: '',
+    name: '',
+    rollno: '',
+    date: '',
+    cgpa: '',
+  };
+
+  const [academics, setAcademics] = useState<emptyAcedamic[]>([]);
+  const [academicDialog, setAcademicDialog] = useState(false);
+  const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false);
+  const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false);
+  const [academic, setAcademic] = useState(emptyAcademic);
+  const [selectedAcademics, setSelectedAcademics] = useState<emptyAcedamic[]>(
+    [],
+  );
+  const [submitted, setSubmitted] = useState(false);
+  const [globalFilter, setGlobalFilter] = useState<string>();
+  const [date, setDate] = useState<Date | null>(null);
+  const toast = useRef<Toast>(null);
+  const dt = useRef<DataTable>(null);
+
+  useEffect(() => {
+    const academicService = new AcademicService();
+    academicService.getAcademics().then((data) => setAcademics(data));
+  }, []);
+
+  const hideDialog = () => {
+    setSubmitted(false);
+    setAcademicDialog(false);
+  };
+
+  const hideDeleteAcademicDialog = () => {
+    setDeleteAcademicDialog(false);
+  };
+
+  const hideDeleteAcademicsDialog = () => {
+    setDeleteAcademicsDialog(false);
+  };
+
+  const saveAcademic = () => {
+    setSubmitted(true);
+
+    if (academic.date && academic.cgpa) {
+      let _academics = [...academics];
+      let _academic = { ...academic };
+      if (academic.id) {
+        const index = findIndexById(academic.id);
+
+        _academics[index] = _academic;
+        if (toast.current) {
+          toast.current?.show({
+            severity: 'success',
+            summary: 'Successful',
+            detail: 'Academic Profile Updated',
+            life: 3000,
+          });
+        }
+      }
+
+      setAcademics(_academics);
+      setAcademicDialog(false);
+      setAcademic(emptyAcademic);
+    }
+  };
+
+  const editAcademic = (academic) => {
+    setAcademic({ ...academic });
+    let _date = new Date(academic.date);
+    setDate(_date);
+    setAcademicDialog(true);
+  };
+
+  const confirmDeleteAcademic = (academic) => {
+    setAcademic(academic);
+    setDeleteAcademicDialog(true);
+  };
+
+  const deleteAcademic = () => {
+    let _academics = academics.filter((val) => val.id !== academic.id);
+    setAcademics(_academics);
+    setDeleteAcademicDialog(false);
+    setAcademic(emptyAcademic);
+    if (toast.current) {
+      toast.current.show({
+        severity: 'success',
+        summary: 'Successful',
+        detail: 'Academic Profile Deleted',
+        life: 3000,
+      });
+    }
+  };
+
+  const findIndexById = (id) => {
+    let index = -1;
+    for (let i = 0; i < academics.length; i++) {
+      if (academics[i].id === id) {
+        index = i;
+        break;
+      }
+    }
+
+    return index;
+  };
+
+  const exportCSV = () => {
+    if (dt.current) {
+      dt.current.exportCSV();
+    }
+  };
+
+  const confirmDeleteSelected = () => {
+    setDeleteAcademicsDialog(true);
+  };
+
+  const deleteSelectedAcademics = () => {
+    let _academics = academics.filter(
+      (val) => !selectedAcademics.includes(val),
+    );
+    setAcademics(_academics);
+    setDeleteAcademicsDialog(false);
+    setSelectedAcademics([]);
+    if (toast.current) {
+      toast.current.show({
+        severity: 'success',
+        summary: 'Successful',
+        detail: 'Academic Profile Deleted',
+        life: 3000,
+      });
+    }
+  };
+
+  const setSelectedRecords = (val) => {
+    setSelectedAcademics(val);
+    console.log(selectedAcademics);
+  };
+
+  const onInputChange = (e, name) => {
+    const val = (e.target && e.target.value) || '';
+    let _academic = { ...academic };
+    if (name == 'date') {
+      setDate(val);
+      let value = val.toString();
+      value = value.substring(4, 16);
+      _academic[`${name}`] =
+        value.substring(4, 6) +
+        '/' +
+        value.substring(0, 3) +
+        '/' +
+        value.substring(7, 11);
+      setAcademic(_academic);
+      return;
+    } else if (name == 'cgpa') {
+      let stringbe = '';
+      let i;
+      let value = val.toString();
+      for (i = 0; i < value.length; i++) {
+        if (i == 0) {
+          if (value[i] >= '0' && value[i] <= '4') {
+            stringbe += value[i];
+          }
+        } else if (i == 1) {
+          if (value[i] == '.') {
+            stringbe += value[i];
+          }
+        } else {
+          if (value[0] != 4) {
+            if (value[i] >= '0' && value[i] <= '9') {
+              stringbe += value[i];
+            }
+          } else {
+            stringbe += '0';
+          }
+        }
+      }
+      if (stringbe.length > 4) {
+        return;
+      }
+      _academic[`${name}`] = stringbe;
+      setAcademic(_academic);
+      return;
+    }
+    _academic[`${name}`] = val;
+    setAcademic(_academic);
+  };
+
+  const leftToolbarTemplate = () => {
+    return (
+      <React.Fragment>
+        <div className="my-2">
+          <Button
+            label="Delete"
+            icon="pi pi-trash"
+            className="p-button-danger"
+            onClick={confirmDeleteSelected}
+            disabled={!selectedAcademics || !selectedAcademics.length}
+          />
+        </div>
+      </React.Fragment>
+    );
+  };
+
+  const rightToolbarTemplate = () => {
+    return (
+      <React.Fragment>
+        <Button
+          label="Export"
+          icon="pi pi-upload"
+          className="p-button-help"
+          onClick={exportCSV}
+        />
+      </React.Fragment>
+    );
+  };
+
+  const rollnoBodyTemplate = (rowData) => {
+    return (
+      <>
+        <span className="p-column-title">Roll No.</span>
+        {rowData.rollno}
+      </>
+    );
+  };
+
+  const nameBodyTemplate = (rowData) => {
+    return (
+      <>
+        <span className="p-column-title">Full Name</span>
+        {rowData.name}
+      </>
+    );
+  };
+  const dateBodyTemplate = (rowData) => {
+    return (
+      <>
+        <span className="p-column-title">Date</span>
+        {rowData.date}
+      </>
+    );
+  };
+
+  const cgpaBodyTemplate = (rowData) => {
+    return (
+      <>
+        <span className="p-column-title">CGPA</span>
+        {rowData.cgpa}
+      </>
+    );
+  };
+
+  const actionBodyTemplate = (rowData) => {
+    return (
+      <>
+        <Button
+          icon="pi pi-pencil"
+          className="p-button-rounded p-button-success mr-2"
+          onClick={() => editAcademic(rowData)}
+        />
+        <Button
+          icon="pi pi-trash"
+          className="p-button-rounded p-button-danger"
+          onClick={() => confirmDeleteAcademic(rowData)}
+        />
+      </>
+    );
+  };
+
+  const header = (
+    <div className="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
+      <h5 className="m-0">Manage Academic Profile</h5>
+      <span className="block mt-2 md:mt-0 p-input-icon-left">
+        <i className="pi pi-search" />
+        <InputText
+          type="search"
+          onInput={(e) => setGlobalFilter((e.target as HTMLInputElement).value)}
+          placeholder="Search..."
+        />
+      </span>
+    </div>
+  );
+
+  const academicDialogFooter = (
+    <>
+      <Button
+        label="Cancel"
+        icon="pi pi-times"
+        className="p-button-text"
+        onClick={hideDialog}
+      />
+      <Button
+        label="Save"
+        icon="pi pi-check"
+        className="p-button-text"
+        onClick={saveAcademic}
+      />
+    </>
+  );
+  const deleteAcademicDialogFooter = (
+    <>
+      <Button
+        label="No"
+        icon="pi pi-times"
+        className="p-button-text"
+        onClick={hideDeleteAcademicDialog}
+      />
+      <Button
+        label="Yes"
+        icon="pi pi-check"
+        className="p-button-text"
+        onClick={deleteAcademic}
+      />
+    </>
+  );
+  const deleteAcademicsDialogFooter = (
+    <>
+      <Button
+        label="No"
+        icon="pi pi-times"
+        className="p-button-text"
+        onClick={hideDeleteAcademicsDialog}
+      />
+      <Button
+        label="Yes"
+        icon="pi pi-check"
+        className="p-button-text"
+        onClick={deleteSelectedAcademics}
+      />
+    </>
+  );
+
+  return (
+    <div className="grid crud-demo">
+      <div className="col-12">
+        <div className="card">
+          <Toast ref={toast} />
+          <Toolbar
+            className="mb-4"
+            left={leftToolbarTemplate}
+            right={rightToolbarTemplate}
+          ></Toolbar>
+
+          <DataTable
+            ref={dt}
+            value={academics}
+            selection={selectedAcademics}
+            onSelectionChange={(e) => setSelectedRecords(e.value)}
+            dataKey="id"
+            paginator
+            rows={10}
+            rowsPerPageOptions={[5, 10, 25]}
+            className="datatable-responsive"
+            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} academics"
+            globalFilter={globalFilter}
+            emptyMessage="No academics found."
+            header={header}
+            responsiveLayout="scroll"
+          >
+            <Column
+              selectionMode="multiple"
+              headerStyle={{ width: '4rem' }}
+            ></Column>
+            <Column
+              field="name"
+              header="Full Name"
+              sortable
+              body={nameBodyTemplate}
+              headerStyle={{ minWidth: '15rem' }}
+            ></Column>
+            <Column
+              field="rollno"
+              header="Roll No."
+              sortable
+              body={rollnoBodyTemplate}
+              headerStyle={{ minWidth: '10rem' }}
+            ></Column>
+            <Column
+              field="date"
+              header="Date"
+              sortable
+              body={dateBodyTemplate}
+              headerStyle={{ minWidth: '10rem' }}
+            ></Column>
+            <Column
+              field="cgpa"
+              header="CGPA"
+              body={cgpaBodyTemplate}
+              sortable
+              headerStyle={{ minWidth: '15rem' }}
+            ></Column>
+
+            <Column
+              body={actionBodyTemplate}
+              headerStyle={{ minWidth: '10rem' }}
+            ></Column>
+          </DataTable>
+
+          <Dialog
+            visible={academicDialog}
+            style={{ width: '450px' }}
+            header="Academic Details"
+            modal
+            className="p-fluid"
+            footer={academicDialogFooter}
+            onHide={hideDialog}
+          >
+            <div className="field">
+              <label htmlFor="date">Date</label>
+              <span className="p-input-icon-right">
+                <Calendar
+                  id="date"
+                  value={date}
+                  onChange={(e) => onInputChange(e, 'date')}
+                  required
+                  className={classNames({
+                    'p-invalid': submitted && !academic.date,
+                  })}
+                />
+                {submitted && !academic.date && (
+                  <small className="p-invalid">Date is required.</small>
+                )}
+                <i className="pi pi-fw pi-calendar" />
+              </span>
+            </div>
+            <div className="field">
+              <label htmlFor="cgpa">CGPA</label>
+              <span className="p-input-icon-right">
+                <InputText
+                  id="cgpa"
+                  value={academic.cgpa}
+                  onChange={(e) => onInputChange(e, 'cgpa')}
+                  required
+                  autoFocus
+                  className={classNames({
+                    'p-invalid': submitted && !academic.cgpa,
+                  })}
+                />
+                {submitted && !academic.cgpa && (
+                  <small className="p-invalid">CGPA is required.</small>
+                )}
+                <i className="pi pi-fw pi-star" />
+              </span>
+            </div>
+          </Dialog>
+
+          <Dialog
+            visible={deleteAcademicDialog}
+            style={{ width: '450px' }}
+            header="Confirm"
+            modal
+            footer={deleteAcademicDialogFooter}
+            onHide={hideDeleteAcademicDialog}
+          >
+            <div className="flex align-items-center justify-content-center">
+              <i
+                className="pi pi-exclamation-triangle mr-3"
+                style={{ fontSize: '2rem' }}
+              />
+              {academic && (
+                <span>
+                  Are you sure you want to delete <b>{academic.name}</b>?
+                </span>
+              )}
+            </div>
+          </Dialog>
+
+          <Dialog
+            visible={deleteAcademicsDialog}
+            style={{ width: '450px' }}
+            header="Confirm"
+            modal
+            footer={deleteAcademicsDialogFooter}
+            onHide={hideDeleteAcademicsDialog}
+          >
+            <div className="flex align-items-center justify-content-center">
+              <i
+                className="pi pi-exclamation-triangle mr-3"
+                style={{ fontSize: '2rem' }}
+              />
+              {academic && (
+                <span>
+                  Are you sure you want to delete the selected Academic Profile?
+                </span>
+              )}
+            </div>
+          </Dialog>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Crud;
+export const getServerSideProps: GetServerSideProps = requireAuthentication(
+  async (ctx) => {
+    const { req } = ctx;
+    if (req.headers.cookie) {
+      const tokens = req.headers.cookie.split(';');
+      const token = tokens.find((token) => token.includes('access_token'));
+      let userType = '';
+      if (token) {
+        const userEmail = jwt
+          .decode(tokens[1].split('=')[1].toString())
+          .email.toString();
+        await apolloClient
+          .query({
+            query: GET_USER_TYPE,
+            variables: { userEmail },
+          })
+          .then((result) => {
+            userType = result.data.GetUserTypeByUserEmail.toString();
+          });
+      }
+      return {
+        props: { userType },
+      };
+    }
+  },
+);
+>>>>>>> main

@@ -13,7 +13,6 @@ import { LayoutContext } from './context/layoutcontext'
 import { Menu } from 'primereact/menu'
 import { Avatar } from 'primereact/avatar'
 import { Dropdown } from 'primereact/dropdown'
-import { typeOf } from 'react-is'
 
 interface Theme {
     name: string
@@ -139,13 +138,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     <a className="layout-topbar-logo">
                         <>
                             <img
-                                src={`${contextPath}/layout/images/logo-${
-                                    layoutConfig.colorScheme !== 'light'
-                                        ? 'white'
-                                        : 'dark'
-                                }.svg`}
-                                width="47.22px"
-                                height={'35px'}
+                                src={`${contextPath}/layout/images/logo.png`}
                                 alt="logo"
                             />
                             <span>NUCES BLOCKED</span>

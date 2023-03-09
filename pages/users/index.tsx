@@ -16,6 +16,15 @@ import { DELETE_USER } from './queries/removeUsers'
 import { CREATE_USER } from './queries/addUser'
 import { useMutation } from '@apollo/client'
 import { UPDATE_USER } from './queries/updateUsers'
+import { GetServerSideProps } from 'next'
+import { requireAuthentication } from '../../layout/context/requireAuthetication'
+import apolloClient from '../../apollo-client'
+import jwt from 'jsonwebtoken'
+import { GET_USER_TYPE } from './queries/getUserType'
+
+interface Props {
+    userType: String
+}
 
 interface UserInterface {
     id: string
@@ -26,7 +35,7 @@ interface UserInterface {
     imgUrl: string
 }
 
-const UserRecords = () => {
+const UserRecords: React.FC<Props> = (userType) => {
     let UserRecordInterface = {
         id: '',
         name: '',
@@ -261,7 +270,8 @@ const UserRecords = () => {
             /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) &&
             user.email &&
             user.role &&
-            user.password
+            user.password &&
+            validatepass(user.password)
         ) {
             let _users = [...users]
             let _user = { ...user }
@@ -422,8 +432,40 @@ const UserRecords = () => {
             setUser(_user)
             return
         }
+
         _user[`${name}`] = val
         setUser(_user)
+    }
+
+    const validatepass = (password: string) => {
+        if (password.length > 6) {
+            let lowerCasecheck = false,
+                upperCasecheck = false,
+                numericCheck = false,
+                symbolCheck = false
+            let i = 0
+            for (i = 0; i < password.length; i++) {
+                if (password[i] >= '0' && password[i] <= '9')
+                    numericCheck = true
+                else if (password[i] >= 'a' && password[i] <= 'z')
+                    lowerCasecheck = true
+                else if (password[i] >= 'A' && password[i] <= 'Z')
+                    upperCasecheck = true
+                else symbolCheck = true
+            }
+            if (
+                (numericCheck && lowerCasecheck) ||
+                (numericCheck && upperCasecheck) ||
+                (numericCheck && symbolCheck) ||
+                (lowerCasecheck && upperCasecheck) ||
+                (lowerCasecheck && symbolCheck) ||
+                (upperCasecheck && symbolCheck)
+            ) {
+                return true
+            }
+            return false
+        }
+        return false
     }
 
     const leftToolbarTemplate = () => {
@@ -743,7 +785,6 @@ const UserRecords = () => {
                             </span>
                         </div>
                         <div className="field">
-                            <label htmlFor="password">Password</label>
                             <Password
                                 id="password"
                                 name="password"
@@ -752,17 +793,30 @@ const UserRecords = () => {
                                 toggleMask
                                 required
                                 autoFocus
-                                className={classNames({
-                                    'p-invalid': submitted && !user.password,
-                                })}
+                                className={classNames(
+                                    {
+                                        'p-invalid':
+                                            submitted && !user.password,
+                                    },
+                                    {
+                                        'p-invalid1': validatepass(
+                                            user.password
+                                        ),
+                                    }
+                                )}
                                 header={passwordHeader}
                                 footer={passwordFooter}
                             />
-                            {submitted && !user.password && (
+                            {(submitted && !user.password && (
                                 <small className="p-invalid">
                                     Password is required.
                                 </small>
-                            )}
+                            )) ||
+                                (!validatepass(user.password) && (
+                                    <small className="p-invalid1">
+                                        Password isn't Too Strong.
+                                    </small>
+                                ))}
                         </div>
                         <div className="field">
                             <label htmlFor="role">Role</label>
@@ -835,5 +889,32 @@ const UserRecords = () => {
         </div>
     )
 }
+
+export const getServerSideProps: GetServerSideProps = requireAuthentication(
+    async (ctx) => {
+        const { req } = ctx
+        if (req.headers.cookie) {
+            const tokens = req.headers.cookie.split(';')
+            const token = tokens.find((token) => token.includes('access_token'))
+            let userType = ''
+            if (token) {
+                const userEmail = jwt
+                    .decode(tokens[1].split('=')[1].toString())
+                    .email.toString()
+                await apolloClient
+                    .query({
+                        query: GET_USER_TYPE,
+                        variables: { userEmail },
+                    })
+                    .then((result) => {
+                        userType = result.data.GetUserTypeByUserEmail.toString()
+                    })
+            }
+            return {
+                props: { userType },
+            }
+        }
+    }
+)
 
 export default UserRecords

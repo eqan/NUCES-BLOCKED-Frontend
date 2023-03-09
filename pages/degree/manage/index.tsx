@@ -14,6 +14,15 @@ import { returnFetchCertificatesHook } from '../queries/getCertificates'
 import { DELETE_CERTIFICATE } from '../queries/removeCertificate'
 import { UPDATE_CERTIFICATE } from '../queries/updateCertificate'
 import { useRouter } from 'next/router'
+import { GetServerSideProps } from 'next'
+import { requireAuthentication } from '../../../layout/context/requireAuthetication'
+import apolloClient from '../../../apollo-client'
+import jwt from 'jsonwebtoken'
+import { GET_USER_TYPE } from '../../users/queries/getUserType'
+
+interface Props {
+    userType: String
+}
 
 interface CertificateInterface {
     id: string
@@ -562,6 +571,50 @@ const CertificateRecords = () => {
         )
     }
 
+    const validateRollNo = () => {
+        if (degree.rollno) {
+            let i
+            let stringbe = ''
+            for (i = 0; i < degree.rollno.length; i++) {
+                if (i != 2) {
+                    if (i >= 1) {
+                        if (
+                            !(
+                                degree.rollno[i] >= '0' &&
+                                degree.rollno[i] <= '9'
+                            )
+                        ) {
+                            return 0
+                        }
+                        stringbe += degree.rollno[i]
+                    } else {
+                        if (
+                            !(
+                                degree.rollno[i] >= '1' &&
+                                degree.rollno[i] <= '9'
+                            )
+                        ) {
+                            return 0
+                        }
+                        stringbe += degree.rollno[i]
+                    }
+                } else if (i == 2) {
+                    if (
+                        (degree.rollno[i] >= 'a' && degree.rollno[i] <= 'z') ||
+                        (degree.rollno[i] >= 'A' && degree.rollno[i] <= 'Z')
+                    ) {
+                        stringbe += degree.rollno[i].toUpperCase()
+                    } else {
+                        return 0
+                    }
+                }
+            }
+            if (stringbe.length != 7) {
+                return 0
+            }
+            return 1
+        }
+    }
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -773,3 +826,29 @@ const CertificateRecords = () => {
 }
 
 export default CertificateRecords
+export const getServerSideProps: GetServerSideProps = requireAuthentication(
+    async (ctx) => {
+        const { req } = ctx
+        if (req.headers.cookie) {
+            const tokens = req.headers.cookie.split(';')
+            const token = tokens.find((token) => token.includes('access_token'))
+            let userType = ''
+            if (token) {
+                const userEmail = jwt
+                    .decode(tokens[1].split('=')[1].toString())
+                    .email.toString()
+                await apolloClient
+                    .query({
+                        query: GET_USER_TYPE,
+                        variables: { userEmail },
+                    })
+                    .then((result) => {
+                        userType = result.data.GetUserTypeByUserEmail.toString()
+                    })
+            }
+            return {
+                props: { userType },
+            }
+        }
+    }
+)

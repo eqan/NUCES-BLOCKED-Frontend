@@ -11,6 +11,7 @@ interface Props {
     parentKey?: string
     index: number
     root?: boolean
+    userType: string
 }
 
 interface Item {
@@ -77,27 +78,34 @@ const AppMenuitem: React.FC<Props> = (props) => {
         else setActiveMenu(key)
     }
 
-    const subMenu = item.items && item.visible !== false && (
-        <CSSTransition
-            timeout={{ enter: 1000, exit: 450 }}
-            classNames="layout-submenu"
-            in={props.root ? true : active}
-            key={item.label}
-        >
-            <ul>
-                {item.items.map((child, i) => {
-                    return (
-                        <AppMenuitem
-                            item={child}
-                            index={i}
-                            parentKey={key}
-                            key={child.label}
-                        />
-                    )
-                })}
-            </ul>
-        </CSSTransition>
-    )
+    const subMenu =
+        item.items && item.visible !== false ? (
+            <CSSTransition
+                timeout={{ enter: 1000, exit: 450 }}
+                classNames="layout-submenu"
+                in={props.root ? true : active}
+                key={item.label}
+            >
+                <ul>
+                    {item.items.map((child, i) => {
+                        if (
+                            props.userType === 'ADMIN' ||
+                            child.label.toString() === 'Home Page' ||
+                            child.label.toString() === 'Academic Profile'
+                        )
+                            return (
+                                <AppMenuitem
+                                    item={child}
+                                    index={i}
+                                    parentKey={key}
+                                    key={child.label}
+                                    userType={props.userType}
+                                />
+                            )
+                    })}
+                </ul>
+            </CSSTransition>
+        ) : null
 
     return (
         <li
