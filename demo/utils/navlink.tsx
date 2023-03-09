@@ -1,17 +1,17 @@
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import { ReactNode } from 'react';
-import PropTypes from 'prop-types';
+import { useRouter } from 'next/router'
+import Link from 'next/link'
+import { ReactNode } from 'react'
+import PropTypes from 'prop-types'
 
 interface NavLinkProps {
-    href: string;
-    activeclassname?: string;
-    exact?: boolean;
-    role?: string;
-    target?: string;
-    ariaLabel?: string;
-    children: ReactNode;
-    className: string;
+    href: string
+    activeclassname?: string
+    exact?: boolean
+    role?: string
+    target?: string
+    ariaLabel?: string
+    children: ReactNode
+    className: string
 }
 
 const NavLink: React.FC<NavLinkProps> = ({
@@ -22,11 +22,11 @@ const NavLink: React.FC<NavLinkProps> = ({
     target,
     ariaLabel,
     ...props
-    }) => {
-    const { pathname } = useRouter();
-    const isActive = exact ? pathname === href : pathname.startsWith(href);
+}) => {
+    const { pathname } = useRouter()
+    const isActive = exact ? pathname === href : pathname.startsWith(href)
     if (isActive) {
-        props.className += ' active-route';
+        props.className += ' active-route'
     }
 
     return (
@@ -35,17 +35,14 @@ const NavLink: React.FC<NavLinkProps> = ({
                 {children}
             </a>
         </Link>
-    );
-};
+    )
+}
 
 NavLink.propTypes = {
-href: PropTypes.string.isRequired,
-activeclassname: PropTypes.string,
-exact: PropTypes.bool,
-role: PropTypes.string
-};
+    href: PropTypes.string.isRequired,
+    activeclassname: PropTypes.string,
+    exact: PropTypes.bool,
+    role: PropTypes.string,
+}
 
-export default NavLink;
-
-
-
+export default NavLink
