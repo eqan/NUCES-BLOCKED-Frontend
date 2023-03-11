@@ -49,8 +49,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
             name: student.name,
             rollno: student.id,
             email: student.email,
-            cgpa: student?.cgpa,
-            date: student?.updatedAt,
+            cgpa: student.cgpa,
+            date: student.updatedAt,
         }
     }
 
@@ -116,10 +116,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 let _students = studentsData?.GetAllStudents.items.filter(
                     (val) => val.id != ''
                 )
-                console.log(_students)
                 const studentsRecords =
                     _students.map(mapStudentToStudentRecord) || []
-                console.log(studentsRecords)
                 const total = _students?.GetAllStudents?.total
                 setStudents(studentsRecords)
                 setTotalRecords(total)
@@ -311,9 +309,9 @@ const StudentRecords: React.FC<Props> = (userType) => {
     }
 
     const deleteSelectedStudents = async () => {
-        let _students = students.filter((val) => {
-            if (selectedStudents) !selectedStudents.includes(val)
-        })
+        let _students = students.filter(
+            (val) => !selectedStudents.includes(val)
+        )
         let _toBeDeletedStudents = students
             .filter((val) => selectedStudents.includes(val))
             .map((val) => val.id)
