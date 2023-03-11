@@ -19,6 +19,7 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
+import { Skeleton } from 'primereact/skeleton'
 
 interface Props {
     userType: String
@@ -702,6 +703,34 @@ const StudentRecords: React.FC<Props> = (userType) => {
             />
         </>
     )
+    const LoadingTemplate = ({ w, h }: { w: string; h: string }) => {
+        return (
+            <div
+                className="flex align-items-center"
+                style={{ height: '17px', flexGrow: '1', overflow: 'hidden' }}
+            >
+                <Skeleton width={w} height={h} />
+            </div>
+        )
+    }
+    const SkeletonTable = () => {
+        return (
+            <>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        margin: '10px',
+                    }}
+                >
+                    <LoadingTemplate h="40px" w="40px" />
+                    <LoadingTemplate h="10px" w="100px" />
+                    <LoadingTemplate h="10px" w="80px" />
+                    <LoadingTemplate h="10px" w="40px" />
+                </div>
+            </>
+        )
+    }
 
     return (
         <div className="grid crud-demo">
@@ -714,64 +743,74 @@ const StudentRecords: React.FC<Props> = (userType) => {
                         right={rightToolbarTemplate}
                     ></Toolbar>
 
-                    <DataTable
-                        ref={dt}
-                        value={students}
-                        selection={selectedStudents}
-                        onSelectionChange={(e) => setSelectedStudents(e.value)}
-                        dataKey="id"
-                        defaultValue={1}
-                        paginator
-                        rows={pageLimit}
-                        first={page * pageLimit}
-                        onPage={onPageChange}
-                        rowsPerPageOptions={[5, 10, 25]}
-                        className="datatable-responsive"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
-                        emptyMessage="No students found."
-                        header={header}
-                        responsiveLayout="scroll"
-                        totalRecords={totalRecords}
-                        loading={isLoading}
-                    >
-                        <Column
-                            selectionMode="multiple"
-                            headerStyle={{ width: '4rem' }}
-                        ></Column>
-                        <Column
-                            field="name"
-                            header="Full Name"
-                            sortable
-                            body={nameBodyTemplate}
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="rollno"
-                            header="Roll No."
-                            sortable
-                            body={rollnoBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                        <Column
-                            field="email"
-                            header="Email"
-                            body={emailBodyTemplate}
-                            sortable
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="cgpa"
-                            header="CGPA"
-                            body={cgpaBodyTemplate}
-                            sortable
-                        ></Column>
+                    {isLoading ? (
+                        <>
+                            {[1, 2, 3, 4, 5].map((v) => (
+                                <SkeletonTable />
+                            ))}
+                        </>
+                    ) : (
+                        <DataTable
+                            ref={dt}
+                            value={students}
+                            selection={selectedStudents}
+                            onSelectionChange={(e) =>
+                                setSelectedStudents(e.value)
+                            }
+                            dataKey="id"
+                            defaultValue={1}
+                            paginator
+                            rows={pageLimit}
+                            first={page * pageLimit}
+                            onPage={onPageChange}
+                            rowsPerPageOptions={[5, 10, 25]}
+                            className="datatable-responsive"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
+                            emptyMessage="No students found."
+                            header={header}
+                            responsiveLayout="scroll"
+                            totalRecords={totalRecords}
+                            loading={isLoading}
+                        >
+                            <Column
+                                selectionMode="multiple"
+                                headerStyle={{ width: '4rem' }}
+                            ></Column>
+                            <Column
+                                field="name"
+                                header="Full Name"
+                                sortable
+                                body={nameBodyTemplate}
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="rollno"
+                                header="Roll No."
+                                sortable
+                                body={rollnoBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                            <Column
+                                field="email"
+                                header="Email"
+                                body={emailBodyTemplate}
+                                sortable
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="cgpa"
+                                header="CGPA"
+                                body={cgpaBodyTemplate}
+                                sortable
+                            ></Column>
 
-                        <Column
-                            body={actionBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                    </DataTable>
+                            <Column
+                                body={actionBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                        </DataTable>
+                    )}
 
                     <Dialog
                         visible={studentDialog}
