@@ -220,7 +220,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                     toast.current.show({
                         severity: 'success',
                         summary: 'Successful',
-                        detail: 'Academic Certificate Updated',
+                        detail: 'Result Added!',
                         life: 3000,
                     })
             } catch (error) {
@@ -228,7 +228,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                     toast.current?.show({
                         severity: 'error',
                         summary: 'Error',
-                        detail: 'Academic Profile Not Updated',
+                        detail: 'Result Not Added!',
                         life: 3000,
                     })
                 }
@@ -252,8 +252,8 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 await updateResultFunction({
                     variables: {
                         UpdateResultInput: {
-                            id: '',
-                            url: '',
+                            id: result.id,
+                            url: result.url,
                         },
                     },
                 })
@@ -262,7 +262,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                     toast.current.show({
                         severity: 'success',
                         summary: 'Successful',
-                        detail: 'Academic Certificate Updated',
+                        detail: 'Result Updated!',
                         life: 3000,
                     })
             } catch (error) {
@@ -270,7 +270,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                     toast.current?.show({
                         severity: 'error',
                         summary: 'Error',
-                        detail: 'Academic Profile Not Updated',
+                        detail: 'Result Not Updated!',
                         life: 3000,
                     })
                 }
@@ -529,7 +529,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const updateResultDialogFooter = (
         <>
             <Button
-                label="UpdateResult"
+                label="Cancel"
                 icon="pi pi-times"
                 className="p-button-text"
                 onClick={hideUpdateResultDialog}
@@ -841,7 +841,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     )
 }
 
-export default SemesterResult
 export const getServerSideProps: GetServerSideProps = requireAuthentication(
     async (ctx) => {
         const { req } = ctx
@@ -868,3 +867,5 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         }
     }
 )
+
+export default SemesterResult
