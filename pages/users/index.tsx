@@ -50,7 +50,7 @@ const UserRecords: React.FC<Props> = (userType) => {
             id: user.id,
             name: user.name,
             password: user.password,
-            role: user.type,
+            role: user.role,
             email: user.email,
             imgUrl: user.imgUrl,
         }
@@ -785,6 +785,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                             </span>
                         </div>
                         <div className="field">
+                            <label htmlFor="email">Password</label>
                             <Password
                                 id="password"
                                 name="password"

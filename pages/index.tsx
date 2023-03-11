@@ -251,6 +251,9 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     .then((result) => {
                         userType = result.data.GetUserTypeByUserEmail.toString()
                     })
+                    .catch((error) => {
+                        console.log(error)
+                    })
             }
             return {
                 props: { userType },

@@ -52,6 +52,7 @@ const LoginPage = () => {
     useEffect(() => {
         if (data) {
             const token = data['LoginUser']
+            console.log(token)
             Cookies.set('access_token', token['access_token'], { expires: 1 })
             router.push('/')
         }
