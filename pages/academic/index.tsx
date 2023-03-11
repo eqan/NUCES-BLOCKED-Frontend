@@ -701,9 +701,9 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
             const token = tokens.find((token) => token.includes('access_token'))
             let userType = ''
             if (token) {
-                const userEmail = jwt
-                    .decode(tokens[1].split('=')[1].toString())
-                    .email.toString()
+                const userEmail = jwt.decode(
+                    token.split('=')[1]?.toString()
+                ).email
                 await apolloClient
                     .query({
                         query: GET_USER_TYPE,

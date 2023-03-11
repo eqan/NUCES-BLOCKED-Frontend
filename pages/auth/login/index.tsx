@@ -49,15 +49,6 @@ const LoginPage = () => {
         })
     }
 
-    useEffect(() => {
-        if (data) {
-            const token = data['LoginUser']
-            console.log(token)
-            Cookies.set('access_token', token['access_token'], { expires: 1 })
-            router.push('/')
-        }
-    }, [data, router])
-
     return (
         <div className={containerClassName}>
             <div className="flex flex-column align-items-center justify-content-center">
@@ -92,6 +83,14 @@ const LoginPage = () => {
                                 try {
                                     await createAccessToken({
                                         variables: { email, password },
+                                    }).then((results) => {
+                                        const token = results.data['LoginUser']
+                                        Cookies.set(
+                                            'access_token',
+                                            token['access_token'],
+                                            { expires: 1 }
+                                        )
+                                        router.push('/')
                                     })
                                 } catch (e) {
                                     console.log(e)
