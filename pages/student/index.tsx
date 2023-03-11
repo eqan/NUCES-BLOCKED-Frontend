@@ -10,11 +10,11 @@ import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
-import { CREATE_STUDENT } from './queries/addStudent'
-import { returnFetchStudentsHook } from './queries/getStudent'
-import { DELETE_STUDENT } from './queries/removeStudent'
-import { UPDATE_STUDENT } from './queries/updateStudent'
-import { GET_USER_TYPE } from '../users/queries/getUserType'
+import { CREATE_STUDENT } from '../../queries/students/addStudent'
+import { returnFetchStudentsHook } from '../../queries/students/getStudent'
+import { DELETE_STUDENT } from '../../queries/students/removeStudent'
+import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
+import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
@@ -30,6 +30,7 @@ interface StudentInterface {
     rollno: string
     email: string
     date: string
+    cgpa: number
 }
 
 const StudentRecords: React.FC<Props> = (userType) => {
@@ -38,6 +39,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
         name: '',
         rollno: '',
         email: '',
+        cgpa: 0,
         date: '',
     }
 
@@ -47,9 +49,11 @@ const StudentRecords: React.FC<Props> = (userType) => {
             name: student.name,
             rollno: student.id,
             email: student.email,
-            date: student.updatedAt,
+            cgpa: student?.cgpa,
+            date: student?.updatedAt,
         }
     }
+
     const router = useRouter()
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [studentDialog, setStudentDialog] = useState(false)
@@ -112,10 +116,12 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 let _students = studentsData?.GetAllStudents.items.filter(
                     (val) => val.id != ''
                 )
-                const studentRecords =
+                console.log(_students)
+                const studentsRecords =
                     _students.map(mapStudentToStudentRecord) || []
-                const total = studentsData?.GetAllStudents?.total
-                setStudents(studentRecords)
+                console.log(studentsRecords)
+                const total = _students?.GetAllStudents?.total
+                setStudents(studentsRecords)
                 setTotalRecords(total)
             } catch (error) {
                 console.log(error)
@@ -165,101 +171,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
         setDeleteStudentsDialog(false)
     }
 
-    const addStudent = async () => {
+    const saveStudent = async () => {
         setSubmitted(true)
-
-        if (student.email && student.name && student.rollno) {
-            let _students = [...students]
-            let _student = { ...student }
-            try {
-                _students[_student.rollno] = _student
-                let newStudent = await createStudentFunction({
-                    variables: {
-                        CreateStudentInput: {
-                            id: _student.rollno,
-                            name: _student.name,
-                            email: _student.email,
-                        },
-                    },
-                })
-                newStudent = newStudent.data['CreateStudent']
-                const mappedData: StudentInterface =
-                    mapStudentToStudentRecord(newStudent)
-                _students = _students.filter(
-                    (item) => (item.rollno = mappedData.id)
-                )
-                _students.push(mappedData)
-                setStudents(_students)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Student Updated',
-                        life: 3000,
-                    })
-            } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Student Not Updated',
-                        life: 3000,
-                    })
-                }
-                console.log(error)
-            }
-
-            setStudentDialog(false)
-            setStudent(StudentRecordInterface)
-        }
-    }
-
-    const updateStudent = async () => {
-        setSubmitted(true)
-
-        if (student.email && student.rollno && student.name) {
-            let _students = [...students]
-            let _student = { ...student }
-            try {
-                const index = findIndexById(_student.id)
-                _students[index] = _student
-                await updateStudentFunction({
-                    variables: {
-                        UpdateStudentInput: {
-                            id: _student.rollno,
-                            email: _student.email,
-                            name: _student.name,
-                        },
-                    },
-                })
-                setStudents(_students)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Student Updated',
-                        life: 3000,
-                    })
-            } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Student Not Updated',
-                        life: 3000,
-                    })
-                }
-                console.log(error)
-            }
-
-            setStudentDialog(false)
-            setStudent(StudentRecordInterface)
-        }
-    }
-
-    const saveStudent = () => {
-        setSubmitted(true)
-
         if (
             student.name.trim() &&
             /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(student.email) &&
@@ -269,29 +182,65 @@ const StudentRecords: React.FC<Props> = (userType) => {
         ) {
             let _students = [...students]
             let _student = { ...student }
-            if (student.id) {
-                const index = findIndexById(student.id)
-                _students[index] = _student
+            let successMessage = ''
+            let errorMessage = ''
+            try {
+                const index = findIndexById(_student.id)
+                _students[_student.rollno] = _student
+                successMessage = 'Student Added!'
+                errorMessage = 'Student Not Added!'
+                if (index == -1) {
+                    let newStudent = await createStudentFunction({
+                        variables: {
+                            CreateStudentInput: {
+                                id: _student.rollno,
+                                name: _student.name,
+                                email: _student.email,
+                                cgpa: _student.cgpa,
+                            },
+                        },
+                    })
+                    newStudent = newStudent.data['CreateStudent']
+                    const mappedData: StudentInterface =
+                        mapStudentToStudentRecord(newStudent)
+                    _students = _students.filter(
+                        (item) => (item.rollno = mappedData.id)
+                    )
+                    _students.push(mappedData)
+                } else {
+                    successMessage = 'Student Updated!'
+                    errorMessage = 'Student Not Updated!'
+                    await updateStudentFunction({
+                        variables: {
+                            UpdateStudentInput: {
+                                id: _student.rollno,
+                                email: _student.email,
+                                name: _student.name,
+                                cgpa: _student.cgpa,
+                            },
+                        },
+                    })
+                }
+                setStudents(_students)
                 if (toast.current)
                     toast.current.show({
                         severity: 'success',
                         summary: 'Successful',
-                        detail: 'Student Updated',
+                        detail: successMessage,
                         life: 3000,
                     })
-            } else {
-                // _student.id = createId()
-                _students.push(_student)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Student Created',
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
                         life: 3000,
                     })
+                }
+                console.log(error)
             }
 
-            setStudents(_students)
             setStudentDialog(false)
             setStudent(StudentRecordInterface)
         }
@@ -357,11 +306,130 @@ const StudentRecords: React.FC<Props> = (userType) => {
         if (dt.current) dt.current.exportCSV()
     }
 
+    const confirmDeleteSelected = () => {
+        setDeleteStudentsDialog(true)
+    }
+
+    const deleteSelectedStudents = async () => {
+        let _students = students.filter((val) => {
+            if (selectedStudents) !selectedStudents.includes(val)
+        })
+        let _toBeDeletedStudents = students
+            .filter((val) => selectedStudents.includes(val))
+            .map((val) => val.id)
+
+        try {
+            await deleteStudentFunction({
+                variables: {
+                    DeleteStudentInput: {
+                        id: _toBeDeletedStudents,
+                    },
+                },
+            })
+            if (toast.current && !studentDeleteDataError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Student Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Student Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
+        setStudents(_students)
+        setDeleteStudentsDialog(false)
+        setSelectedStudents([])
+    }
+
+    const validateRollNo = () => {
+        if (student.rollno) {
+            let i
+            let stringbe = ''
+            for (i = 0; i < student.rollno.length; i++) {
+                if (i != 2) {
+                    if (i >= 1) {
+                        if (
+                            !(
+                                student.rollno[i] >= '0' &&
+                                student.rollno[i] <= '9'
+                            )
+                        ) {
+                            return 0
+                        }
+                        stringbe += student.rollno[i]
+                    } else {
+                        if (
+                            !(
+                                student.rollno[i] >= '1' &&
+                                student.rollno[i] <= '9'
+                            )
+                        ) {
+                            return 0
+                        }
+                        stringbe += student.rollno[i]
+                    }
+                } else if (i == 2) {
+                    if (
+                        (student.rollno[i] >= 'a' &&
+                            student.rollno[i] <= 'z') ||
+                        (student.rollno[i] >= 'A' && student.rollno[i] <= 'Z')
+                    ) {
+                        stringbe += student.rollno[i].toUpperCase()
+                    } else {
+                        return 0
+                    }
+                }
+            }
+            if (stringbe.length != 7) {
+                return 0
+            }
+            return 1
+        }
+    }
+
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || ''
         let _student = { ...student }
         let stringbe
-        if (name == 'name') {
+        if (name == 'cgpa') {
+            let stringbe = ''
+            let i
+            let value = val.toString()
+            for (i = 0; i < value.length; i++) {
+                if (i == 0) {
+                    if (value[i] >= '0' && value[i] <= '4') {
+                        stringbe += value[i]
+                    }
+                } else if (i == 1) {
+                    if (value[i] == '.') {
+                        stringbe += value[i]
+                    }
+                } else {
+                    if (value[0] != 4) {
+                        if (value[i] >= '0' && value[i] <= '9') {
+                            stringbe += value[i]
+                        }
+                    } else {
+                        stringbe += '0'
+                    }
+                }
+            }
+            if (stringbe.length > 4) {
+                return
+            }
+            _student[`${name}`] = stringbe
+            setStudent(_student)
+            return
+        } else if (name == 'name') {
             let i
             let stringbe = ''
             for (i = 0; i < val.length; i++) {
@@ -419,70 +487,30 @@ const StudentRecords: React.FC<Props> = (userType) => {
         setPageLimit(event.rows)
     }
 
-    const confirmDeleteSelected = () => {
-        setDeleteStudentsDialog(true)
+    const leftToolbarTemplate = () => {
+        return (
+            <React.Fragment>
+                <div className="my-2">
+                    <Button
+                        label="New"
+                        icon="pi pi-plus"
+                        className="p-button-success mr-2"
+                        onClick={openNew}
+                    />
+                    <Button
+                        label="Delete"
+                        icon="pi pi-trash"
+                        className="p-button-danger"
+                        onClick={confirmDeleteSelected}
+                        disabled={!selectedStudents || !selectedStudents.length}
+                    />
+                </div>
+            </React.Fragment>
+        )
     }
 
-    const deleteSelectedStudents = () => {
-        let _students = students.filter((val) => {
-            if (selectedStudents) !selectedStudents.includes(val)
-        })
-        setStudents(_students)
-        setDeleteStudentsDialog(false)
-        setSelectedStudents([])
-        if (toast.current)
-            toast.current.show({
-                severity: 'success',
-                summary: 'Successful',
-                detail: 'Students Deleted',
-                life: 3000,
-            })
-    }
-
-    const validateRollNo = () => {
-        if (student.rollno) {
-            let i
-            let stringbe = ''
-            for (i = 0; i < student.rollno.length; i++) {
-                if (i != 2) {
-                    if (i >= 1) {
-                        if (
-                            !(
-                                student.rollno[i] >= '0' &&
-                                student.rollno[i] <= '9'
-                            )
-                        ) {
-                            return 0
-                        }
-                        stringbe += student.rollno[i]
-                    } else {
-                        if (
-                            !(
-                                student.rollno[i] >= '1' &&
-                                student.rollno[i] <= '9'
-                            )
-                        ) {
-                            return 0
-                        }
-                        stringbe += student.rollno[i]
-                    }
-                } else if (i == 2) {
-                    if (
-                        (student.rollno[i] >= 'a' &&
-                            student.rollno[i] <= 'z') ||
-                        (student.rollno[i] >= 'A' && student.rollno[i] <= 'Z')
-                    ) {
-                        stringbe += student.rollno[i].toUpperCase()
-                    } else {
-                        return 0
-                    }
-                }
-            }
-            if (stringbe.length != 7) {
-                return 0
-            }
-            return 1
-        }
+    const toCapitalize = (s) => {
+        return s.charAt(0).toUpperCase() + s.slice(1)
     }
 
     const importCSV = (e) => {
@@ -537,36 +565,11 @@ const StudentRecords: React.FC<Props> = (userType) => {
         reader.readAsText(file, 'UTF-8')
     }
 
-    const leftToolbarTemplate = () => {
-        return (
-            <React.Fragment>
-                <div className="my-2">
-                    <Button
-                        label="New"
-                        icon="pi pi-plus"
-                        className="p-button-success mr-2"
-                        onClick={openNew}
-                    />
-                    <Button
-                        label="Delete"
-                        icon="pi pi-trash"
-                        className="p-button-danger"
-                        onClick={confirmDeleteSelected}
-                        disabled={!selectedStudents || !selectedStudents.length}
-                    />
-                </div>
-            </React.Fragment>
-        )
-    }
-
     const rightToolbarTemplate = () => {
         return (
             <React.Fragment>
                 <FileUpload
-                    chooseOptions={{
-                        label: 'import',
-                        icon: 'pi pi-download',
-                    }}
+                    chooseOptions={{ label: 'import', icon: 'pi pi-download' }}
                     mode="basic"
                     name="demo[]"
                     auto
@@ -583,10 +586,6 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 />
             </React.Fragment>
         )
-    }
-
-    const toCapitalize = (s) => {
-        return s.charAt(0).toUpperCase() + s.slice(1)
     }
 
     const rollnoBodyTemplate = (rowData) => {
@@ -607,11 +606,11 @@ const StudentRecords: React.FC<Props> = (userType) => {
         )
     }
 
-    const batchBodyTemplate = (rowData) => {
+    const cgpaBodyTemplate = (rowData) => {
         return (
             <>
-                <span className="p-column-title">Batch</span>
-                {rowData.batch}
+                <span className="p-column-title">CGPA</span>
+                {rowData.cgpa}
             </>
         )
     }
@@ -764,9 +763,9 @@ const StudentRecords: React.FC<Props> = (userType) => {
                             headerStyle={{ minWidth: '15rem' }}
                         ></Column>
                         <Column
-                            field="batch"
-                            header="Batch"
-                            body={batchBodyTemplate}
+                            field="cgpa"
+                            header="CGPA"
+                            body={cgpaBodyTemplate}
                             sortable
                         ></Column>
 
@@ -877,6 +876,27 @@ const StudentRecords: React.FC<Props> = (userType) => {
                                             </small>
                                         ))}
                                 <i className="pi pi-envelope" />
+                            </span>
+                        </div>
+                        <div className="field">
+                            <label htmlFor="cgpa">CGPA</label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="cgpa"
+                                    value={student.cgpa}
+                                    onChange={(e) => onInputChange(e, 'cgpa')}
+                                    required
+                                    autoFocus
+                                    className={classNames({
+                                        'p-invalid': submitted && !student.cgpa,
+                                    })}
+                                />
+                                {submitted && !student.cgpa && (
+                                    <small className="p-invalid">
+                                        CGPA is required.
+                                    </small>
+                                )}
+                                <i className="pi pi-fw pi-star" />
                             </span>
                         </div>
                     </Dialog>

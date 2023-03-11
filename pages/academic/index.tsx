@@ -11,13 +11,13 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from '../users/queries/getUserType'
-import { returnFetchContributionsHook } from './queries/getStudentContributions'
+import { GET_USER_TYPE } from '../../queries/users/getUserType'
+import { returnFetchContributionsHook } from '../../queries/academic/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
-import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN } from './queries/createUpdateStudentContributionAdmin'
+import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN } from '../../queries/academic/createUpdateStudentContributionAdmin'
 import { useMutation } from '@apollo/client'
-import { DELETE_STUDENT_CONTRIBUTION_ADMIN } from './queries/deleteStudentContributionAdmin'
+import { DELETE_STUDENT_CONTRIBUTION_ADMIN } from '../../queries/academic/deleteStudentContributionAdmin'
 
 interface AcademicContributionInterface {
     id: string

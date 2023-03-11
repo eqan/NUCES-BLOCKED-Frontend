@@ -6,6 +6,7 @@ export const UPDATE_STUDENT = gql`
             id
             email
             name
+            cgpa
         }
     }
 `

@@ -1,4 +1,4 @@
-import { gql, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import Head from 'next/head'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
@@ -13,14 +13,8 @@ import { InputText } from 'primereact/inputtext'
 import { classNames } from 'primereact/utils'
 import { Messages } from 'primereact/messages'
 import Cookies from 'js-cookie'
+import { GET_ACCESS_TOKEN } from '../../../queries/auth/getAccessToken'
 
-const GET_ACCESS_TOKEN = gql`
-    mutation LoginUser($email: String!, $password: String!) {
-        LoginUser(LoginUserInput: { email: $email, password: $password }) {
-            access_token
-        }
-    }
-`
 const LoginPage = () => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')

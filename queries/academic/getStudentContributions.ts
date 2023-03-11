@@ -12,6 +12,7 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 updatedAt
                 student {
                     name
+                    email
                 }
             }
             careerCounsellorContributions {

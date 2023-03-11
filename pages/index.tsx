@@ -5,7 +5,7 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../layout/context/requireAuthetication'
 import apolloClient from '../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from './users/queries/getUserType'
+import { GET_USER_TYPE } from '../queries/users/getUserType'
 
 interface Props {
     userType: String
