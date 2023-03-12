@@ -185,10 +185,10 @@ const StudentRecords: React.FC<Props> = (userType) => {
             let errorMessage = ''
             try {
                 const index = findIndexById(_student.id)
-                _students[_student.rollno] = _student
                 successMessage = 'Student Added!'
                 errorMessage = 'Student Not Added!'
                 if (index == -1) {
+                    _students[_student.rollno] = _student
                     let newStudent = await createStudentFunction({
                         variables: {
                             CreateStudentInput: {
@@ -207,6 +207,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
                     )
                     _students.push(mappedData)
                 } else {
+                    _students[index] = _student
                     successMessage = 'Student Updated!'
                     errorMessage = 'Student Not Updated!'
                     await updateStudentFunction({
@@ -242,6 +243,27 @@ const StudentRecords: React.FC<Props> = (userType) => {
 
             setStudentDialog(false)
             setStudent(StudentRecordInterface)
+        }
+    }
+
+    const updateStudent = async () => {
+        let _students = [...students]
+        let _student = { ...student }
+        try {
+            const index = findIndexById(_student.id)
+            _students[index] = _student
+            await updateStudentFunction({
+                variables: {
+                    UpdateStudentInput: {
+                        id: _student.rollno,
+                        email: _student.email,
+                        name: _student.name,
+                    },
+                },
+            })
+            setStudents(_students)
+        } catch (error) {
+            console.log(error)
         }
     }
 
