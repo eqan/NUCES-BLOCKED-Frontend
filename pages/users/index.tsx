@@ -193,11 +193,11 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 email: _user.email,
                                 password: _user.password,
                                 type: _user.role,
-                                imgUrl: _user.imgUrl,
+                                imgUrl: 'https://www.instagram.com/p/Csaadsad/',
                             },
                         },
                     })
-                    newUser = newUser.data['Createuser']
+                    newUser = newUser.data.CreateUser
                     const mappedData: UserInterface =
                         mapUserToUserRecord(newUser)
                     _users = _users.filter((item) => (item.id = mappedData.id))

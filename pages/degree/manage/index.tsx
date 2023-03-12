@@ -228,7 +228,7 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
             let _degrees = [...degrees]
             let _degree = { ...degree }
             try {
-                const index = findIndexById(_degree.id)
+                const index = findIndexById(_degree.rollno)
                 _degrees[index] = _degree
                 await updateCertificateFunction({
                     variables: {
