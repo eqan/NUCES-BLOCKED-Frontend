@@ -13,8 +13,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { CREATE_STUDENT } from '../../queries/students/addStudent'
 import { returnFetchStudentsHook } from '../../queries/students/getStudent'
 import { DELETE_STUDENT } from '../../queries/students/removeStudent'
-import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
 import { GET_USER_TYPE } from '../../queries/users/getUserType'
+import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
@@ -31,7 +31,7 @@ interface StudentInterface {
     rollno: string
     email: string
     date: string
-    cgpa: number
+    cgpa: string
 }
 
 const StudentRecords: React.FC<Props> = (userType) => {
@@ -40,7 +40,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
         name: '',
         rollno: '',
         email: '',
-        cgpa: 0,
+        cgpa: '',
         date: '',
     }
 
@@ -185,9 +185,9 @@ const StudentRecords: React.FC<Props> = (userType) => {
             let errorMessage = ''
             try {
                 const index = findIndexById(_student.id)
-                successMessage = 'Student Added!'
-                errorMessage = 'Student Not Added!'
                 if (index == -1) {
+                    successMessage = 'Student Added!'
+                    errorMessage = 'Student Not Added!'
                     _students[_student.rollno] = _student
                     let newStudent = await createStudentFunction({
                         variables: {
@@ -203,13 +203,13 @@ const StudentRecords: React.FC<Props> = (userType) => {
                     const mappedData: StudentInterface =
                         mapStudentToStudentRecord(newStudent)
                     _students = _students.filter(
-                        (item) => (item.rollno = mappedData.id)
+                        (item) => (item.rollno = mappedData.rollno)
                     )
                     _students.push(mappedData)
                 } else {
-                    _students[index] = _student
                     successMessage = 'Student Updated!'
                     errorMessage = 'Student Not Updated!'
+                    _students[index] = _student
                     await updateStudentFunction({
                         variables: {
                             UpdateStudentInput: {
@@ -240,30 +240,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 }
                 console.log(error)
             }
-
             setStudentDialog(false)
             setStudent(StudentRecordInterface)
-        }
-    }
-
-    const updateStudent = async () => {
-        let _students = [...students]
-        let _student = { ...student }
-        try {
-            const index = findIndexById(_student.id)
-            _students[index] = _student
-            await updateStudentFunction({
-                variables: {
-                    UpdateStudentInput: {
-                        id: _student.rollno,
-                        email: _student.email,
-                        name: _student.name,
-                    },
-                },
-            })
-            setStudents(_students)
-        } catch (error) {
-            console.log(error)
         }
     }
 
