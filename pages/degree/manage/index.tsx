@@ -9,16 +9,16 @@ import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
-import { CREATE_CERTIFICATE } from '../queries/addCertificate'
-import { returnFetchCertificatesHook } from '../queries/getCertificates'
-import { DELETE_CERTIFICATE } from '../queries/removeCertificate'
-import { UPDATE_CERTIFICATE } from '../queries/updateCertificate'
+import { CREATE_CERTIFICATE } from '../../../queries/degree/addCertificate'
+import { returnFetchCertificatesHook } from '../../../queries/degree/getCertificates'
+import { DELETE_CERTIFICATE } from '../../../queries/degree/removeCertificate'
+import { UPDATE_CERTIFICATE } from '../../../queries/degree/updateCertificate'
 import { useRouter } from 'next/router'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../../layout/context/requireAuthetication'
 import apolloClient from '../../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from '../../users/queries/getUserType'
+import { GET_USER_TYPE } from '../../../queries/users/getUserType'
 
 interface Props {
     userType: String
@@ -31,7 +31,7 @@ interface CertificateInterface {
     date: string
     hash: string
 }
-const CertificateRecords = () => {
+const CertificateRecords: React.FC<Props> = ({ userType }) => {
     let CertificateRecordInterface = {
         id: '',
         name: '',
@@ -201,7 +201,7 @@ const CertificateRecords = () => {
                     toast.current.show({
                         severity: 'success',
                         summary: 'Successful',
-                        detail: 'Academic Certificate Updated',
+                        detail: ' Certificate Updated',
                         life: 3000,
                     })
             } catch (error) {
@@ -209,7 +209,7 @@ const CertificateRecords = () => {
                     toast.current?.show({
                         severity: 'error',
                         summary: 'Error',
-                        detail: 'Academic Profile Not Updated',
+                        detail: 'Certificate Not Updated',
                         life: 3000,
                     })
                 }
@@ -243,7 +243,7 @@ const CertificateRecords = () => {
                     toast.current.show({
                         severity: 'success',
                         summary: 'Successful',
-                        detail: 'Academic Certificate Updated',
+                        detail: ' Certificate Updated',
                         life: 3000,
                     })
             } catch (error) {
@@ -251,7 +251,7 @@ const CertificateRecords = () => {
                     toast.current?.show({
                         severity: 'error',
                         summary: 'Error',
-                        detail: 'Academic Profile Not Updated',
+                        detail: 'Certificate Not Updated',
                         life: 3000,
                     })
                 }
@@ -288,7 +288,7 @@ const CertificateRecords = () => {
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
-                    detail: 'Academic Profile Deleted',
+                    detail: 'Certificate Deleted',
                     life: 3000,
                 })
             }
@@ -297,7 +297,7 @@ const CertificateRecords = () => {
                 toast.current?.show({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Academic Profile Not Deleted',
+                    detail: 'Certificate Not Deleted',
                     life: 3000,
                 })
             }
@@ -345,7 +345,7 @@ const CertificateRecords = () => {
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
-                    detail: 'Academic Profile Deleted',
+                    detail: 'Certificate Deleted',
                     life: 3000,
                 })
             }
@@ -354,7 +354,7 @@ const CertificateRecords = () => {
                 toast.current?.show({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Academic Profile Not Deleted',
+                    detail: 'Certificate Not Deleted',
                     life: 3000,
                 })
             }
@@ -462,7 +462,7 @@ const CertificateRecords = () => {
 
     const header = (
         <div className="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-            <h5 className="m-0">Manage Academic Certificate</h5>
+            <h5 className="m-0">Manage Certificate</h5>
             <span className="block mt-2 md:mt-0 p-input-icon-left">
                 <i className="pi pi-search" />
                 <InputText
@@ -571,50 +571,6 @@ const CertificateRecords = () => {
         )
     }
 
-    const validateRollNo = () => {
-        if (degree.rollno) {
-            let i
-            let stringbe = ''
-            for (i = 0; i < degree.rollno.length; i++) {
-                if (i != 2) {
-                    if (i >= 1) {
-                        if (
-                            !(
-                                degree.rollno[i] >= '0' &&
-                                degree.rollno[i] <= '9'
-                            )
-                        ) {
-                            return 0
-                        }
-                        stringbe += degree.rollno[i]
-                    } else {
-                        if (
-                            !(
-                                degree.rollno[i] >= '1' &&
-                                degree.rollno[i] <= '9'
-                            )
-                        ) {
-                            return 0
-                        }
-                        stringbe += degree.rollno[i]
-                    }
-                } else if (i == 2) {
-                    if (
-                        (degree.rollno[i] >= 'a' && degree.rollno[i] <= 'z') ||
-                        (degree.rollno[i] >= 'A' && degree.rollno[i] <= 'Z')
-                    ) {
-                        stringbe += degree.rollno[i].toUpperCase()
-                    } else {
-                        return 0
-                    }
-                }
-            }
-            if (stringbe.length != 7) {
-                return 0
-            }
-            return 1
-        }
-    }
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -825,7 +781,6 @@ const CertificateRecords = () => {
     )
 }
 
-export default CertificateRecords
 export const getServerSideProps: GetServerSideProps = requireAuthentication(
     async (ctx) => {
         const { req } = ctx
@@ -834,9 +789,9 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
             const token = tokens.find((token) => token.includes('access_token'))
             let userType = ''
             if (token) {
-                const userEmail = jwt
-                    .decode(tokens[1].split('=')[1].toString())
-                    .email.toString()
+                const userEmail = jwt.decode(
+                    token.split('=')[1]?.toString()
+                ).email
                 await apolloClient
                     .query({
                         query: GET_USER_TYPE,
@@ -852,3 +807,5 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         }
     }
 )
+
+export default CertificateRecords

@@ -1,13 +1,13 @@
 import { gql, useQuery } from '@apollo/client'
 
 export const GET_STUDENTS = gql`
-    query GetAllResults($FilterResultInput: FilterResultInput) {
-        GetAllResults(FilterResultInput: $FilterResultInput) {
+    query GetAllStudents($filterStudentDto: FilterStudentDto) {
+        GetAllStudents(filterStudentDto: $filterStudentDto) {
             items {
                 id
-                url
-                year
-                type
+                email
+                name
+                cgpa
                 updatedAt
             }
             total
@@ -22,7 +22,7 @@ export function returnFetchStudentsHook(
 ) {
     const { data, loading, error, refetch } = useQuery(GET_STUDENTS, {
         variables: {
-            FilterResultInput: {
+            filterStudentDto: {
                 page: page,
                 limit: limit,
                 id: studentId,

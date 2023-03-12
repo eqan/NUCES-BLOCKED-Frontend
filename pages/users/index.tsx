@@ -11,16 +11,17 @@ import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
-import { returnFetchUsersHook } from './queries/getUsers'
-import { DELETE_USER } from './queries/removeUsers'
-import { CREATE_USER } from './queries/addUser'
+import { returnFetchUsersHook } from '../../queries/users/getUsers'
+import { DELETE_USER } from '../../queries/users/removeUsers'
+import { CREATE_USER } from '../../queries/users/addUser'
 import { useMutation } from '@apollo/client'
-import { UPDATE_USER } from './queries/updateUsers'
+import { UPDATE_USER } from '../../queries/users/updateUsers'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from './queries/getUserType'
+import { GET_USER_TYPE } from '../../queries/users/getUserType'
+import { Skeleton } from 'primereact/skeleton'
 
 interface Props {
     userType: String
@@ -52,13 +53,12 @@ const UserRecords: React.FC<Props> = (userType) => {
             password: user.password,
             role: user.type,
             email: user.email,
-            imgUrl: user.imgUrl,
+            imgUrl: user?.imgUrl || 'https://www.linkedin.com/in/noms',
         }
     }
     const router = useRouter()
     const [users, setUsers] = useState<UserInterface[]>([])
-    const [userAddDialog, setUserAddDialog] = useState(false)
-    const [userUpdateDialog, setUpdateUserDialog] = useState(false)
+    const [userSaveDialog, setSaveUserDialog] = useState(false)
     const [deleteUserDialog, setDeleteUserDialog] = useState(false)
     const [deleteUsersDialog, setDeleteUsersDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
@@ -145,21 +145,16 @@ const UserRecords: React.FC<Props> = (userType) => {
 
     useEffect(() => {}, [globalFilter])
 
-    const openNewAddUserDialog = () => {
+    const openAddUpdateUserDialog = () => {
         setUser(UserRecordInterface)
         setRole('')
         setSubmitted(false)
-        setUserAddDialog(true)
+        setSaveUserDialog(true)
     }
 
-    const hideAddUserDialog = () => {
+    const hideUserDialog = () => {
         setSubmitted(false)
-        setUserAddDialog(false)
-    }
-
-    const hideUpdateUserDialog = () => {
-        setSubmitted(false)
-        setUpdateUserDialog(false)
+        setSaveUserDialog(false)
     }
 
     const hideDeleteUserDialog = () => {
@@ -170,99 +165,7 @@ const UserRecords: React.FC<Props> = (userType) => {
         setDeleteUsersDialog(false)
     }
 
-    const addUser = async () => {
-        setSubmitted(true)
-
-        if (user.name && user.email) {
-            let _users = [...users]
-            let _user = { ...user }
-            try {
-                _users[_user.id] = _user
-                let newUser = await createuserFunction({
-                    variables: {
-                        CreateUserInput: {
-                            name: _user.name,
-                            email: _user.email,
-                            password: _user.password,
-                            type: _user.role,
-                            imgUrl: _user.imgUrl,
-                        },
-                    },
-                })
-                newUser = newUser.data['Createuser']
-                const mappedData: UserInterface = mapUserToUserRecord(newUser)
-                _users = _users.filter((item) => (item.id = mappedData.id))
-                _users.push(mappedData)
-                setUsers(_users)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'User Added',
-                        life: 3000,
-                    })
-            } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'User Not Added',
-                        life: 3000,
-                    })
-                }
-                console.log(error)
-            }
-
-            setUserAddDialog(false)
-            setUser(UserRecordInterface)
-        }
-    }
-
-    const updateUser = async () => {
-        setSubmitted(true)
-
-        if (user.email) {
-            let _users = [...users]
-            let _user = { ...user }
-            try {
-                const index = findIndexById(_user.id)
-                _users[index] = _user
-                await updateuserFunction({
-                    variables: {
-                        UpdateUserInput: {
-                            email: _user.email,
-                            name: _user.name,
-                            password: _user.password,
-                            type: _user.role,
-                        },
-                    },
-                })
-                setUsers(_users)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'User Updated',
-                        life: 3000,
-                    })
-            } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'User Not Updated',
-                        life: 3000,
-                    })
-                }
-                console.log(error)
-            }
-
-            setUpdateUserDialog(false)
-            setUser(UserRecordInterface)
-        }
-    }
-
-    const saveUser = () => {
+    const saveUser = async () => {
         setSubmitted(true)
 
         if (
@@ -275,39 +178,74 @@ const UserRecords: React.FC<Props> = (userType) => {
         ) {
             let _users = [...users]
             let _user = { ...user }
-            if (user.id) {
-                const index = findIndexById(user.id)
-                _users[index] = _user
+            let successMessage = ''
+            let errorMessage = ''
+            try {
+                const index = findIndexById(_user.id)
+                successMessage = 'User Added!'
+                errorMessage = 'User Not Added!'
+                if (index == -1) {
+                    _users[user.id] = _user
+                    let newUser = await createuserFunction({
+                        variables: {
+                            CreateUserInput: {
+                                name: _user.name,
+                                email: _user.email,
+                                password: _user.password,
+                                type: _user.role,
+                                imgUrl: _user.imgUrl,
+                            },
+                        },
+                    })
+                    newUser = newUser.data['Createuser']
+                    const mappedData: UserInterface =
+                        mapUserToUserRecord(newUser)
+                    _users = _users.filter((item) => (item.id = mappedData.id))
+                    _users.push(mappedData)
+                } else {
+                    _users[index] = _user
+                    successMessage = 'User Updated!'
+                    errorMessage = 'User Not Updated!'
+                    await updateuserFunction({
+                        variables: {
+                            UpdateUserInput: {
+                                email: _user.email,
+                                name: _user.name,
+                                password: _user.password,
+                                type: _user.role,
+                            },
+                        },
+                    })
+                }
+                setUsers(_users)
                 if (toast.current)
                     toast.current.show({
                         severity: 'success',
                         summary: 'Successful',
-                        detail: 'User Updated',
+                        detail: successMessage,
                         life: 3000,
                     })
-            } else {
-                // _user.id = createId()
-                _users.push(_user)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'User Created',
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
                         life: 3000,
                     })
+                }
+                console.log(error)
             }
 
-            setUsers(_users)
-            setUserAddDialog(false)
+            setSaveUserDialog(false)
             setUser(UserRecordInterface)
-            setRole('')
         }
     }
 
     const editUser = (user) => {
         setUser({ ...user })
         setRole({ name: user.role })
-        setUserAddDialog(true)
+        setSaveUserDialog(true)
     }
 
     const confirmDeleteUser = (user) => {
@@ -476,7 +414,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                         label="New"
                         icon="pi pi-plus"
                         className="p-button-success mr-2"
-                        onClick={openNewAddUserDialog}
+                        onClick={openAddUpdateUserDialog}
                     />
                     <Button
                         label="Delete"
@@ -562,35 +500,19 @@ const UserRecords: React.FC<Props> = (userType) => {
         </div>
     )
 
-    const addUserDialogFooter = (
+    const saveUserDialogFooter = (
         <>
             <Button
                 label="Cancel"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideAddUserDialog}
+                onClick={hideUserDialog}
             />
             <Button
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={addUser}
-            />
-        </>
-    )
-    const updateUserDialogFooter = (
-        <>
-            <Button
-                label="Cancel"
-                icon="pi pi-times"
-                className="p-button-text"
-                onClick={hideUpdateUserDialog}
-            />
-            <Button
-                label="Save"
-                icon="pi pi-check"
-                className="p-button-text"
-                onClick={updateUser}
+                onClick={saveUser}
             />
         </>
     )
@@ -652,6 +574,34 @@ const UserRecords: React.FC<Props> = (userType) => {
         { name: 'CAREER_COUNSELLOR' },
         { name: 'SOCIETY_HEAD' },
     ]
+    const LoadingTemplate = ({ w, h }: { w: string; h: string }) => {
+        return (
+            <div
+                className="flex align-items-center"
+                style={{ height: '17px', flexGrow: '1', overflow: 'hidden' }}
+            >
+                <Skeleton width={w} height={h} />
+            </div>
+        )
+    }
+    const SkeletonTable = () => {
+        return (
+            <>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        margin: '10px',
+                    }}
+                >
+                    <LoadingTemplate h="40px" w="40px" />
+                    <LoadingTemplate h="10px" w="100px" />
+                    <LoadingTemplate h="10px" w="80px" />
+                    <LoadingTemplate h="10px" w="40px" />
+                </div>
+            </>
+        )
+    }
 
     return (
         <div className="grid crud-demo">
@@ -664,66 +614,74 @@ const UserRecords: React.FC<Props> = (userType) => {
                         right={rightToolbarTemplate}
                     ></Toolbar>
 
-                    <DataTable
-                        ref={dt}
-                        value={users}
-                        selection={selectedUsers}
-                        onSelectionChange={(e) => setSelectedUsers(e.value)}
-                        dataKey="id"
-                        defaultValue={1}
-                        paginator
-                        rows={pageLimit}
-                        first={page * pageLimit}
-                        onPage={onPageChange}
-                        rowsPerPageOptions={[5, 10, 25]}
-                        className="datatable-responsive"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
-                        emptyMessage="No users found."
-                        header={header}
-                        responsiveLayout="scroll"
-                        totalRecords={totalRecords}
-                        loading={isLoading}
-                    >
-                        <Column
-                            selectionMode="multiple"
-                            headerStyle={{ width: '4rem' }}
-                        ></Column>
-                        <Column
-                            field="name"
-                            header="Full Name"
-                            sortable
-                            body={nameBodyTemplate}
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="email"
-                            header="Email"
-                            body={emailBodyTemplate}
-                            sortable
-                            headerStyle={{ minWidth: '15rem' }}
-                        ></Column>
-                        <Column
-                            field="role"
-                            header="Role"
-                            body={roleBodyTemplate}
-                            sortable
-                        ></Column>
+                    {isLoading ? (
+                        <>
+                            {[1, 2, 3, 4, 5].map((v) => (
+                                <SkeletonTable />
+                            ))}
+                        </>
+                    ) : (
+                        <DataTable
+                            ref={dt}
+                            value={users}
+                            selection={selectedUsers}
+                            onSelectionChange={(e) => setSelectedUsers(e.value)}
+                            dataKey="id"
+                            defaultValue={1}
+                            paginator
+                            rows={pageLimit}
+                            first={page * pageLimit}
+                            onPage={onPageChange}
+                            rowsPerPageOptions={[5, 10, 25]}
+                            className="datatable-responsive"
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+                            emptyMessage="No users found."
+                            header={header}
+                            responsiveLayout="scroll"
+                            totalRecords={totalRecords}
+                            loading={isLoading}
+                        >
+                            <Column
+                                selectionMode="multiple"
+                                headerStyle={{ width: '4rem' }}
+                            ></Column>
+                            <Column
+                                field="name"
+                                header="Full Name"
+                                sortable
+                                body={nameBodyTemplate}
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="email"
+                                header="Email"
+                                body={emailBodyTemplate}
+                                sortable
+                                headerStyle={{ minWidth: '15rem' }}
+                            ></Column>
+                            <Column
+                                field="role"
+                                header="Role"
+                                body={roleBodyTemplate}
+                                sortable
+                            ></Column>
 
-                        <Column
-                            body={actionBodyTemplate}
-                            headerStyle={{ minWidth: '10rem' }}
-                        ></Column>
-                    </DataTable>
+                            <Column
+                                body={actionBodyTemplate}
+                                headerStyle={{ minWidth: '10rem' }}
+                            ></Column>
+                        </DataTable>
+                    )}
 
                     <Dialog
-                        visible={userAddDialog}
+                        visible={userSaveDialog}
                         style={{ width: '450px' }}
                         header="User Details"
                         modal
                         className="p-fluid"
-                        footer={addUserDialogFooter}
-                        onHide={hideAddUserDialog}
+                        footer={saveUserDialogFooter}
+                        onHide={hideUserDialog}
                     >
                         <div className="field">
                             <label htmlFor="name">Name</label>
@@ -785,6 +743,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                             </span>
                         </div>
                         <div className="field">
+                            <label htmlFor="email">Password</label>
                             <Password
                                 id="password"
                                 name="password"
@@ -898,9 +857,9 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
             const token = tokens.find((token) => token.includes('access_token'))
             let userType = ''
             if (token) {
-                const userEmail = jwt
-                    .decode(tokens[1].split('=')[1].toString())
-                    .email.toString()
+                const userEmail = jwt.decode(
+                    token.split('=')[1]?.toString()
+                ).email
                 await apolloClient
                     .query({
                         query: GET_USER_TYPE,
@@ -909,9 +868,9 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     .then((result) => {
                         userType = result.data.GetUserTypeByUserEmail.toString()
                     })
-            }
-            return {
-                props: { userType },
+                return {
+                    props: { userType },
+                }
             }
         }
     }

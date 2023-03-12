@@ -6,6 +6,7 @@ export const CREATE_STUDENT = gql`
             id
             email
             name
+            cgpa
         }
     }
 `
