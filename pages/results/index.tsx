@@ -21,6 +21,7 @@ import { requireAuthentication } from '../../layout/context/requireAuthetication
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_TYPE } from '../../queries/users/getUserType'
+import { NFTStorage } from 'nft.storage'
 
 interface ResultsInterface {
     id: string
@@ -34,6 +35,8 @@ interface Props {
 }
 
 const SemesterResult: React.FC<Props> = (userType) => {
+    const NFT_STORAGE_TOKEN =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDEzNzY2YkZjNUY4NjRhNjFmYTEzOGFkN0EyN0E1NDgxMGMyYzI5NGMiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY3NzA5Mzc3ODMzMCwibmFtZSI6Ik5VQ0VTIEJMT0NLRUQifQ.1TjcDSvnNEDdiOou_CweWwQ8UFCKLLDoknKpOA2e3IU'
     let ResultsRecordInterface = {
         id: '',
         semester: '',
@@ -52,6 +55,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
     }
     const router = useRouter()
+    const [file, setFile] = useState(null)
     const [results, setResults] = useState<ResultsInterface[]>([])
     const [resultAddDialog, setAddResultDialog] = useState(false)
     const [resultUpdateDialog, setUpdateResultDialog] = useState(false)
@@ -70,6 +74,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const [totalRecords, setTotalRecords] = useState(1)
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
+    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN })
+    const [uploading, setUploading] = useState(false)
+    const [uploadUrl, setUploadUrl] = useState(null)
 
     const [
         resultsData,
@@ -149,6 +156,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
     useEffect(() => {}, [globalFilter])
 
     const onUpload = () => {
+        // THi
         if (toast.current)
             toast.current.show({
                 severity: 'info',
@@ -607,6 +615,48 @@ const SemesterResult: React.FC<Props> = (userType) => {
             </>
         )
     }
+
+    const invoiceUploadHandler = async ({ files }) => {
+        const [file] = files
+        const fileReader = new FileReader()
+        fileReader.onload = (e) => {
+            handleUpload(e.target.result)
+        }
+        await console.log(fileReader.readAsDataURL(file))
+    }
+
+    const handleUpload = async (file) => {
+        try {
+            const nftstorage = new NFTStorage({
+                token: NFT_STORAGE_TOKEN,
+            })
+            const image = new File([file], 'NFT', {
+                type: '/image*',
+            })
+
+            const metadata = {
+                name: 'My NFT',
+                description: 'My NFT Description',
+            }
+
+            try {
+                const value = await nftstorage.store({
+                    image,
+                    name: metadata.name,
+                    description: metadata.description,
+                })
+                console.log('NFT URL:', value.url)
+            } catch (error) {
+                console.error('Error uploading file:', error)
+            }
+            // Set the upload URL and hide the spinner
+            setUploadUrl(result.url)
+            setUploading(false)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
     return (
         <div className="grid crud-demo">
@@ -744,18 +794,29 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
                         <div className="field">
                             <label htmlFor="file">File</label>
+
                             <FileUpload
                                 chooseOptions={{
                                     label: 'import',
                                     icon: 'pi pi-download',
                                 }}
+                                name="file"
+                                // url="http://localhost:3000/upload.php"
+                                // itemTemplate={customItemTemplate}
+                                // auto={true}
+                                // mode="basic"
+                                // accept="image/*"
+                                // // onUpload={handleUpload}
+                                // disabled={uploading}
+                                // maxFileSize={1000000}
+                                // customUpload={false}
+                                // uploadHandler={handleUpload}
+                                accept="image/*"
+                                customUpload={true}
+                                uploadHandler={invoiceUploadHandler}
                                 mode="basic"
-                                name="demo[]"
-                                auto
-                                url="/api/upload"
-                                accept=".csv"
+                                auto={true}
                                 className="mr-2"
-                                onUpload={onUpload}
                             />
                         </div>
                     </Dialog>
