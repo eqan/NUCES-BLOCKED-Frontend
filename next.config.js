@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+const dotenv = require('dotenv')
+    
+dotenv.config()
+
 
 const nextConfig = {
     reactStrictMode: false,
@@ -7,7 +11,7 @@ const nextConfig = {
     publicRuntimeConfig: {
         contextPath: process.env.NODE_ENV === 'production' ? '/nuces-blocked' : '',
         uploadPath: process.env.NODE_ENV === 'production' ? '/nuces-blocked/upload.php' : '/api/upload'
-    }
+    },
 };
 
 module.exports = nextConfig;

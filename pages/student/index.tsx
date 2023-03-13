@@ -8,7 +8,9 @@ import { FileUpload } from 'primereact/fileupload'
 import { InputText } from 'primereact/inputtext'
 import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
+import { Skeleton } from 'primereact/skeleton'
 import { classNames } from 'primereact/utils'
+import jwt from 'jsonwebtoken'
 import React, { useEffect, useRef, useState } from 'react'
 import { CREATE_STUDENT } from '../../queries/students/addStudent'
 import { returnFetchStudentsHook } from '../../queries/students/getStudent'
@@ -18,8 +20,6 @@ import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
-import jwt from 'jsonwebtoken'
-import { Skeleton } from 'primereact/skeleton'
 
 interface Props {
     userType: String

@@ -22,6 +22,7 @@ import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { NFTStorage } from 'nft.storage'
+import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 
 interface ResultsInterface {
     id: string
@@ -35,8 +36,6 @@ interface Props {
 }
 
 const SemesterResult: React.FC<Props> = (userType) => {
-    const NFT_STORAGE_TOKEN =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDEzNzY2YkZjNUY4NjRhNjFmYTEzOGFkN0EyN0E1NDgxMGMyYzI5NGMiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY3NzA5Mzc3ODMzMCwibmFtZSI6Ik5VQ0VTIEJMT0NLRUQifQ.1TjcDSvnNEDdiOou_CweWwQ8UFCKLLDoknKpOA2e3IU'
     let ResultsRecordInterface = {
         id: '',
         semester: '',
@@ -75,7 +74,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const [totalRecords, setTotalRecords] = useState(1)
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
-    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN })
     const [uploading, setUploading] = useState(false)
     const [uploadUrl, setUploadUrl] = useState(null)
 
@@ -156,10 +154,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     useEffect(() => {}, [globalFilter])
 
-    const onUpload = () => {
-        // THi
-    }
-
     const openNewAddResultDialog = () => {
         setResult(ResultsRecordInterface)
         setSubmitted(false)
@@ -208,7 +202,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                         CreateResultInput: {
                             year: result.year,
                             type: result.semester,
-                            url: result.url,
+                            url: uploadUrl,
                         },
                     },
                 })
@@ -620,31 +614,38 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     const handleUpload = async (file) => {
         try {
+            setUploading(true)
             const nftstorage = new NFTStorage({
                 token: NFT_STORAGE_TOKEN,
             })
-            const image = new File([file], 'NFT', {
-                type: '/image*',
+            const binaryFileWithMetaData = new File([file], 'NFT', {
+                type: '.csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             })
 
             const metadata = {
-                name: 'My NFT',
-                description: 'My NFT Description',
+                name: result.semester + '_' + result.year,
+                description: `Semester result of the ${result.semester} ${result.year}`,
             }
 
             try {
                 const value = await nftstorage.store({
-                    image,
+                    image: binaryFileWithMetaData,
                     name: metadata.name,
                     description: metadata.description,
                 })
-                console.log('NFT URL:', value.url)
+                setUploadUrl(value.url)
+                setUploading(false)
             } catch (error) {
                 console.error('Error uploading file:', error)
+                if (toast.current)
+                    toast.current.show({
+                        severity: 'error',
+                        summary: 'error',
+                        detail: 'Error in Uploading File',
+                        life: 3000,
+                    })
             }
             handleReset()
-            setUploadUrl(result.url)
-            setUploading(false)
             if (toast.current)
                 toast.current.show({
                     severity: 'info',
@@ -653,6 +654,13 @@ const SemesterResult: React.FC<Props> = (userType) => {
                     life: 3000,
                 })
         } catch (error) {
+            if (toast.current)
+                toast.current.show({
+                    severity: 'error',
+                    summary: 'error',
+                    detail: 'File Not Uploaded',
+                    life: 3000,
+                })
             console.error(error)
         }
     }
@@ -802,17 +810,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                                     icon: 'pi pi-download',
                                 }}
                                 name="file"
-                                // url="http://localhost:3000/upload.php"
-                                // itemTemplate={customItemTemplate}
-                                // auto={true}
-                                // mode="basic"
-                                // accept="image/*"
-                                // // onUpload={handleUpload}
-                                // disabled={uploading}
-                                // maxFileSize={1000000}
-                                // customUpload={false}
-                                // uploadHandler={handleUpload}
-                                accept="image/*"
+                                accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                 customUpload={true}
                                 uploadHandler={invoiceUploadHandler}
                                 mode="basic"
@@ -831,25 +829,21 @@ const SemesterResult: React.FC<Props> = (userType) => {
                         onHide={hideUpdateResultDialog}
                     >
                         <div className="field">
-                            <label htmlFor="hash">Hash</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="hash"
-                                    value={result.url}
-                                    onChange={(e) => onInputChange(e, 'hash')}
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid': submitted && !result.url,
-                                    })}
-                                />
-                                {submitted && !result.url && (
-                                    <small className="p-invalid">
-                                        Hash is required.
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-prime" />
-                            </span>
+                            <label htmlFor="file">File</label>
+
+                            <FileUpload
+                                ref={fileUploadRef}
+                                chooseOptions={{
+                                    label: 'import',
+                                    icon: 'pi pi-download',
+                                }}
+                                name="file"
+                                accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                customUpload={true}
+                                uploadHandler={invoiceUploadHandler}
+                                mode="basic"
+                                className="mr-2"
+                            />
                         </div>
                     </Dialog>
 
