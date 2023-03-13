@@ -56,6 +56,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }
     const router = useRouter()
     const [file, setFile] = useState(null)
+    const fileUploadRef = useRef(null)
     const [results, setResults] = useState<ResultsInterface[]>([])
     const [resultAddDialog, setAddResultDialog] = useState(false)
     const [resultUpdateDialog, setUpdateResultDialog] = useState(false)
@@ -157,13 +158,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     const onUpload = () => {
         // THi
-        if (toast.current)
-            toast.current.show({
-                severity: 'info',
-                summary: 'Success',
-                detail: 'File Uploaded',
-                life: 3000,
-            })
     }
 
     const openNewAddResultDialog = () => {
@@ -617,12 +611,11 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }
 
     const invoiceUploadHandler = async ({ files }) => {
-        const [file] = files
-        const fileReader = new FileReader()
-        fileReader.onload = (e) => {
-            handleUpload(e.target.result)
-        }
-        await console.log(fileReader.readAsDataURL(file))
+        const uploadedFile = files[0]
+        handleUpload(uploadedFile)
+    }
+    const handleReset = () => {
+        fileUploadRef.current.clear() // call the clear method on file upload ref
     }
 
     const handleUpload = async (file) => {
@@ -649,9 +642,16 @@ const SemesterResult: React.FC<Props> = (userType) => {
             } catch (error) {
                 console.error('Error uploading file:', error)
             }
-            // Set the upload URL and hide the spinner
+            handleReset()
             setUploadUrl(result.url)
             setUploading(false)
+            if (toast.current)
+                toast.current.show({
+                    severity: 'info',
+                    summary: 'Success',
+                    detail: 'File Uploaded',
+                    life: 3000,
+                })
         } catch (error) {
             console.error(error)
         }
@@ -796,6 +796,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                             <label htmlFor="file">File</label>
 
                             <FileUpload
+                                ref={fileUploadRef}
                                 chooseOptions={{
                                     label: 'import',
                                     icon: 'pi pi-download',
@@ -815,7 +816,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
                                 customUpload={true}
                                 uploadHandler={invoiceUploadHandler}
                                 mode="basic"
-                                auto={true}
                                 className="mr-2"
                             />
                         </div>
