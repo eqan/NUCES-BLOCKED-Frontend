@@ -23,6 +23,7 @@ import jwt from 'jsonwebtoken'
 import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { NFTStorage } from 'nft.storage'
 import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
+import FileSaver from 'file-saver'
 
 interface ResultsInterface {
     id: string
@@ -191,11 +192,11 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     const addResult = async () => {
         setSubmitted(true)
-
         if (result.semester && result.year) {
             let _results = [...results]
             let _result = { ...result }
             try {
+                handleUpload()
                 _results[_result.id] = _result
                 let newResult = await createResultFunction({
                     variables: {
@@ -473,7 +474,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 <Button
                     icon="pi pi-arrow-down"
                     className="p-button-rounded p-button-success mr-2"
-                    onClick={exportCSV}
+                    onClick={downloadSemesterResult}
                 />
                 <Button
                     icon="pi pi-arrow-up"
@@ -604,21 +605,37 @@ const SemesterResult: React.FC<Props> = (userType) => {
         )
     }
 
+    const downloadSemesterResult = async () => {
+        try {
+            const response = await fetch(result.url)
+            const data = await response.text()
+            FileSaver.saveAs(
+                new Blob([data], {
+                    type: '.csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                }),
+                `${result.id}.csv`
+            )
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const invoiceUploadHandler = async ({ files }) => {
-        const uploadedFile = files[0]
-        handleUpload(uploadedFile)
+        const uploadFileName = files[0]
+        setFile(uploadFileName)
     }
     const handleReset = () => {
         fileUploadRef.current.clear() // call the clear method on file upload ref
+        setFile(null)
     }
 
-    const handleUpload = async (file) => {
+    const handleUpload = async () => {
         try {
             setUploading(true)
             const nftstorage = new NFTStorage({
                 token: NFT_STORAGE_TOKEN,
             })
-            const binaryFileWithMetaData = new File([file], 'NFT', {
+            const binaryFileWithMetaData = new File([file], 'Result', {
                 type: '.csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             })
 
