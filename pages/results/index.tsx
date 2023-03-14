@@ -209,14 +209,14 @@ const SemesterResult: React.FC<Props> = (userType) => {
             try {
                 _results[_result.id] = _result
                 const id = _result.semester + '_' + _result.year
-                await handleUpload(id)
+                const url = await handleUpload(id)
                 // console.log(uploadUrl)
                 let newResult = await createResultFunction({
                     variables: {
                         CreateResultInput: {
                             year: result.year.toString(),
                             type: result.semester,
-                            url: uploadUrl,
+                            url: url,
                         },
                     },
                 })
@@ -490,7 +490,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 <Button
                     icon="pi pi-arrow-down"
                     className="p-button-rounded p-button-success mr-2"
-                    onClick={downloadSemesterResult}
+                    onClick={() => downloadSemesterResult(rowData)}
                 />
                 <Button
                     icon="pi pi-arrow-up"
@@ -621,13 +621,11 @@ const SemesterResult: React.FC<Props> = (userType) => {
         )
     }
 
-    const downloadSemesterResult = async () => {
+    const downloadSemesterResult = async (result) => {
         try {
-            console.log(result.url)
-            const response = await fetch(result.url)
-            const data = await response.text()
+            const response = await axios.get(result.url)
             FileSaver.saveAs(
-                new Blob([data], {
+                new Blob([response.data], {
                     type: 'text/csv',
                 }),
                 `${result.id}.csv`
@@ -648,6 +646,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }
 
     const handleUpload = async (id) => {
+        let url = null
         try {
             setUploading(true)
 
@@ -663,26 +662,15 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 name: id,
                 description: `Semester result of the ${id}`,
             }
-            try {
-                const value = await nftstorage.store({
-                    image: binaryFileWithMetaData,
-                    name: metadata.name,
-                    description: metadata.description,
-                })
-                console.log(value.url)
-                const url = await extractActualDataFromIPFS(value.url, '.csv')
-                console.log(url)
-                setUploadUrl(url)
-            } catch (error) {
-                console.error('Error uploading file:', error)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'error',
-                        summary: 'error',
-                        detail: 'Error in Uploading File',
-                        life: 3000,
-                    })
-            }
+            const value = await nftstorage.store({
+                image: binaryFileWithMetaData,
+                name: metadata.name,
+                description: metadata.description,
+            })
+            console.log(value.url)
+            url = await extractActualDataFromIPFS(value.url, '.csv')
+            console.log(url)
+            setUploadUrl(url)
             handleReset()
             if (toast.current)
                 toast.current.show({
@@ -702,6 +690,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
             console.error(error)
         }
         setUploading(false)
+        return url
     }
 
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
