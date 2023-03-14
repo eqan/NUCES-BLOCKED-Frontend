@@ -14,6 +14,8 @@ import { useMutation } from '@apollo/client'
 import { DELETE_RESULT } from '../../queries/results/removeResult'
 import { CREATE_RESULT } from '../../queries/results/addResult'
 import { UPDATE_RESULT } from '../../queries/results/updateResult'
+import { START_RESULT_CRON_JOB } from '../../queries/results/startCronJob'
+import { STOP_RESULT_CRON_JOB } from '../../queries/results/stopCronJob'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { GetServerSideProps } from 'next'
@@ -24,6 +26,8 @@ import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { NFTStorage } from 'nft.storage'
 import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import FileSaver from 'file-saver'
+import axios from 'axios'
+import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 
 interface ResultsInterface {
     id: string
@@ -115,6 +119,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
         },
     ] = useMutation(UPDATE_RESULT)
 
+    const [startCronJobFunction] = useMutation(START_RESULT_CRON_JOB)
+    const [stopCronJobFunction] = useMutation(STOP_RESULT_CRON_JOB)
+
     const fetchData = async () => {
         setIsLoading(true)
         if (!resultsLoading) {
@@ -154,6 +161,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }, [resultsRefetchHook, router.events])
 
     useEffect(() => {}, [globalFilter])
+    useEffect(() => {
+        console.log(file)
+    }, [file])
 
     const openNewAddResultDialog = () => {
         setResult(ResultsRecordInterface)
@@ -193,15 +203,18 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const addResult = async () => {
         setSubmitted(true)
         if (result.semester && result.year) {
+            stopCronJobFunction()
             let _results = [...results]
             let _result = { ...result }
             try {
-                handleUpload()
                 _results[_result.id] = _result
+                const id = _result.semester + '_' + _result.year
+                await handleUpload(id)
+                // console.log(uploadUrl)
                 let newResult = await createResultFunction({
                     variables: {
                         CreateResultInput: {
-                            year: result.year,
+                            year: result.year.toString(),
                             type: result.semester,
                             url: uploadUrl,
                         },
@@ -232,6 +245,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 console.log(error)
             }
 
+            startCronJobFunction()
             setAddResultDialog(false)
             setResult(ResultsRecordInterface)
         }
@@ -241,6 +255,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
         setSubmitted(true)
 
         if (result.url) {
+            stopCronJobFunction()
             let _results = [...results]
             let _result = { ...result }
             try {
@@ -274,6 +289,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 console.log(error)
             }
 
+            startCronJobFunction()
             setUpdateResultDialog(false)
             setResult(ResultsRecordInterface)
         }
@@ -607,11 +623,12 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     const downloadSemesterResult = async () => {
         try {
+            console.log(result.url)
             const response = await fetch(result.url)
             const data = await response.text()
             FileSaver.saveAs(
                 new Blob([data], {
-                    type: '.csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    type: 'text/csv',
                 }),
                 `${result.id}.csv`
             )
@@ -620,38 +637,42 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
     }
 
-    const invoiceUploadHandler = async ({ files }) => {
-        const uploadFileName = files[0]
-        setFile(uploadFileName)
+    const invoiceUploadHandler = ({ files }) => {
+        if (file != null) handleReset()
+        const fileToUpload = files[0]
+        setFile(fileToUpload)
     }
     const handleReset = () => {
-        fileUploadRef.current.clear() // call the clear method on file upload ref
+        if (fileUploadRef.current != null) fileUploadRef.current.clear() // call the clear method on file upload ref
         setFile(null)
     }
 
-    const handleUpload = async () => {
+    const handleUpload = async (id) => {
         try {
             setUploading(true)
+
             const nftstorage = new NFTStorage({
                 token: NFT_STORAGE_TOKEN,
             })
-            const binaryFileWithMetaData = new File([file], 'Result', {
-                type: '.csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            console.log(file)
+            const binaryFileWithMetaData = new File([file], id + '.csv', {
+                type: 'text/csv',
             })
 
             const metadata = {
-                name: result.semester + '_' + result.year,
-                description: `Semester result of the ${result.semester} ${result.year}`,
+                name: id,
+                description: `Semester result of the ${id}`,
             }
-
             try {
                 const value = await nftstorage.store({
                     image: binaryFileWithMetaData,
                     name: metadata.name,
                     description: metadata.description,
                 })
-                setUploadUrl(value.url)
-                setUploading(false)
+                console.log(value.url)
+                const url = await extractActualDataFromIPFS(value.url, '.csv')
+                console.log(url)
+                setUploadUrl(url)
             } catch (error) {
                 console.error('Error uploading file:', error)
                 if (toast.current)
@@ -680,6 +701,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 })
             console.error(error)
         }
+        setUploading(false)
     }
 
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
