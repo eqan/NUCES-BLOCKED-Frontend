@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { format } from 'path'
 export const regex = /ipfs:\/\/([a-zA-Z0-9]+)/
 export const regex2 = /[^/]*$/
 
@@ -19,6 +18,5 @@ export const extractActualDataFromIPFS = async (
     )
     const requiredHash = response.data.image.match(regex)[1]
     const name = response.data.name + format
-    const newUrl = convertToHTTPAccessibleFormat(requiredHash, name)
-    return newUrl
+    return convertToHTTPAccessibleFormat(requiredHash, name)
 }
