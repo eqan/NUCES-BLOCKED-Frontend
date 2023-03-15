@@ -3,14 +3,7 @@
 /node_modules
 .next
 
-constants
-
-src/schemaFile.graphql
-src/graphqlFile.ts
-
-src/schema.graphql
-
-src/graphql.ts
+constants/env-variables.ts
 
 # Logs
 logs
