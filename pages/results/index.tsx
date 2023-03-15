@@ -14,6 +14,8 @@ import { useMutation } from '@apollo/client'
 import { DELETE_RESULT } from '../../queries/results/removeResult'
 import { CREATE_RESULT } from '../../queries/results/addResult'
 import { UPDATE_RESULT } from '../../queries/results/updateResult'
+import { START_RESULT_CRON_JOB } from '../../queries/results/startCronJob'
+import { STOP_RESULT_CRON_JOB } from '../../queries/results/stopCronJob'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { GetServerSideProps } from 'next'
@@ -21,6 +23,11 @@ import { requireAuthentication } from '../../layout/context/requireAuthetication
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_TYPE } from '../../queries/users/getUserType'
+import { NFTStorage } from 'nft.storage'
+import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
+import FileSaver from 'file-saver'
+import axios from 'axios'
+import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 
 interface ResultsInterface {
     id: string
@@ -52,6 +59,8 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
     }
     const router = useRouter()
+    const [file, setFile] = useState(null)
+    const fileUploadRef = useRef(null)
     const [results, setResults] = useState<ResultsInterface[]>([])
     const [resultAddDialog, setAddResultDialog] = useState(false)
     const [resultUpdateDialog, setUpdateResultDialog] = useState(false)
@@ -70,6 +79,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const [totalRecords, setTotalRecords] = useState(1)
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
+    const [uploading, setUploading] = useState(false)
 
     const [
         resultsData,
@@ -107,6 +117,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
             reset: resultUpdateDataReset,
         },
     ] = useMutation(UPDATE_RESULT)
+
+    const [startCronJobFunction] = useMutation(START_RESULT_CRON_JOB)
+    const [stopCronJobFunction] = useMutation(STOP_RESULT_CRON_JOB)
 
     const fetchData = async () => {
         setIsLoading(true)
@@ -148,16 +161,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     useEffect(() => {}, [globalFilter])
 
-    const onUpload = () => {
-        if (toast.current)
-            toast.current.show({
-                severity: 'info',
-                summary: 'Success',
-                detail: 'File Uploaded',
-                life: 3000,
-            })
-    }
-
     const openNewAddResultDialog = () => {
         setResult(ResultsRecordInterface)
         setSubmitted(false)
@@ -195,18 +198,20 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     const addResult = async () => {
         setSubmitted(true)
-
         if (result.semester && result.year) {
+            stopCronJobFunction()
             let _results = [...results]
             let _result = { ...result }
             try {
                 _results[_result.id] = _result
+                const id = _result.semester + '_' + _result.year
+                const url = await handleUpload(id)
                 let newResult = await createResultFunction({
                     variables: {
                         CreateResultInput: {
-                            year: result.year,
+                            year: result.year.toString(),
                             type: result.semester,
-                            url: result.url,
+                            url: url,
                         },
                     },
                 })
@@ -235,6 +240,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 console.log(error)
             }
 
+            startCronJobFunction()
             setAddResultDialog(false)
             setResult(ResultsRecordInterface)
         }
@@ -244,16 +250,18 @@ const SemesterResult: React.FC<Props> = (userType) => {
         setSubmitted(true)
 
         if (result.url) {
+            stopCronJobFunction()
             let _results = [...results]
             let _result = { ...result }
             try {
                 const index = findIndexById(_result.id)
+                const url = await handleUpload(result.id)
                 _results[index] = _result
                 await updateResultFunction({
                     variables: {
                         UpdateResultInput: {
                             id: result.id,
-                            url: result.url,
+                            url: url,
                         },
                     },
                 })
@@ -277,12 +285,13 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 console.log(error)
             }
 
+            startCronJobFunction()
             setUpdateResultDialog(false)
             setResult(ResultsRecordInterface)
         }
     }
 
-    const editResult = (result) => {
+    const uploadResult = (result) => {
         setResult({ ...result })
         setSemester({ name: result.semester })
         setUpdateResultDialog(true)
@@ -477,12 +486,12 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 <Button
                     icon="pi pi-arrow-down"
                     className="p-button-rounded p-button-success mr-2"
-                    onClick={exportCSV}
+                    onClick={() => downloadSemesterResult(rowData)}
                 />
                 <Button
                     icon="pi pi-arrow-up"
                     className="p-button-rounded p-button-warning mr-2"
-                    onClick={() => editResult(rowData)}
+                    onClick={() => uploadResult(rowData)}
                 />
                 <Button
                     icon="pi pi-trash"
@@ -607,6 +616,76 @@ const SemesterResult: React.FC<Props> = (userType) => {
             </>
         )
     }
+
+    const downloadSemesterResult = async (result) => {
+        try {
+            const response = await axios.get(result.url)
+            FileSaver.saveAs(
+                new Blob([response.data], {
+                    type: 'text/csv',
+                }),
+                `${result.id}.csv`
+            )
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const uploadHandler = ({ files }) => {
+        handleReset()
+        const fileToUpload = files[0]
+        setFile(fileToUpload)
+    }
+    const handleReset = () => {
+        if (fileUploadRef.current != null) fileUploadRef.current.clear() // call the clear method on file upload ref
+        setFile(null)
+    }
+
+    const handleUpload = async (id) => {
+        let url = null
+        try {
+            setUploading(true)
+
+            const nftstorage = new NFTStorage({
+                token: NFT_STORAGE_TOKEN,
+            })
+            const binaryFileWithMetaData = new File([file], id + '.csv', {
+                type: 'text/csv',
+            })
+
+            const metadata = {
+                name: id,
+                description: `Semester result of the ${id}`,
+            }
+            const value = await nftstorage.store({
+                image: binaryFileWithMetaData,
+                name: metadata.name,
+                description: metadata.description,
+            })
+            console.log(value.url)
+            url = await extractActualDataFromIPFS(value.url, '.csv')
+            handleReset()
+            if (toast.current)
+                toast.current.show({
+                    severity: 'info',
+                    summary: 'Success',
+                    detail: 'File Uploaded',
+                    life: 3000,
+                })
+        } catch (error) {
+            if (toast.current)
+                toast.current.show({
+                    severity: 'error',
+                    summary: 'error',
+                    detail: 'File Not Uploaded',
+                    life: 3000,
+                })
+            console.error(error)
+        }
+        setUploading(false)
+        return url
+    }
+
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
     return (
         <div className="grid crud-demo">
@@ -744,18 +823,19 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
                         <div className="field">
                             <label htmlFor="file">File</label>
+
                             <FileUpload
+                                ref={fileUploadRef}
                                 chooseOptions={{
                                     label: 'import',
                                     icon: 'pi pi-download',
                                 }}
+                                name="file"
+                                accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                customUpload={true}
+                                uploadHandler={uploadHandler}
                                 mode="basic"
-                                name="demo[]"
-                                auto
-                                url="/api/upload"
-                                accept=".csv"
                                 className="mr-2"
-                                onUpload={onUpload}
                             />
                         </div>
                     </Dialog>
@@ -770,25 +850,21 @@ const SemesterResult: React.FC<Props> = (userType) => {
                         onHide={hideUpdateResultDialog}
                     >
                         <div className="field">
-                            <label htmlFor="hash">Hash</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="hash"
-                                    value={result.url}
-                                    onChange={(e) => onInputChange(e, 'hash')}
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid': submitted && !result.url,
-                                    })}
-                                />
-                                {submitted && !result.url && (
-                                    <small className="p-invalid">
-                                        Hash is required.
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-prime" />
-                            </span>
+                            <label htmlFor="file">File</label>
+
+                            <FileUpload
+                                ref={fileUploadRef}
+                                chooseOptions={{
+                                    label: 'import',
+                                    icon: 'pi pi-download',
+                                }}
+                                name="file"
+                                accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                customUpload={true}
+                                uploadHandler={uploadHandler}
+                                mode="basic"
+                                className="mr-2"
+                            />
                         </div>
                     </Dialog>
 

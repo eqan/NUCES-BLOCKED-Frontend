@@ -23,7 +23,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx"
-, "apollo-client.js"  ],
+, "apollo-client.js", "queries/results/stopCronJob.ts"  ],
   "exclude": [
     "node_modules"
   ]
