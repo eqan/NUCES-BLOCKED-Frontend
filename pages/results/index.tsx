@@ -80,7 +80,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
     const [uploading, setUploading] = useState(false)
-    const [uploadUrl, setUploadUrl] = useState(null)
 
     const [
         resultsData,
@@ -210,7 +209,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 _results[_result.id] = _result
                 const id = _result.semester + '_' + _result.year
                 const url = await handleUpload(id)
-                // console.log(uploadUrl)
                 let newResult = await createResultFunction({
                     variables: {
                         CreateResultInput: {
@@ -260,12 +258,13 @@ const SemesterResult: React.FC<Props> = (userType) => {
             let _result = { ...result }
             try {
                 const index = findIndexById(_result.id)
+                const url = await handleUpload(result.id)
                 _results[index] = _result
                 await updateResultFunction({
                     variables: {
                         UpdateResultInput: {
                             id: result.id,
-                            url: result.url,
+                            url: url,
                         },
                     },
                 })
@@ -295,7 +294,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
     }
 
-    const editResult = (result) => {
+    const uploadResult = (result) => {
         setResult({ ...result })
         setSemester({ name: result.semester })
         setUpdateResultDialog(true)
@@ -495,7 +494,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 <Button
                     icon="pi pi-arrow-up"
                     className="p-button-rounded p-button-warning mr-2"
-                    onClick={() => editResult(rowData)}
+                    onClick={() => uploadResult(rowData)}
                 />
                 <Button
                     icon="pi pi-trash"
@@ -669,8 +668,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
             })
             console.log(value.url)
             url = await extractActualDataFromIPFS(value.url, '.csv')
-            console.log(url)
-            setUploadUrl(url)
             handleReset()
             if (toast.current)
                 toast.current.show({
