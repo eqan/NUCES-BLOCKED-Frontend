@@ -160,9 +160,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }, [resultsRefetchHook, router.events])
 
     useEffect(() => {}, [globalFilter])
-    useEffect(() => {
-        console.log(file)
-    }, [file])
 
     const openNewAddResultDialog = () => {
         setResult(ResultsRecordInterface)
@@ -634,8 +631,8 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
     }
 
-    const invoiceUploadHandler = ({ files }) => {
-        if (file != null) handleReset()
+    const uploadHandler = ({ files }) => {
+        handleReset()
         const fileToUpload = files[0]
         setFile(fileToUpload)
     }
@@ -652,7 +649,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
             const nftstorage = new NFTStorage({
                 token: NFT_STORAGE_TOKEN,
             })
-            console.log(file)
             const binaryFileWithMetaData = new File([file], id + '.csv', {
                 type: 'text/csv',
             })
@@ -837,7 +833,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                                 name="file"
                                 accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                 customUpload={true}
-                                uploadHandler={invoiceUploadHandler}
+                                uploadHandler={uploadHandler}
                                 mode="basic"
                                 className="mr-2"
                             />
@@ -865,7 +861,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                                 name="file"
                                 accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                 customUpload={true}
-                                uploadHandler={invoiceUploadHandler}
+                                uploadHandler={uploadHandler}
                                 mode="basic"
                                 className="mr-2"
                             />
