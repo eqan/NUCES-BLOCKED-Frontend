@@ -13,6 +13,8 @@ import { LayoutContext } from './context/layoutcontext'
 import { Menu } from 'primereact/menu'
 import { Avatar } from 'primereact/avatar'
 import { Dropdown } from 'primereact/dropdown'
+import { Button } from 'primereact/button'
+import { ethers } from 'ethers'
 
 interface Theme {
     name: string
@@ -44,12 +46,41 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const menu = useRef(null)
     const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null)
+    const [toggleShowMetaMaskButton, setToggleShowMetaMaskButton] =
+        useState(true)
+    const [provider, setProvider] = useState(null)
+
+    useEffect(() => {
+        if (sessionStorage.getItem('walletAddress')) {
+            setToggleShowMetaMaskButton(false)
+        }
+    }, [])
 
     useImperativeHandle(ref, () => ({
         menubutton: menubuttonRef.current,
         topbarmenu: topbarmenuRef.current,
         topbarmenubutton: topbarmenubuttonRef.current,
     }))
+
+    const connectToMetaMask = async (event) => {
+        if (window.ethereum) {
+            try {
+                const provider = new ethers.providers.Web3Provider(
+                    window.ethereum,
+                    'any'
+                )
+                await provider.send('eth_requestAccounts', [])
+                const signer = provider.getSigner()
+                const address = await signer.getAddress()
+                sessionStorage.setItem('walletAddress', address)
+            } catch (err) {
+                console.error(err)
+            }
+        } else {
+            console.error('Metamask not found')
+            // setProvider(new ethers.providers.getDefaultProvider()) // fallback to a default provider
+        }
+    }
 
     const themes: Theme[] = [{ name: 'Dark' }, { name: 'Light' }]
 
@@ -170,6 +201,24 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                         layoutState.profileSidebarVisible,
                 })}
             >
+                {toggleShowMetaMaskButton ? (
+                    <Button
+                        className="bg-bluegray-600 hover:bg-bluegray-400 border-bluegray-700"
+                        onClick={connectToMetaMask}
+                    >
+                        <img
+                            alt="logo"
+                            src={`${contextPath}/metamask.png`}
+                            className="h-2rem"
+                        ></img>
+                        <span style={{ fontWeight: 'bold' }}>
+                            Connect Wallet
+                        </span>
+                    </Button>
+                ) : (
+                    <div />
+                )}
+
                 <Menu ref={menu} model={overlayMenuItems} popup />
                 <button
                     type="button"
