@@ -44,10 +44,6 @@ interface Props {
 }
 
 const SemesterResult: React.FC<Props> = (userType) => {
-    const abiArray = ABI.abi as any[]
-    let provider = null
-    let signer = null
-    let contract = null
     let ResultsRecordInterface = {
         id: '',
         semester: '',
@@ -87,6 +83,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
     const [uploading, setUploading] = useState(false)
+    const [contract, setContract] = useState(null)
 
     const [
         resultsData,
@@ -150,19 +147,15 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     useEffect(() => {
         if (window.ethereum !== 'undefined') {
-            provider = new ethers.providers.Web3Provider(window.ethereum)
-            signer = provider.getSigner()
-            contract = new ethers.Contract(
+            const abiArray = ABI.abi as any[]
+            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const signer = provider.getSigner()
+            const contractInstance = new ethers.Contract(
                 DeployedContracts.SemesterStore,
                 abiArray,
                 signer
             )
-            contract.functions.addSemester(
-                'SPRING',
-                2018,
-                'www.helloworld.com',
-                { from: sessionStorage.getItem('walletAddress') }
-            )
+            setContract(contractInstance)
         } else {
             console.error('Metamask not found')
         }
@@ -230,33 +223,31 @@ const SemesterResult: React.FC<Props> = (userType) => {
             let _results = [...results]
             let _result = { ...result }
             try {
-                _results[_result.id] = _result
                 const id = _result.semester + '_' + _result.year
+                _results[id] = _result
                 const url = await handleUpload(id)
 
-                // let newResult = await createResultFunction({
-                //     variables: {
-                //         CreateResultInput: {
-                //             year: _result.year.toString(),
-                //             type: _result.semester,
-                //             url: url,
-                //         },
-                //     },
-                // })
-                console.log(contract.addSemester)
-                // const result = await contract.functions.addSemester(
-                //     result.semester,
-                //     result.year,
-                //     url,
-                //     { from: sessionStorage.getItem('walletAddress') }
-                // )
-                // console.log(result)
-                // newResult = newResult.data['CreateResult']
-                // const mappedData: ResultsInterface =
-                //     mapSemesterToSemesterRecord(newResult)
-                // _results = _results.filter((item) => (item.id = mappedData.id))
-                // _results.push(mappedData)
-                // setResults(_results)
+                let newResult = await createResultFunction({
+                    variables: {
+                        CreateResultInput: {
+                            year: _result.year.toString(),
+                            type: _result.semester,
+                            url: url,
+                        },
+                    },
+                })
+                await contract.functions.addSemester(
+                    _result.semester,
+                    _result.year,
+                    url,
+                    { from: sessionStorage.getItem('walletAddress') }
+                )
+                newResult = newResult.data['CreateResult']
+                const mappedData: ResultsInterface =
+                    mapSemesterToSemesterRecord(newResult)
+                _results = _results.filter((item) => (item.id = mappedData.id))
+                _results.push(mappedData)
+                setResults(_results)
                 if (toast.current)
                     toast.current.show({
                         severity: 'success',
@@ -283,6 +274,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }
 
     const updateResult = async () => {
+        console.log(result.id)
         setSubmitted(true)
 
         if (result.url) {
@@ -300,6 +292,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
                             url: url,
                         },
                     },
+                })
+                await contract.functions.updateSemester(result.id, url, {
+                    from: sessionStorage.getItem('walletAddress'),
                 })
                 setResults(_results)
                 if (toast.current)
@@ -347,6 +342,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
                         id: [result.id],
                     },
                 },
+            })
+            await contract.functions.removeSemester(result.id, {
+                from: sessionStorage.getItem('walletAddress'),
             })
             setResults(_results)
             if (toast.current && !resultDeleteDataError) {
@@ -406,6 +404,10 @@ const SemesterResult: React.FC<Props> = (userType) => {
                     },
                 },
             })
+            // _toBeDeletedResults.map((id) => {
+            //     await contract.functions.removeSemester(id, {
+            //         from: sessionStorage.getItem('walletAddress')
+            // }})
             if (toast.current && !resultDeleteDataError) {
                 toast.current.show({
                     severity: 'success',
