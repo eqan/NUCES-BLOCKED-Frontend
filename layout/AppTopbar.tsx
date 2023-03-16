@@ -13,6 +13,8 @@ import { LayoutContext } from './context/layoutcontext'
 import { Menu } from 'primereact/menu'
 import { Avatar } from 'primereact/avatar'
 import { Dropdown } from 'primereact/dropdown'
+import { Button } from 'primereact/button'
+import { ethers } from 'ethers'
 
 interface Theme {
     name: string
@@ -24,7 +26,7 @@ interface AppTopbarProps {
     topbarmenubuttonRef: React.RefObject<HTMLButtonElement>
     selectedTheme: String | null
     toggleMenu: (event: React.MouseEvent<HTMLButtonElement>) => void
-    onThemeChange: (e: { value: Theme }) => void
+    onThemeChange: (e: { value: string }) => void
     changeTheme: (theme: string, colorScheme: string) => void
     replaceLink: (
         linkElement: any,
@@ -43,13 +45,46 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const topbarmenubuttonRef = useRef(null)
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const menu = useRef(null)
-    const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null)
+    const [selectedTheme, setSelectedTheme] = useState<string>(null)
+    const [toggleShowMetaMaskButton, setToggleShowMetaMaskButton] =
+        useState(true)
+
+    useEffect(() => {
+        const theme = localStorage.getItem('theme')
+        setSelectedTheme(theme)
+        if (sessionStorage.getItem('walletAddress')) {
+            setToggleShowMetaMaskButton(false)
+        }
+        if (theme) {
+            switchThemeOnStartup(theme)
+        }
+    }, [])
 
     useImperativeHandle(ref, () => ({
         menubutton: menubuttonRef.current,
         topbarmenu: topbarmenuRef.current,
         topbarmenubutton: topbarmenubuttonRef.current,
     }))
+
+    const connectToMetaMask = async (event) => {
+        if (window.ethereum) {
+            try {
+                const provider = new ethers.providers.Web3Provider(
+                    window.ethereum,
+                    'any'
+                )
+                await provider.send('eth_requestAccounts', [])
+                const signer = provider.getSigner()
+                const address = await signer.getAddress()
+                sessionStorage.setItem('walletAddress', address)
+            } catch (err) {
+                console.error(err)
+            }
+        } else {
+            console.error('Metamask not found')
+            // setProvider(new ethers.providers.getDefaultProvider()) // fallback to a default provider
+        }
+    }
 
     const themes: Theme[] = [{ name: 'Dark' }, { name: 'Light' }]
 
@@ -73,6 +108,16 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const onThemeChange = (e) => {
         setSelectedTheme(e.value)
         if (e.value.name == 'Dark') {
+            changeTheme('vela-blue', 'dark')
+            localStorage.setItem('theme', 'Dark')
+        } else {
+            changeTheme('saga-blue', 'light')
+            localStorage.setItem('theme', 'Light')
+        }
+    }
+
+    const switchThemeOnStartup = (theme) => {
+        if (theme == 'Dark') {
             changeTheme('vela-blue', 'dark')
         } else {
             changeTheme('saga-blue', 'light')
@@ -160,7 +205,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                 options={themes}
                 onChange={onThemeChange}
                 optionLabel="name"
-                placeholder="Light"
+                placeholder={selectedTheme}
             />
 
             <div
@@ -170,6 +215,24 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                         layoutState.profileSidebarVisible,
                 })}
             >
+                {toggleShowMetaMaskButton ? (
+                    <Button
+                        className="bg-bluegray-600 hover:bg-bluegray-400 border-bluegray-700"
+                        onClick={connectToMetaMask}
+                    >
+                        <img
+                            alt="logo"
+                            src={`${contextPath}/metamask.png`}
+                            className="h-2rem"
+                        ></img>
+                        <span style={{ fontWeight: 'bold' }}>
+                            Connect Wallet
+                        </span>
+                    </Button>
+                ) : (
+                    <div />
+                )}
+
                 <Menu ref={menu} model={overlayMenuItems} popup />
                 <button
                     type="button"

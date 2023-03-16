@@ -1,0 +1,5 @@
+export const NFT_STORAGE_TOKEN = ''
+export const CLOUD_NAME = ''
+export const API_KEY = ''
+export const API_SECRET = ''
+export const JWT_SECRET = ''

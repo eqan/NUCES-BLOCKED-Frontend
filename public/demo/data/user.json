@@ -1,7 +1,0 @@
-{
-    "data": [
-        {"id": "1000","password": "12134","name": "M Shahid Imran","email": "mshahid.imran@gmail.com","role": "Admin"},
-        {"id": "1001","password": "4321","name": "Eqan Ahmed","email": "eqan.ahmed@gmail.com","role": "Society Head"},
-        {"id": "1002","password": "1122","name": "Noman Mumtaz","email": "noman.mumtaz@gmail.com","role": "Teacher"}
-    ]
-}
