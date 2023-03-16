@@ -28,6 +28,9 @@ import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import FileSaver from 'file-saver'
 import axios from 'axios'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
+import { ethers } from 'ethers'
+import ABI from '../../contracts/SemesterStore.json'
+import { DeployedContracts } from '../../contracts/deployedAddresses'
 
 interface ResultsInterface {
     id: string
@@ -41,6 +44,10 @@ interface Props {
 }
 
 const SemesterResult: React.FC<Props> = (userType) => {
+    const abiArray = ABI.abi as any[]
+    let provider = null
+    let signer = null
+    let contract = null
     let ResultsRecordInterface = {
         id: '',
         semester: '',
@@ -142,6 +149,26 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }
 
     useEffect(() => {
+        if (window.ethereum !== 'undefined') {
+            provider = new ethers.providers.Web3Provider(window.ethereum)
+            signer = provider.getSigner()
+            contract = new ethers.Contract(
+                DeployedContracts.SemesterStore,
+                abiArray,
+                signer
+            )
+            contract.functions.addSemester(
+                'SPRING',
+                2018,
+                'www.helloworld.com',
+                { from: sessionStorage.getItem('walletAddress') }
+            )
+        } else {
+            console.error('Metamask not found')
+        }
+    }, [])
+
+    useEffect(() => {
         if (!resultsLoading && resultsData) {
             fetchData()
         }
@@ -206,21 +233,30 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 _results[_result.id] = _result
                 const id = _result.semester + '_' + _result.year
                 const url = await handleUpload(id)
-                let newResult = await createResultFunction({
-                    variables: {
-                        CreateResultInput: {
-                            year: result.year.toString(),
-                            type: result.semester,
-                            url: url,
-                        },
-                    },
-                })
-                newResult = newResult.data['CreateResult']
-                const mappedData: ResultsInterface =
-                    mapSemesterToSemesterRecord(newResult)
-                _results = _results.filter((item) => (item.id = mappedData.id))
-                _results.push(mappedData)
-                setResults(_results)
+
+                // let newResult = await createResultFunction({
+                //     variables: {
+                //         CreateResultInput: {
+                //             year: _result.year.toString(),
+                //             type: _result.semester,
+                //             url: url,
+                //         },
+                //     },
+                // })
+                console.log(contract.addSemester)
+                // const result = await contract.functions.addSemester(
+                //     result.semester,
+                //     result.year,
+                //     url,
+                //     { from: sessionStorage.getItem('walletAddress') }
+                // )
+                // console.log(result)
+                // newResult = newResult.data['CreateResult']
+                // const mappedData: ResultsInterface =
+                //     mapSemesterToSemesterRecord(newResult)
+                // _results = _results.filter((item) => (item.id = mappedData.id))
+                // _results.push(mappedData)
+                // setResults(_results)
                 if (toast.current)
                     toast.current.show({
                         severity: 'success',

@@ -26,7 +26,7 @@ interface AppTopbarProps {
     topbarmenubuttonRef: React.RefObject<HTMLButtonElement>
     selectedTheme: String | null
     toggleMenu: (event: React.MouseEvent<HTMLButtonElement>) => void
-    onThemeChange: (e: { value: Theme }) => void
+    onThemeChange: (e: { value: string }) => void
     changeTheme: (theme: string, colorScheme: string) => void
     replaceLink: (
         linkElement: any,
@@ -45,14 +45,18 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const topbarmenubuttonRef = useRef(null)
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const menu = useRef(null)
-    const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null)
+    const [selectedTheme, setSelectedTheme] = useState<string>(null)
     const [toggleShowMetaMaskButton, setToggleShowMetaMaskButton] =
         useState(true)
-    const [provider, setProvider] = useState(null)
 
     useEffect(() => {
+        const theme = localStorage.getItem('theme')
+        setSelectedTheme(theme)
         if (sessionStorage.getItem('walletAddress')) {
             setToggleShowMetaMaskButton(false)
+        }
+        if (theme) {
+            switchThemeOnStartup(theme)
         }
     }, [])
 
@@ -104,6 +108,16 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const onThemeChange = (e) => {
         setSelectedTheme(e.value)
         if (e.value.name == 'Dark') {
+            changeTheme('vela-blue', 'dark')
+            localStorage.setItem('theme', 'Dark')
+        } else {
+            changeTheme('saga-blue', 'light')
+            localStorage.setItem('theme', 'Light')
+        }
+    }
+
+    const switchThemeOnStartup = (theme) => {
+        if (theme == 'Dark') {
             changeTheme('vela-blue', 'dark')
         } else {
             changeTheme('saga-blue', 'light')
@@ -191,7 +205,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                 options={themes}
                 onChange={onThemeChange}
                 optionLabel="name"
-                placeholder="Light"
+                placeholder={selectedTheme}
             />
 
             <div
