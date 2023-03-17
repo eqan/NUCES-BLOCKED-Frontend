@@ -168,6 +168,25 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "string[]",
+          "name": "ids",
+          "type": "string[]"
+        }
+      ],
+      "name": "removeSemesters",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "renounceOwnership",
       "outputs": [],
@@ -213,4 +232,3 @@
     }
   ]
 }
-
