@@ -341,6 +341,7 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                     },
                 },
             })
+
             if (toast.current && !certificateDeleteDataError) {
                 toast.current.show({
                     severity: 'success',

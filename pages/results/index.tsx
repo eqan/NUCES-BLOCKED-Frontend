@@ -404,10 +404,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
                     },
                 },
             })
-            // _toBeDeletedResults.map((id) => {
-            //     await contract.functions.removeSemester(id, {
-            //         from: sessionStorage.getItem('walletAddress')
-            // }})
+            await contract.functions.removeSemesters(_toBeDeletedResults)
             if (toast.current && !resultDeleteDataError) {
                 toast.current.show({
                     severity: 'success',

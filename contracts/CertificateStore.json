@@ -193,6 +193,25 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "string[]",
+          "name": "ids",
+          "type": "string[]"
+        }
+      ],
+      "name": "removeCertificates",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "renounceOwnership",
       "outputs": [],
@@ -248,4 +267,3 @@
     }
   ]
 }
-
