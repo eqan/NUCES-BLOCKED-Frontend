@@ -1,4 +1,4 @@
 export enum DeployedContracts {
-    SemesterStore = '0x55e49d307e3886536A902214BEBA73faa2366dEE',
-    CertificateStore = '0xF2bB140fB23014EFAcbae6Ee1698aA2f8CdeB87F',
+    SemesterStore = '0x0A07cc1bf3d94fe00059dfD9835C3e404868e118',
+    CertificateStore = '0x919Ccd710E1b7f2C29F92CaF971b45BFA515A30e',
 }
