@@ -13,6 +13,24 @@ export const CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN = gql`
                 adminContributionType
                 contribution
             }
+            CareerCounsellorContributions {
+                id
+                studentId
+                careerCounsellorContributionType
+                contribution
+            }
+            TeachersContributions {
+                id
+                studentId
+                teacherContributionType
+                contribution
+            }
+            SocietyHeadsContributions {
+                id
+                studentId
+                societyHeadContributionType
+                contribution
+            }
         }
     }
 `

@@ -5,25 +5,12 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
         $FilterContributionsDto: FilterAllContributionDto
     ) {
         GetAllContributions(FilterContributionsDto: $FilterContributionsDto) {
-            adminContributions {
-                id
-                adminContributionType
-                contribution
-                updatedAt
-                student {
-                    name
-                    email
-                }
-            }
             careerCounsellorContributions {
                 id
                 studentId
                 careerCounsellorContributionType
                 contribution
                 updatedAt
-                student {
-                    name
-                }
             }
             teachersContribution {
                 id
@@ -31,9 +18,6 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 teacherContributionType
                 contribution
                 updatedAt
-                student {
-                    name
-                }
             }
             societyHeadsContributions {
                 id
@@ -41,9 +25,6 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 societyHeadContributionType
                 contribution
                 updatedAt
-                student {
-                    name
-                }
             }
 
             total
