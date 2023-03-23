@@ -23,7 +23,7 @@ const GET_USER_TYPE = gql`
 interface Props {
     Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode }
     pageProps: any
-    usertype: string | null
+    usertype: string
 }
 
 const MyApp: FC<Props> = ({ Component, pageProps, usertype }) => {
@@ -69,7 +69,9 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userType = result.data.GetUserTypeByUserEmail.toString()
+                        userType =
+                            result.data.GetUserTypeByUserEmail.type.toString()
+                        console.log('This is user type', result.data)
                     })
                     .catch((error) => {
                         console.log(error)

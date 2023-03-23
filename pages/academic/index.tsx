@@ -1,6 +1,10 @@
 import { Button } from 'primereact/button'
 import { Column } from 'primereact/column'
-import { DataTable } from 'primereact/datatable'
+import {
+    DataTable,
+    DataTableExpandedRows,
+    DataTableRowEventParams,
+} from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { InputText } from 'primereact/inputtext'
 import { Toast } from 'primereact/toast'
@@ -15,55 +19,93 @@ import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { returnFetchContributionsHook } from '../../queries/academic/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
-import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN } from '../../queries/academic/createUpdateStudentContributionAdmin'
+import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN as CREATE_UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createUpdateStudentContributionAdmin'
 import { useMutation } from '@apollo/client'
-import { DELETE_STUDENT_CONTRIBUTION_ADMIN } from '../../queries/academic/deleteStudentContributionAdmin'
+import { DELETE_STUDENT_CONTRIBUTION_ADMIN as DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
 
-interface AcademicContributionInterface {
-    id: string
+// Header Row: studentid, name, email,
+// SubRow: id, Contribution, contributor, title
+
+// First expand this to header then the subrow
+
+interface HeadRowInterface {
+    studentId: string
     name: string
     rollno: string
-    date: string
-    cgpa: string
+    email: string
+}
+
+interface SubRowInterface {
+    id: string
+    title: string
+    type: string
+    contribution: string
+    updatedAt: string
 }
 
 interface Props {
-    userType: String
+    userType: string
+    userSubType: string
 }
 
-const AcademicRecords: React.FC<Props> = ({ userType }) => {
+const AcademicContributionsRecords: React.FC<Props> = ({
+    userType,
+    userSubType,
+}) => {
     const router = useRouter()
 
-    let AcademicRecordInterface = {
-        id: '',
+    let HeaderRowRecordInterface = {
+        studentId: '',
         name: '',
         rollno: '',
-        date: '',
-        cgpa: '',
+        email: '',
     }
 
-    const mapContributionToAcademicRecord = (
-        contribution: AcademicContributionInterface
+    let SubRowRecordInterface = {
+        id: '',
+        title: '',
+        contribution: '',
+        email: '',
+        updatedAt: '',
+    }
+
+    const mapContributionToHeadRowContributionRecord = (
+        contribution: HeadRowInterface
     ) => {
         return {
-            id: contribution.id,
+            studentId: contribution.studentId,
             name: contribution.student.name,
-            rollno: contribution.id,
-            date: contribution.updatedAt,
-            cgpa: contribution.contribution,
+            rollno: contribution.studentId,
+            email: contribution.student.email,
         }
     }
 
-    const [academics, setAcademics] = useState<AcademicContributionInterface[]>(
-        [] as AcademicContributionInterface[]
+    const mapContributionToSubRowContributionRecord = (
+        contribution: SubRowInterface
+    ) => {
+        return {
+            id: contribution.id,
+            title: contribution.title,
+            contribution: contribution.contribution,
+            updatedAt: contribution.updatedAt,
+        }
+    }
+
+    const [headers, setHeaders] = useState<HeadRowInterface[]>(
+        [] as HeadRowInterface[]
     )
+    const [subRows, setSubRows] = useState<SubRowInterface[]>(
+        [] as SubRowInterface[]
+    )
+    const [expandedRows, setExpandedRows] =
+        useState<DataTableExpandedRows>(null)
     const [academicDialog, setAcademicDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false)
     const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false)
-    const [academic, setAcademic] = useState(AcademicRecordInterface)
+    const [academic, setAcademic] = useState(HeaderRowRecordInterface)
     const [selectedAcademics, setSelectedAcademics] = useState<
-        AcademicContributionInterface[]
+        HeadRowInterface[]
     >([])
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>('')
@@ -78,38 +120,75 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
         contributionsLoading,
         contributionsFetchingError,
         contributionsRefetchHook,
-    ] = returnFetchContributionsHook('ADMIN', page + 1, pageLimit, globalFilter)
+    ] = returnFetchContributionsHook(
+        '',
+        userType,
+        page + 1,
+        pageLimit,
+        globalFilter
+    )
 
     const [
-        adminContributionDeleteFunction,
+        contributionDeleteFunction,
         {
-            data: adminContributionDeleteData,
-            loading: adminContributionDeleteLoading,
-            error: adminContributionDeleteError,
-            reset: adminContributionDeleteReset,
+            data: contributionDeleteData,
+            loading: contributionDeleteLoading,
+            error: contributionDeleteError,
+            reset: contributionDeleteReset,
         },
-    ] = useMutation(DELETE_STUDENT_CONTRIBUTION_ADMIN)
+    ] = useMutation(DELETE_STUDENT_CONTRIBUTION)
 
     const [
-        adminContributionAddUpdateFunction,
+        contributionAddUpdateFunction,
         {
-            data: adminContributionAddUpdateData,
-            loading: adminContributionAddUpdateLoading,
-            error: adminContributionAddUpdateError,
-            reset: adminContributionAddUpdateReset,
+            data: contributionAddUpdateData,
+            loading: contributionAddUpdateLoading,
+            error: contributionAddUpdateError,
+            reset: contributionAddUpdateReset,
         },
-    ] = useMutation(CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN)
+    ] = useMutation(CREATE_UPDATE_STUDENT_CONTRIBUTIONS)
+
+    const returnHeadRecordsDataOfUserType = async () => {
+        switch (userType) {
+            case 'TEACHER':
+                return (
+                    contributionsData?.GetAllContributions
+                        .teachersContribution || []
+                )
+            case 'CAREER_COUNSELLOR':
+                return (
+                    contributionsData?.GetAllContributions
+                        .careerCounsellorContributions || []
+                )
+            case 'SOCIETY_HEAD':
+                return (
+                    contributionsData?.GetAllContributions
+                        .societyHeadsContributions || []
+                )
+            default:
+                return null
+        }
+    }
 
     const fetchData = async () => {
         setIsLoading(true)
         if (!contributionsLoading) {
             try {
-                const academicRecords =
-                    contributionsData?.GetAllContributions.adminContributions?.map(
-                        mapContributionToAcademicRecord
-                    ) || []
+                const contributionRecords =
+                    await returnHeadRecordsDataOfUserType()
+                const contributionHeadRecords = contributionRecords
+                    ?.map(mapContributionToHeadRowContributionRecord)
+                    ?.filter(
+                        (record, index, self) =>
+                            index === self.findIndex((r) => r.id === record.id)
+                    )
+
+                const contributionSubRecords = contributionRecords?.map(
+                    mapContributionToSubRowContributionRecord
+                )
                 const total = contributionsData?.GetAllContributions?.total
-                setAcademics(academicRecords)
+                setHeaders(contributionHeadRecords)
+                setSubRows(contributionSubRecords)
                 setTotalRecords(total)
             } catch (error) {
                 console.log(error)
@@ -155,29 +234,29 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
     const saveAcademic = async () => {
         setSubmitted(true)
 
-        if (academic.cgpa) {
-            let _academics = [...academics]
+        if (academic.contribution) {
+            let _academics = [...headers]
             let _academic = { ...academic }
             if (academic.id) {
                 const index = findIndexById(academic.id)
 
                 _academics[index] = _academic
                 try {
-                    await adminContributionAddUpdateFunction({
+                    await contributionAddUpdateFunction({
                         variables: {
                             CreateUpdateStudentInput: {
                                 contributionType: {
-                                    type: 'ADMIN',
-                                    contributionType: 'ADMIN',
-                                    adminContributionType: 'CGPA',
-                                    teacherContributionType: null,
-                                    societyHeadContributionType: null,
+                                    type: 'SOCIETY_HEAD',
+                                    contributionType: 'SOCIETY_HEAD',
+                                    teacherContributionType: 'RESEARCH',
+                                    societyHeadContributionType:
+                                        'UNIVERSITY_EVENT',
                                     careerCounsellorContributionType: null,
                                 },
-                                title: 'CGPA',
-                                contributor: 'khalil123@gmail.com',
-                                contribution: _academic.cgpa,
-                                studentId: _academic.rollno,
+                                contribution: 'Hosted FCAP speed programming',
+                                title: 'Daira 2023',
+                                contributor: 'Rehan Farooq',
+                                studentId: '19F0256',
                             },
                         },
                     })
@@ -202,9 +281,9 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
                 }
             }
 
-            setAcademics(_academics)
+            setHeaders(_academics)
             setAcademicDialog(false)
-            setAcademic(AcademicRecordInterface)
+            setAcademic(HeaderRowRecordInterface)
         }
     }
 
@@ -219,9 +298,9 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
     }
 
     const deleteAcademic = async () => {
-        let _academics = academics.filter((val) => val.id !== academic.id)
+        let _academics = headers.filter((val) => val.id !== academic.id)
         try {
-            await adminContributionDeleteFunction({
+            await contributionDeleteFunction({
                 variables: {
                     DeleteContributionInput: {
                         contributionType: 'ADMIN',
@@ -229,7 +308,7 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
                     },
                 },
             })
-            if (toast.current && !adminContributionDeleteError) {
+            if (toast.current && !contributionDeleteError) {
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
@@ -248,15 +327,15 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
             }
             console.log(error)
         }
-        setAcademic(AcademicRecordInterface)
+        setAcademic(HeaderRowRecordInterface)
         setDeleteAcademicDialog(false)
-        setAcademics(_academics)
+        setHeaders(_academics)
     }
 
     const findIndexById = (id) => {
         let index = -1
-        for (let i = 0; i < academics.length; i++) {
-            if (academics[i].id === id) {
+        for (let i = 0; i < headers.length; i++) {
+            if (headers[i].id === id) {
                 index = i
                 break
             }
@@ -275,12 +354,12 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
     }
 
     const deleteSelectedAcademics = async () => {
-        let _academics = academics.filter(
+        let _academics = headers.filter(
             (val) => !selectedAcademics.includes(val)
         )
         try {
             selectedAcademics.map(async (academic) => {
-                await adminContributionDeleteFunction({
+                await contributionDeleteFunction({
                     variables: {
                         DeleteContributionInput: {
                             contributionType: 'ADMIN',
@@ -289,7 +368,7 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
                     },
                 })
             })
-            if (toast.current && !adminContributionDeleteError) {
+            if (toast.current && !contributionDeleteError) {
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
@@ -309,7 +388,7 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
             console.log(error)
         }
         setSelectedAcademics([])
-        setAcademics(_academics)
+        setHeaders(_academics)
         setDeleteAcademicsDialog(false)
     }
 
@@ -530,6 +609,51 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
             </>
         )
     }
+
+    const onRowExpand = (event: DataTableRowEventParams) => {
+        toast.current.show({
+            severity: 'info',
+            summary: 'Product Expanded',
+            detail: event.data.name,
+            life: 3000,
+        })
+    }
+
+    const onRowCollapse = (event: DataTableRowEventParams) => {
+        toast.current.show({
+            severity: 'success',
+            summary: 'Product Collapsed',
+            detail: event.data.name,
+            life: 3000,
+        })
+    }
+
+    const rowExpansionTemplate = (rowData) => {
+        return (
+            <div className="p-3">
+                <DataTable value={rowData}>
+                    <Column field="id" header="Id" sortable></Column>
+                    <Column
+                        field="title"
+                        header="Contribution Title"
+                        sortable
+                    ></Column>
+                    <Column
+                        field="type"
+                        header="Contribution Type"
+                        sortable
+                    ></Column>
+                    <Column
+                        field="contribution"
+                        header="Description"
+                        sortable
+                    ></Column>
+                    <Column field="date" header="Date" sortable></Column>
+                    <Column headerStyle={{ width: '4rem' }}></Column>
+                </DataTable>
+            </div>
+        )
+    }
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -549,64 +673,32 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
                     ) : (
                         <DataTable
                             ref={dt}
-                            value={academics}
-                            selection={selectedAcademics}
-                            onSelectionChange={(e) => {
-                                setSelectedAcademics(e.value)
-                            }}
+                            value={headers}
+                            expandedRows={subRows}
+                            onRowToggle={(e) => setExpandedRows(e?.data)}
+                            onRowExpand={onRowExpand}
+                            onRowCollapse={onRowCollapse}
+                            rowExpansionTemplate={rowExpansionTemplate}
                             dataKey="id"
-                            defaultValue={1}
-                            paginator
-                            rows={pageLimit}
-                            first={page * pageLimit}
-                            onPage={onPageChange}
-                            rowsPerPageOptions={[5, 10, 25]}
-                            className="datatable-responsive"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} academics"
-                            emptyMessage="No academics found."
                             header={header}
-                            responsiveLayout="scroll"
-                            totalRecords={totalRecords}
-                            loading={isLoading}
+                            tableStyle={{ minWidth: '60rem' }}
                         >
+                            <Column style={{ width: '5rem' }} />
                             <Column
-                                selectionMode="multiple"
-                                headerStyle={{ width: '4rem' }}
-                            ></Column>
+                                field="studentId"
+                                header="Student ID"
+                                sortable
+                            />
                             <Column
                                 field="name"
-                                header="Full Name"
+                                header="Student Name"
                                 sortable
-                                body={nameBodyTemplate}
-                                headerStyle={{ minWidth: '15rem' }}
-                            ></Column>
+                            />
                             <Column
-                                field="rollno"
-                                header="Roll No."
+                                field="email"
+                                header="Student Email"
                                 sortable
-                                body={rollnoBodyTemplate}
-                                headerStyle={{ minWidth: '10rem' }}
-                            ></Column>
-                            <Column
-                                field="date"
-                                header="Last Updated"
-                                sortable
-                                body={dateBodyTemplate}
-                                headerStyle={{ minWidth: '10rem' }}
-                            ></Column>
-                            <Column
-                                field="cgpa"
-                                header="CGPA"
-                                body={cgpaBodyTemplate}
-                                sortable
-                                headerStyle={{ minWidth: '15rem' }}
-                            ></Column>
-
-                            <Column
-                                body={actionBodyTemplate}
-                                headerStyle={{ minWidth: '10rem' }}
-                            ></Column>
+                            />
                         </DataTable>
                     )}
 
@@ -692,14 +784,14 @@ const AcademicRecords: React.FC<Props> = ({ userType }) => {
     )
 }
 
-export default AcademicRecords
+export default AcademicContributionsRecords
 export const getServerSideProps: GetServerSideProps = requireAuthentication(
     async (ctx) => {
         const { req } = ctx
         if (req.headers.cookie) {
             const tokens = req.headers.cookie.split(';')
             const token = tokens.find((token) => token.includes('access_token'))
-            let userType = ''
+            let userData = ''
             if (token) {
                 const userEmail = jwt.decode(
                     token.split('=')[1]?.toString()
@@ -710,14 +802,18 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userType = result.data.GetUserTypeByUserEmail.toString()
+                        userData = result.data.GetUserTypeByUserEmail
+                        console.log('This is user type', result.data)
                     })
                     .catch((error) => {
                         console.log(error)
                     })
             }
             return {
-                props: { userType },
+                props: {
+                    userType: userData?.type,
+                    userSubType: userData?.subType,
+                },
             }
         }
     }

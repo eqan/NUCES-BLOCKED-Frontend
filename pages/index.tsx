@@ -5,19 +5,21 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../layout/context/requireAuthetication'
 import apolloClient from '../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from '../queries/users/getUserType'
+import { GET_USER_DATA } from '../queries/users/getUser'
 
 interface Props {
-    userType: String
+    userType: string | null
+    userEmail: string | null
+    userName: string | null
 }
 
-const dashboard: React.FC<Props> = (userType) => {
-    const menu1 = useRef<Menu>(null)
-    const menu2 = useRef<Menu>(null)
+const dashboard: React.FC<Props> = ({ userType, userName, userEmail }) => {
+    // const menu1 = useRef<Menu>(null)
+    // const menu2 = useRef<Menu>(null)
 
     return (
         <div className="grid">
-            {userType['userType'] == 'ADMIN' ? (
+            {/* {userType['userType'] == 'ADMIN' ? (
                 <div className="col-12 lg:col-6 xl:col-3">
                     <div className="card mb-0">
                         <div className="flex justify-content-between mb-3">
@@ -110,33 +112,12 @@ const dashboard: React.FC<Props> = (userType) => {
                     <span className="text-green-500 font-medium">85</span>
                     <span className="text-500"> recently generated</span>
                 </div>
-            </div>
+            </div> */}
 
             <div className="col-12 xl:col-6">
                 <div className="card">
                     <div className="flex justify-content-between align-items-center mb-5">
                         <h5>Profile</h5>
-                        <div>
-                            <Button
-                                type="button"
-                                icon="pi pi-ellipsis-v"
-                                className="p-button-rounded p-button-text p-button-plain"
-                                onClick={(event) => {
-                                    if (menu1.current)
-                                        menu1.current.toggle(event)
-                                }}
-                            />
-                            <Menu
-                                ref={menu1}
-                                popup
-                                model={[
-                                    {
-                                        label: 'Edit Profile',
-                                        icon: 'pi pi-fw pi-pencil',
-                                    },
-                                ]}
-                            />
-                        </div>
                     </div>
                     <ul className="list-none p-0 m-0">
                         <li className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-4">
@@ -144,7 +125,7 @@ const dashboard: React.FC<Props> = (userType) => {
                                 <span className="text-900 font-medium mr-2 mb-1 md:mb-0">
                                     Name
                                 </span>
-                                <div className="mt-1 text-600">Admin</div>
+                                <div className="mt-1 text-600">{userName}</div>
                             </div>
                         </li>
                         <li className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-4">
@@ -152,16 +133,22 @@ const dashboard: React.FC<Props> = (userType) => {
                                 <span className="text-900 font-medium mr-2 mb-1 md:mb-0">
                                     Email
                                 </span>
-                                <div className="mt-1 text-600">
-                                    admin@gmail.com
-                                </div>
+                                <div className="mt-1 text-600">{userEmail}</div>
+                            </div>
+                        </li>
+                        <li className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-4">
+                            <div>
+                                <span className="text-900 font-medium mr-2 mb-1 md:mb-0">
+                                    Role
+                                </span>
+                                <div className="mt-1 text-600">{userType}</div>
                             </div>
                         </li>
                     </ul>
                 </div>
             </div>
 
-            <div className="col-12 xl:col-6">
+            {/* <div className="col-12 xl:col-6">
                 <div className="card">
                     <div className="flex align-items-center justify-content-between mb-4">
                         <h5>History</h5>
@@ -227,7 +214,7 @@ const dashboard: React.FC<Props> = (userType) => {
                         </li>
                     </ul>
                 </div>
-            </div>
+            </div> */}
         </div>
     )
 }
@@ -238,26 +225,29 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         if (req.headers.cookie) {
             const tokens = req.headers.cookie.split(';')
             const token = tokens.find((token) => token.includes('access_token'))
-            let userType = ''
+            let userData = ''
             if (token) {
                 const userEmail = jwt.decode(
                     token.split('=')[1]?.toString()
                 ).email
                 await apolloClient
                     .query({
-                        query: GET_USER_TYPE,
+                        query: GET_USER_DATA,
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userType = result.data.GetUserTypeByUserEmail
-                        console.log(userType)
+                        userData = result.data.GetUserDataByUserEmail
                     })
                     .catch((error) => {
                         console.log(error)
                     })
             }
             return {
-                props: { userType },
+                props: {
+                    userType: userData?.type,
+                    userEmail: userData?.email,
+                    userName: userData?.name,
+                },
             }
         }
     }

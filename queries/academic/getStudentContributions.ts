@@ -10,7 +10,13 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 studentId
                 careerCounsellorContributionType
                 contribution
+                contributor
                 updatedAt
+                title
+                student {
+                    name
+                    email
+                }
             }
             teachersContribution {
                 id
@@ -18,6 +24,11 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 teacherContributionType
                 contribution
                 updatedAt
+                title
+                student {
+                    name
+                    email
+                }
             }
             societyHeadsContributions {
                 id
@@ -25,6 +36,11 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 societyHeadContributionType
                 contribution
                 updatedAt
+                title
+                student {
+                    name
+                    email
+                }
             }
 
             total
@@ -34,6 +50,7 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
 
 export function returnFetchContributionsHook(
     contributionType: string,
+    contributor: string,
     page: number,
     limit: number,
     studentId: string | null
@@ -43,6 +60,7 @@ export function returnFetchContributionsHook(
         {
             variables: {
                 FilterContributionsDto: {
+                    contributor,
                     contributionType,
                     page,
                     limit,
