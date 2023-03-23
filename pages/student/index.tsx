@@ -20,6 +20,7 @@ import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
+import { GET_USER_DATA } from '../../queries/users/getUser'
 
 interface Props {
     userType: String
@@ -1000,11 +1001,11 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                 ).email
                 await apolloClient
                     .query({
-                        query: GET_USER_TYPE,
+                        query: GET_USER_DATA,
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userType = result.data.GetUserTypeByUserEmail?.type
+                        userType = result.data.GetUserDataByUserEmail
                         console.log('This is user type', result.data)
                     })
             }

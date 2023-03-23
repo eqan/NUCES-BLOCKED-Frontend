@@ -15,13 +15,13 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { returnFetchContributionsHook } from '../../queries/academic/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN as CREATE_UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createUpdateStudentContributionAdmin'
 import { useMutation } from '@apollo/client'
 import { DELETE_STUDENT_CONTRIBUTION_ADMIN as DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
+import { GET_USER_DATA } from '../../queries/users/getUser'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -798,12 +798,11 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                 ).email
                 await apolloClient
                     .query({
-                        query: GET_USER_TYPE,
+                        query: GET_USER_DATA,
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userData = result.data.GetUserTypeByUserEmail
-                        console.log('This is user type', result.data)
+                        userData = result.data.GetUserDataByUserEmail
                     })
                     .catch((error) => {
                         console.log(error)

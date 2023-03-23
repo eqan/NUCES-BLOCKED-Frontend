@@ -7,6 +7,7 @@ import { gql } from '@apollo/client'
 import apolloClient from '../../../../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_TYPE } from '../../../../queries/users/getUserType'
+import { GET_USER_DATA } from '../../../../queries/users/getUser'
 
 interface Props {
     userType: string
@@ -69,11 +70,11 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                 ).email
                 await apolloClient
                     .query({
-                        query: GET_USER_TYPE,
+                        query: GET_USER_DATA,
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userData = result.data.GetUserTypeByUserEmail
+                        userData = result.data.GetUserDataByUserEmail
                     })
             }
             return {

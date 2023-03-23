@@ -13,6 +13,7 @@ import { requireAuthentication } from '../layout/context/requireAuthetication'
 import { gql } from '@apollo/client'
 import apolloClient from '../apollo-client'
 import jwt from 'jsonwebtoken'
+import { GET_USER_DATA } from '../queries/users/getUser'
 
 const GET_USER_TYPE = gql`
     query ($userEmail: String!) {
@@ -58,19 +59,18 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         if (req.headers.cookie) {
             const tokens = req.headers.cookie.split(';')
             const token = tokens.find((token) => token.includes('access_token'))
-            let userType = ''
+            let userData = ''
             if (token) {
                 const userEmail = jwt
                     .decode(tokens[1].split('=')[1].toString())
                     .email.toString()
                 await apolloClient
                     .query({
-                        query: GET_USER_TYPE,
+                        query: GET_USER_DATA,
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userType =
-                            result.data.GetUserTypeByUserEmail.type.toString()
+                        userData = result.data.GetUserDataByUserEmail
                         console.log('This is user type', result.data)
                     })
                     .catch((error) => {
@@ -78,7 +78,7 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     })
             }
             return {
-                props: { userType },
+                props: { userType: userData?.type },
             }
         }
     }
