@@ -1,15 +1,10 @@
 import { Button } from 'primereact/button'
 import { Column } from 'primereact/column'
-import {
-    DataTable,
-    DataTableExpandedRows,
-    DataTableRowEventParams,
-} from 'primereact/datatable'
+import { DataTable, DataTableExpandedRows } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { InputText } from 'primereact/inputtext'
 import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
-import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
@@ -22,6 +17,7 @@ import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/crea
 import { useMutation } from '@apollo/client'
 import { DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
 import { GET_USER_DATA } from '../../queries/users/getUser'
+import { Dropdown } from 'primereact/dropdown'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -61,6 +57,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         subRows: [],
     }
 
+    const [contributionEnums, setContributionEnums] = useState([])
     const [headers, setHeaders] = useState<HeadRowInterface[]>(
         [] as HeadRowInterface[]
     )
@@ -71,7 +68,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const [deleteAcademicDialog, setDeleteContributionDialog] = useState(false)
     const [deleteAcademicsDialog, setDeleteContributionsDialog] =
         useState(false)
-    const [headerRecord, setHeaderRecord] = useState(HeaderRowRecordInterface)
+    const [subRowRecord, setHeaderRecord] = useState(HeaderRowRecordInterface)
     const [selectedSubRecords, setSelectedSubRecords] = useState<
         HeadRowInterface[]
     >([])
@@ -79,7 +76,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
-    const [totalHeaderRecords, setTotalHeaderRecords] = useState(1)
+    const [totalRecords, setTotalRecords] = useState(1)
 
     const toast = useRef<Toast>(null)
     const dt = useRef<DataTable>(null)
@@ -144,8 +141,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             try {
                 const contributionRecords =
                     await returnHeadRecordsDataOfUserType()
-                // console.log(contributionRecords)
-                const total = contributionsData?.GetAllContributions?.total
+
+                const total = contributionsData?.GetAllContributions.total
                 const groupedData = contributionRecords.reduce((acc, item) => {
                     if (!acc[item.studentId]) {
                         acc[item.studentId] = []
@@ -176,8 +173,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
                 console.log(headRows)
                 setHeaders(headRows)
-                // setSubRows(contributionSubRecords)
-                setTotalHeaderRecords(total)
+                setTotalRecords(total)
             } catch (error) {
                 console.log(error)
             } finally {
@@ -185,6 +181,29 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             }
         }
     }
+
+    useEffect(() => {
+        switch (userType) {
+            case 'TEACHER':
+                setContributionEnums(['TA_SHIP', 'RESEARCH'])
+                break
+            case 'SOCIETY_HEAD':
+                setContributionEnums([
+                    'UNIVERSITY_EVENT',
+                    'COMPETITION_ACHIEVEMENT',
+                ])
+                break
+            case 'CAREER_COUNSELLOR':
+                setContributionEnums([
+                    'EXCHANGE_PROGRAM',
+                    'INTERNSHIP',
+                    'FELLOWSHIP_PROGRAM',
+                ])
+                break
+            default:
+                break
+        }
+    }, [])
 
     useEffect(() => {
         if (!contributionsLoading && contributionsData) {
@@ -219,60 +238,60 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setDeleteContributionsDialog(false)
     }
 
-    const saveAcademic = async () => {
-        setSubmitted(true)
+    const saveContribution = async (rowData) => {
+        // setSubmitted(true)
+        console.log(rowData)
+        // if (subRowRecord.contribution) {
+        //     let _academics = [...headers]
+        //     let _academic = { ...subRowRecord }
+        //     if (subRowRecord.id) {
+        //         const index = findIndexById(subRowRecord.id)
 
-        if (headerRecord.contribution) {
-            let _academics = [...headers]
-            let _academic = { ...headerRecord }
-            if (headerRecord.id) {
-                const index = findIndexById(headerRecord.id)
+        //         _academics[index] = _academic
+        //         try {
+        //             await contributionAddUpdateFunction({
+        //                 variables: {
+        //                     CreateUpdateStudentInput: {
+        //                         contributionType: {
+        //                             type: userType,
+        //                             contributionType: userType,
+        //                             teacherContributionType: 'RESEARCH',
+        //                             societyHeadContributionType:
+        //                                 'UNIVERSITY_EVENT',
+        //                             careerCounsellorContributionType: null,
+        //                         },
+        //                         contribution: 'Hosted FCAP speed programming',
+        //                         title: 'Daira 2023',
+        //                         contributor: 'Rehan Farooq',
+        //                         studentId: '19F0256',
+        //                     },
+        //                 },
+        //             })
+        //             if (toast.current) {
+        //                 toast.current?.show({
+        //                     severity: 'success',
+        //                     summary: 'Successful',
+        //                     detail: 'Academic Profile Updated',
+        //                     life: 3000,
+        //                 })
+        //             }
+        //         } catch (error) {
+        //             if (toast.current) {
+        //                 toast.current?.show({
+        //                     severity: 'error',
+        //                     summary: 'Error',
+        //                     detail: 'Academic Profile Not Updated',
+        //                     life: 3000,
+        //                 })
+        //             }
+        //             console.log(error)
+        //         }
+        //     }
 
-                _academics[index] = _academic
-                try {
-                    await contributionAddUpdateFunction({
-                        variables: {
-                            CreateUpdateStudentInput: {
-                                contributionType: {
-                                    type: userType,
-                                    contributionType: userType,
-                                    teacherContributionType: 'RESEARCH',
-                                    societyHeadContributionType:
-                                        'UNIVERSITY_EVENT',
-                                    careerCounsellorContributionType: null,
-                                },
-                                contribution: 'Hosted FCAP speed programming',
-                                title: 'Daira 2023',
-                                contributor: 'Rehan Farooq',
-                                studentId: '19F0256',
-                            },
-                        },
-                    })
-                    if (toast.current) {
-                        toast.current?.show({
-                            severity: 'success',
-                            summary: 'Successful',
-                            detail: 'Academic Profile Updated',
-                            life: 3000,
-                        })
-                    }
-                } catch (error) {
-                    if (toast.current) {
-                        toast.current?.show({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Academic Profile Not Updated',
-                            life: 3000,
-                        })
-                    }
-                    console.log(error)
-                }
-            }
-
-            setHeaders(_academics)
-            setAcademicDialog(false)
-            setHeaderRecord(HeaderRowRecordInterface)
-        }
+        //     setHeaders(_academics)
+        //     setAcademicDialog(false)
+        //     setHeaderRecord(HeaderRowRecordInterface)
+        // }
     }
 
     const openAddUpdateUserDialog = () => {
@@ -280,10 +299,10 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setSubmitted(false)
         setAcademicDialog(true)
     }
-    const editAcademic = (academic) => {
-        setHeaderRecord({ ...academic })
-        setAcademicDialog(true)
-    }
+    // const editAcademic = (academic) => {
+    //     setHeaderRecord({ ...academic })
+    //     setAcademicDialog(true)
+    // }
 
     const confirmDeleteAcademic = (academic) => {
         setHeaderRecord(academic)
@@ -291,13 +310,13 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const deleteAcademic = async () => {
-        let _academics = headers.filter((val) => val.id !== headerRecord.id)
+        let _academics = headers.filter((val) => val.id !== subRowRecord.id)
         try {
             await contributionDeleteFunction({
                 variables: {
                     DeleteContributionInput: {
                         contributionType: userType,
-                        studentId: headerRecord.id,
+                        studentId: subRowRecord.id,
                     },
                 },
             })
@@ -390,43 +409,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setPageLimit(event.rows)
     }
 
-    const onInputChange = (e, name) => {
-        const val = (e.target && e.target.value) || ''
-        let _academic = { ...headerRecord }
-        if (name == 'cgpa') {
-            let stringbe = ''
-            let i
-            let value = val.toString()
-            for (i = 0; i < value.length; i++) {
-                if (i == 0) {
-                    if (value[i] >= '0' && value[i] <= '4') {
-                        stringbe += value[i]
-                    }
-                } else if (i == 1) {
-                    if (value[i] == '.') {
-                        stringbe += value[i]
-                    }
-                } else {
-                    if (value[0] != 4) {
-                        if (value[i] >= '0' && value[i] <= '9') {
-                            stringbe += value[i]
-                        }
-                    } else {
-                        stringbe += '0'
-                    }
-                }
-            }
-            if (stringbe.length > 4) {
-                return
-            }
-            _academic[`${name}`] = stringbe
-            setHeaderRecord(_academic)
-            return
-        }
-        _academic[`${name}`] = val
-        setHeaderRecord(_academic)
-    }
-
     const leftToolbarTemplate = () => {
         return (
             <React.Fragment>
@@ -499,14 +481,45 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         )
     }
 
-    const actionBodyTemplate = (rowData) => {
+    const idBodyTemplate = (rowData) => {
         return (
             <>
-                <Button
-                    icon="pi pi-pencil"
-                    className="p-button-rounded p-button-success mr-2"
-                    onClick={() => editAcademic(rowData)}
-                />
+                <span className="p-column-title">Contribution ID</span>
+                {rowData.id}
+            </>
+        )
+    }
+
+    const titleBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Contribution Title</span>
+                {rowData.title}
+            </>
+        )
+    }
+
+    // const contributionTypeBodyTemplate = (rowData) => {
+    //     return (
+    //         <>
+    //             <span className="p-column-title">Contribution Type</span>
+    //             {rowData.type}
+    //         </>
+    //     )
+    // }
+
+    const contributionDescriptionBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Contribution Description</span>
+                {rowData.contribution}
+            </>
+        )
+    }
+
+    const deleteAcademicButtonTemplate = (rowData) => {
+        return (
+            <>
                 <Button
                     icon="pi pi-trash"
                     className="p-button-rounded p-button-danger"
@@ -544,7 +557,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={saveAcademic}
+                onClick={saveContribution}
             />
         </>
     )
@@ -608,47 +621,40 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             </>
         )
     }
-
-    const idBodyTemplate = (rowData) => {
+    const contributionEnumEditor = (options) => {
         return (
-            <>
-                <span className="p-column-title">Contribution ID</span>
-                {rowData.id}
-            </>
+            <Dropdown
+                value={options.value}
+                options={contributionEnums}
+                onChange={(e) => options.editorCallback(e.value)}
+                placeholder="Select a Type"
+                itemTemplate={(option) => {
+                    return option
+                }}
+            />
         )
     }
 
-    const titleBodyTemplate = (rowData) => {
+    const contributionTemplate = (rowData) => {
+        return rowData.type
+    }
+    const textEditor = (options) => {
         return (
-            <>
-                <span className="p-column-title">Contribution Title</span>
-                {rowData.title}
-            </>
+            <InputText
+                type="text"
+                value={options.value}
+                onChange={(e) => options.editorCallback(e.target.value)}
+            />
         )
     }
-
-    const contributionTypeBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">Contribution Type</span>
-                {rowData.type}
-            </>
-        )
-    }
-
-    const contributionDescriptionBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">Contribution Description</span>
-                {rowData.contribution}
-            </>
-        )
-    }
-
     const rowExpansionTemplate = (rowData) => {
         return (
             <div className="p-3">
-                <DataTable value={rowData.subRows}>
+                <DataTable
+                    value={rowData.subRows}
+                    editMode="row"
+                    onRowEditComplete={saveContribution}
+                >
                     <Column
                         field="id"
                         header="Contribution ID"
@@ -658,6 +664,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     <Column
                         field="title"
                         header="Contribution Title"
+                        editor={textEditor}
                         sortable
                         body={titleBodyTemplate}
                     />
@@ -665,12 +672,14 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         field="type"
                         header="Contribution Type"
                         sortable
-                        body={contributionTypeBodyTemplate}
+                        editor={contributionEnumEditor}
+                        body={contributionTemplate}
                     />
                     <Column
                         field="contribution"
                         header="Description"
                         sortable
+                        editor={textEditor}
                         body={contributionDescriptionBodyTemplate}
                     />
                     <Column
@@ -680,8 +689,12 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         body={dateBodyTemplate}
                     />
                     <Column
-                        body={actionBodyTemplate}
-                        headerStyle={{ minWidth: '10rem' }}
+                        rowEditor
+                        bodyStyle={{ textAlign: 'right' }}
+                    ></Column>
+                    <Column
+                        body={deleteAcademicButtonTemplate}
+                        bodyStyle={{ textAlign: 'left' }}
                     ></Column>
                 </DataTable>
             </div>
@@ -713,6 +726,19 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                             rowExpansionTemplate={rowExpansionTemplate}
                             expandedRows={expandedRows}
                             onRowToggle={(e) => setExpandedRows(e?.data)}
+                            totalRecords={totalRecords}
+                            loading={isLoading}
+                            responsiveLayout="scroll"
+                            emptyMessage="No Contributions found."
+                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+                            className="datatable-responsive"
+                            defaultValue={1}
+                            paginator
+                            rows={pageLimit}
+                            first={page * pageLimit}
+                            onPage={onPageChange}
+                            rowsPerPageOptions={[5, 10, 25]}
                         >
                             <Column expander style={{ width: '5em' }} />
                             <Column
@@ -740,42 +766,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     )}
 
                     <Dialog
-                        visible={academicDialog}
-                        style={{ width: '450px' }}
-                        header="Academic Details"
-                        modal
-                        className="p-fluid"
-                        footer={academicDialogFooter}
-                        onHide={hideDialog}
-                    >
-                        <div className="field">
-                            <label htmlFor="studentId">Student ID</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="studentId"
-                                    value={headerRecord.studentId}
-                                    onChange={(e) =>
-                                        onInputChange(e, 'studentId')
-                                    }
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid':
-                                            submitted &&
-                                            !headerRecord.studentId,
-                                    })}
-                                />
-                                {submitted && !headerRecord.studentId && (
-                                    <small className="p-invalid">
-                                        Student Id is required!
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-star" />
-                            </span>
-                        </div>
-                    </Dialog>
-
-                    <Dialog
                         visible={deleteAcademicDialog}
                         style={{ width: '450px' }}
                         header="Confirm"
@@ -788,10 +778,10 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                                 className="pi pi-exclamation-triangle mr-3"
                                 style={{ fontSize: '2rem' }}
                             />
-                            {headerRecord && (
+                            {subRowRecord && (
                                 <span>
                                     Are you sure you want to delete{' '}
-                                    <b>{headerRecord.name}</b>?
+                                    <b>{subRowRecord.name}</b>?
                                 </span>
                             )}
                         </div>
@@ -810,7 +800,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                                 className="pi pi-exclamation-triangle mr-3"
                                 style={{ fontSize: '2rem' }}
                             />
-                            {headerRecord && (
+                            {subRowRecord && (
                                 <span>
                                     Are you sure you want to delete the selected
                                     Academic Profile?
