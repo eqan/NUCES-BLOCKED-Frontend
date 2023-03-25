@@ -18,9 +18,9 @@ import jwt from 'jsonwebtoken'
 import { returnFetchContributionsHook } from '../../queries/academic/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
-import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN as CREATE_UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createUpdateStudentContributionAdmin'
+import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createUpdateStudentContributionAdmin'
 import { useMutation } from '@apollo/client'
-import { DELETE_STUDENT_CONTRIBUTION_ADMIN as DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
+import { DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 
 // Header Row: studentid, name, email,
@@ -31,8 +31,8 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 interface HeadRowInterface {
     studentId: string
     name: string
-    rollno: string
     email: string
+    subRows: SubRowInterface[]
 }
 
 interface SubRowInterface {
@@ -40,7 +40,7 @@ interface SubRowInterface {
     title: string
     type: string
     contribution: string
-    updatedAt: string
+    date: string
 }
 
 interface Props {
@@ -57,61 +57,29 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     let HeaderRowRecordInterface = {
         studentId: '',
         name: '',
-        rollno: '',
         email: '',
-    }
-
-    let SubRowRecordInterface = {
-        id: '',
-        title: '',
-        contribution: '',
-        email: '',
-        updatedAt: '',
-    }
-
-    const mapContributionToHeadRowContributionRecord = (
-        contribution: HeadRowInterface
-    ) => {
-        return {
-            studentId: contribution.studentId,
-            name: contribution.student.name,
-            rollno: contribution.studentId,
-            email: contribution.student.email,
-        }
-    }
-
-    const mapContributionToSubRowContributionRecord = (
-        contribution: SubRowInterface
-    ) => {
-        return {
-            id: contribution.id,
-            title: contribution.title,
-            contribution: contribution.contribution,
-            updatedAt: contribution.updatedAt,
-        }
+        subRows: [],
     }
 
     const [headers, setHeaders] = useState<HeadRowInterface[]>(
         [] as HeadRowInterface[]
     )
-    const [subRows, setSubRows] = useState<SubRowInterface[]>(
-        [] as SubRowInterface[]
-    )
     const [expandedRows, setExpandedRows] =
         useState<DataTableExpandedRows>(null)
     const [academicDialog, setAcademicDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
-    const [deleteAcademicDialog, setDeleteAcademicDialog] = useState(false)
-    const [deleteAcademicsDialog, setDeleteAcademicsDialog] = useState(false)
-    const [academic, setAcademic] = useState(HeaderRowRecordInterface)
-    const [selectedAcademics, setSelectedAcademics] = useState<
+    const [deleteAcademicDialog, setDeleteContributionDialog] = useState(false)
+    const [deleteAcademicsDialog, setDeleteContributionsDialog] =
+        useState(false)
+    const [headerRecord, setHeaderRecord] = useState(HeaderRowRecordInterface)
+    const [selectedSubRecords, setSelectedSubRecords] = useState<
         HeadRowInterface[]
     >([])
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
-    const [totalRecords, setTotalRecords] = useState(1)
+    const [totalHeaderRecords, setTotalHeaderRecords] = useState(1)
 
     const toast = useRef<Toast>(null)
     const dt = useRef<DataTable>(null)
@@ -121,7 +89,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         contributionsFetchingError,
         contributionsRefetchHook,
     ] = returnFetchContributionsHook(
-        '',
+        userSubType,
         userType,
         page + 1,
         pageLimit,
@@ -176,20 +144,40 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             try {
                 const contributionRecords =
                     await returnHeadRecordsDataOfUserType()
-                const contributionHeadRecords = contributionRecords
-                    ?.map(mapContributionToHeadRowContributionRecord)
-                    ?.filter(
-                        (record, index, self) =>
-                            index === self.findIndex((r) => r.id === record.id)
-                    )
-
-                const contributionSubRecords = contributionRecords?.map(
-                    mapContributionToSubRowContributionRecord
-                )
+                // console.log(contributionRecords)
                 const total = contributionsData?.GetAllContributions?.total
-                setHeaders(contributionHeadRecords)
-                setSubRows(contributionSubRecords)
-                setTotalRecords(total)
+                const groupedData = contributionRecords.reduce((acc, item) => {
+                    if (!acc[item.studentId]) {
+                        acc[item.studentId] = []
+                    }
+                    acc[item.studentId].push(item)
+                    return acc
+                }, {})
+
+                // Map each group to a HeadRowInterface object
+                const headRows = Object.values(groupedData).map((group) => {
+                    // Map the sub-rows for this group
+                    const subRows = group.map((item) => ({
+                        id: item.id,
+                        title: item.title,
+                        type: item.teacherContributionType,
+                        contribution: item.contribution,
+                        date: item.updatedAt,
+                    }))
+
+                    // Create a new object that matches the HeadRowInterface and include the mapped sub-rows
+                    return {
+                        studentId: group[0].studentId,
+                        name: group[0].student.name,
+                        email: group[0].student.email,
+                        subRows: subRows,
+                    }
+                })
+
+                console.log(headRows)
+                setHeaders(headRows)
+                // setSubRows(contributionSubRecords)
+                setTotalHeaderRecords(total)
             } catch (error) {
                 console.log(error)
             } finally {
@@ -224,21 +212,21 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const hideDeleteAcademicDialog = () => {
-        setDeleteAcademicDialog(false)
+        setDeleteContributionDialog(false)
     }
 
     const hideDeleteAcademicsDialog = () => {
-        setDeleteAcademicsDialog(false)
+        setDeleteContributionsDialog(false)
     }
 
     const saveAcademic = async () => {
         setSubmitted(true)
 
-        if (academic.contribution) {
+        if (headerRecord.contribution) {
             let _academics = [...headers]
-            let _academic = { ...academic }
-            if (academic.id) {
-                const index = findIndexById(academic.id)
+            let _academic = { ...headerRecord }
+            if (headerRecord.id) {
+                const index = findIndexById(headerRecord.id)
 
                 _academics[index] = _academic
                 try {
@@ -246,8 +234,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         variables: {
                             CreateUpdateStudentInput: {
                                 contributionType: {
-                                    type: 'SOCIETY_HEAD',
-                                    contributionType: 'SOCIETY_HEAD',
+                                    type: userType,
+                                    contributionType: userType,
                                     teacherContributionType: 'RESEARCH',
                                     societyHeadContributionType:
                                         'UNIVERSITY_EVENT',
@@ -283,28 +271,33 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
             setHeaders(_academics)
             setAcademicDialog(false)
-            setAcademic(HeaderRowRecordInterface)
+            setHeaderRecord(HeaderRowRecordInterface)
         }
     }
 
+    const openAddUpdateUserDialog = () => {
+        // setAcademic(SubRowRecordInterface)
+        setSubmitted(false)
+        setAcademicDialog(true)
+    }
     const editAcademic = (academic) => {
-        setAcademic({ ...academic })
+        setHeaderRecord({ ...academic })
         setAcademicDialog(true)
     }
 
     const confirmDeleteAcademic = (academic) => {
-        setAcademic(academic)
-        setDeleteAcademicDialog(true)
+        setHeaderRecord(academic)
+        setDeleteContributionDialog(true)
     }
 
     const deleteAcademic = async () => {
-        let _academics = headers.filter((val) => val.id !== academic.id)
+        let _academics = headers.filter((val) => val.id !== headerRecord.id)
         try {
             await contributionDeleteFunction({
                 variables: {
                     DeleteContributionInput: {
-                        contributionType: 'ADMIN',
-                        studentId: academic.id,
+                        contributionType: userType,
+                        studentId: headerRecord.id,
                     },
                 },
             })
@@ -327,8 +320,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             }
             console.log(error)
         }
-        setAcademic(HeaderRowRecordInterface)
-        setDeleteAcademicDialog(false)
+        setHeaderRecord(HeaderRowRecordInterface)
+        setDeleteContributionDialog(false)
         setHeaders(_academics)
     }
 
@@ -350,19 +343,19 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const confirmDeleteSelected = () => {
-        setDeleteAcademicsDialog(true)
+        setDeleteContributionsDialog(true)
     }
 
-    const deleteSelectedAcademics = async () => {
+    const deleteSelectedContributions = async () => {
         let _academics = headers.filter(
-            (val) => !selectedAcademics.includes(val)
+            (val) => !selectedSubRecords.includes(val)
         )
         try {
-            selectedAcademics.map(async (academic) => {
+            selectedSubRecords.map(async (academic) => {
                 await contributionDeleteFunction({
                     variables: {
                         DeleteContributionInput: {
-                            contributionType: 'ADMIN',
+                            contributionType: userType,
                             studentId: academic.id,
                         },
                     },
@@ -387,9 +380,9 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             }
             console.log(error)
         }
-        setSelectedAcademics([])
+        setSelectedSubRecords([])
         setHeaders(_academics)
-        setDeleteAcademicsDialog(false)
+        setDeleteContributionsDialog(false)
     }
 
     const onPageChange = (event) => {
@@ -399,7 +392,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || ''
-        let _academic = { ...academic }
+        let _academic = { ...headerRecord }
         if (name == 'cgpa') {
             let stringbe = ''
             let i
@@ -427,11 +420,11 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 return
             }
             _academic[`${name}`] = stringbe
-            setAcademic(_academic)
+            setHeaderRecord(_academic)
             return
         }
         _academic[`${name}`] = val
-        setAcademic(_academic)
+        setHeaderRecord(_academic)
     }
 
     const leftToolbarTemplate = () => {
@@ -439,12 +432,18 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             <React.Fragment>
                 <div className="my-2">
                     <Button
+                        label="New"
+                        icon="pi pi-plus"
+                        className="p-button-success mr-2"
+                        onClick={openAddUpdateUserDialog}
+                    />
+                    <Button
                         label="Delete"
                         icon="pi pi-trash"
                         className="p-button-danger"
                         onClick={confirmDeleteSelected}
                         disabled={
-                            !selectedAcademics || !selectedAcademics.length
+                            !selectedSubRecords || !selectedSubRecords.length
                         }
                     />
                 </div>
@@ -465,37 +464,37 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         )
     }
 
-    const rollnoBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">Roll No.</span>
-                {rowData.rollno}
-            </>
-        )
-    }
-
     const nameBodyTemplate = (rowData) => {
         return (
             <>
-                <span className="p-column-title">Full Name</span>
+                <span className="p-column-title">Student Name</span>
                 {rowData.name}
             </>
         )
     }
+
+    const emailBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Student Email</span>
+                {rowData.email}
+            </>
+        )
+    }
+    const studentIdBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Student ID</span>
+                {rowData.studentId}
+            </>
+        )
+    }
+
     const dateBodyTemplate = (rowData) => {
         return (
             <>
                 <span className="p-column-title">Last Updated</span>
                 {rowData.date}
-            </>
-        )
-    }
-
-    const cgpaBodyTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title">CGPA</span>
-                {rowData.cgpa}
             </>
         )
     }
@@ -519,7 +518,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const header = (
         <div className="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-            <h5 className="m-0">Manage Academic Profile</h5>
+            <h5 className="m-0">Manage Contributions</h5>
             <span className="block mt-2 md:mt-0 p-input-icon-left">
                 <i className="pi pi-search" />
                 <InputText
@@ -577,7 +576,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteSelectedAcademics}
+                onClick={deleteSelectedContributions}
             />
         </>
     )
@@ -610,50 +609,85 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         )
     }
 
-    const onRowExpand = (event: DataTableRowEventParams) => {
-        toast.current.show({
-            severity: 'info',
-            summary: 'Product Expanded',
-            detail: event.data.name,
-            life: 3000,
-        })
+    const idBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Contribution ID</span>
+                {rowData.id}
+            </>
+        )
     }
 
-    const onRowCollapse = (event: DataTableRowEventParams) => {
-        toast.current.show({
-            severity: 'success',
-            summary: 'Product Collapsed',
-            detail: event.data.name,
-            life: 3000,
-        })
+    const titleBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Contribution Title</span>
+                {rowData.title}
+            </>
+        )
+    }
+
+    const contributionTypeBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Contribution Type</span>
+                {rowData.type}
+            </>
+        )
+    }
+
+    const contributionDescriptionBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Contribution Description</span>
+                {rowData.contribution}
+            </>
+        )
     }
 
     const rowExpansionTemplate = (rowData) => {
         return (
             <div className="p-3">
-                <DataTable value={rowData}>
-                    <Column field="id" header="Id" sortable></Column>
+                <DataTable value={rowData.subRows}>
+                    <Column
+                        field="id"
+                        header="Contribution ID"
+                        sortable
+                        body={idBodyTemplate}
+                    />
                     <Column
                         field="title"
                         header="Contribution Title"
                         sortable
-                    ></Column>
+                        body={titleBodyTemplate}
+                    />
                     <Column
                         field="type"
                         header="Contribution Type"
                         sortable
-                    ></Column>
+                        body={contributionTypeBodyTemplate}
+                    />
                     <Column
                         field="contribution"
                         header="Description"
                         sortable
+                        body={contributionDescriptionBodyTemplate}
+                    />
+                    <Column
+                        field="updatedAt"
+                        header="Date"
+                        sortable
+                        body={dateBodyTemplate}
+                    />
+                    <Column
+                        body={actionBodyTemplate}
+                        headerStyle={{ minWidth: '10rem' }}
                     ></Column>
-                    <Column field="date" header="Date" sortable></Column>
-                    <Column headerStyle={{ width: '4rem' }}></Column>
                 </DataTable>
             </div>
         )
     }
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -674,30 +708,33 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         <DataTable
                             ref={dt}
                             value={headers}
-                            expandedRows={subRows}
-                            onRowToggle={(e) => setExpandedRows(e?.data)}
-                            onRowExpand={onRowExpand}
-                            onRowCollapse={onRowCollapse}
-                            rowExpansionTemplate={rowExpansionTemplate}
-                            dataKey="id"
+                            dataKey="studentId"
                             header={header}
-                            tableStyle={{ minWidth: '60rem' }}
+                            rowExpansionTemplate={rowExpansionTemplate}
+                            expandedRows={expandedRows}
+                            onRowToggle={(e) => setExpandedRows(e?.data)}
                         >
-                            <Column style={{ width: '5rem' }} />
+                            <Column expander style={{ width: '5em' }} />
                             <Column
                                 field="studentId"
                                 header="Student ID"
+                                body={studentIdBodyTemplate}
                                 sortable
+                                headerStyle={{ minWidth: '15rem' }}
                             />
                             <Column
                                 field="name"
                                 header="Student Name"
+                                body={nameBodyTemplate}
                                 sortable
+                                headerStyle={{ minWidth: '15rem' }}
                             />
                             <Column
                                 field="email"
                                 header="Student Email"
+                                body={emailBodyTemplate}
                                 sortable
+                                headerStyle={{ minWidth: '15rem' }}
                             />
                         </DataTable>
                     )}
@@ -712,22 +749,25 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         onHide={hideDialog}
                     >
                         <div className="field">
-                            <label htmlFor="cgpa">CGPA</label>
+                            <label htmlFor="studentId">Student ID</label>
                             <span className="p-input-icon-right">
                                 <InputText
-                                    id="cgpa"
-                                    value={academic.cgpa}
-                                    onChange={(e) => onInputChange(e, 'cgpa')}
+                                    id="studentId"
+                                    value={headerRecord.studentId}
+                                    onChange={(e) =>
+                                        onInputChange(e, 'studentId')
+                                    }
                                     required
                                     autoFocus
                                     className={classNames({
                                         'p-invalid':
-                                            submitted && !academic.cgpa,
+                                            submitted &&
+                                            !headerRecord.studentId,
                                     })}
                                 />
-                                {submitted && !academic.cgpa && (
+                                {submitted && !headerRecord.studentId && (
                                     <small className="p-invalid">
-                                        CGPA is required.
+                                        Student Id is required!
                                     </small>
                                 )}
                                 <i className="pi pi-fw pi-star" />
@@ -748,10 +788,10 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                                 className="pi pi-exclamation-triangle mr-3"
                                 style={{ fontSize: '2rem' }}
                             />
-                            {academic && (
+                            {headerRecord && (
                                 <span>
                                     Are you sure you want to delete{' '}
-                                    <b>{academic.name}</b>?
+                                    <b>{headerRecord.name}</b>?
                                 </span>
                             )}
                         </div>
@@ -770,7 +810,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                                 className="pi pi-exclamation-triangle mr-3"
                                 style={{ fontSize: '2rem' }}
                             />
-                            {academic && (
+                            {headerRecord && (
                                 <span>
                                     Are you sure you want to delete the selected
                                     Academic Profile?

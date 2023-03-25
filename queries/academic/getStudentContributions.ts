@@ -49,8 +49,8 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
 `
 
 export function returnFetchContributionsHook(
-    contributionType: string,
     contributor: string,
+    contributionType: string,
     page: number,
     limit: number,
     studentId: string | null

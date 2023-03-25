@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client'
 
-export const CREATE_UPDATE_STUDENT_CONTRIBUTIONS_ADMIN = gql`
+export const CREATE_UPDATE_STUDENT_CONTRIBUTIONS = gql`
     mutation CreateUpdateContribution(
         $CreateUpdateStudentInput: ContributionDto!
     ) {
