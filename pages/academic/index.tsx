@@ -59,11 +59,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const [contributionEnums, setContributionEnums] = useState([])
-    const [selectedContributionType, setSelectedContributionType] = useState({
-        TEACHER: null,
-        SOCIETY_HEAD: null,
-        CAREER_COUNSELLOR: null,
-    })
     const [headers, setHeaders] = useState<HeadRowInterface[]>(
         [] as HeadRowInterface[]
     )
@@ -241,7 +236,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     useEffect(() => {}, [globalFilter])
 
-    const hideDialog = () => {
+    const hideContributionDialog = () => {
         setSubmitted(false)
         setAcademicDialog(false)
     }
@@ -276,61 +271,61 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         return types
     }
 
-    // const addContribution = async () => {
-    //     setSubmitted(true)
-    //     if (subRowRecord.contribution) {
-    //         let _academics = [...headers]
-    //         let _academic = { ...subRowRecord }
-    //         if (subRowRecord.id) {
-    //             const index = findIndexById(subRowRecord.id)
+    const addContribution = async () => {
+        setSubmitted(true)
+        if (subRowRecord.contribution) {
+            let _academics = [...headers]
+            let _academic = { ...subRowRecord }
+            if (subRowRecord.id) {
+                const index = findIndexById(subRowRecord.id)
 
-    //             _academics[index] = _academic
-    //             try {
-    //                 await contributionAddFunction({
-    //                     variables: {
-    //                         CreateUpdateStudentInput: {
-    //                             contributionType: {
-    //                                 type: userType,
-    //                                 contributionType: userType,
-    //                                 teacherContributionType: 'RESEARCH',
-    //                                 societyHeadContributionType:
-    //                                     'UNIVERSITY_EVENT',
-    //                                 careerCounsellorContributionType: null,
-    //                             },
-    //                             contribution: 'Hosted FCAP speed programming',
-    //                             title: 'Daira 2023',
-    //                             contributor: 'Rehan Farooq',
-    //                             studentId: '19F0256',
-    //                         },
-    //                     },
-    //                 })
-    //                 if (toast.current) {
-    //                     toast.current?.show({
-    //                         severity: 'success',
-    //                         summary: 'Successful',
-    //                         detail: 'Academic Profile Updated',
-    //                         life: 3000,
-    //                     })
-    //                 }
-    //             } catch (error) {
-    //                 if (toast.current) {
-    //                     toast.current?.show({
-    //                         severity: 'error',
-    //                         summary: 'Error',
-    //                         detail: 'Academic Profile Not Updated',
-    //                         life: 3000,
-    //                     })
-    //                 }
-    //                 console.log(error)
-    //             }
-    //         }
+                _academics[index] = _academic
+                try {
+                    await contributionAddFunction({
+                        variables: {
+                            CreateUpdateStudentInput: {
+                                contributionType: {
+                                    type: userType,
+                                    contributionType: userType,
+                                    teacherContributionType: 'RESEARCH',
+                                    societyHeadContributionType:
+                                        'UNIVERSITY_EVENT',
+                                    careerCounsellorContributionType: null,
+                                },
+                                contribution: 'Hosted FCAP speed programming',
+                                title: 'Daira 2023',
+                                contributor: 'Rehan Farooq',
+                                studentId: '19F0256',
+                            },
+                        },
+                    })
+                    if (toast.current) {
+                        toast.current?.show({
+                            severity: 'success',
+                            summary: 'Successful',
+                            detail: 'Academic Profile Updated',
+                            life: 3000,
+                        })
+                    }
+                } catch (error) {
+                    if (toast.current) {
+                        toast.current?.show({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Academic Profile Not Updated',
+                            life: 3000,
+                        })
+                    }
+                    console.log(error)
+                }
+            }
 
-    //         setHeaders(_academics)
-    //         setAcademicDialog(false)
-    //         setHeaderRecord(HeaderRowRecordInterface)
-    //     }
-    // }
-    //
+            setHeaders(_academics)
+            setAcademicDialog(false)
+            setHeaderRecord(HeaderRowRecordInterface)
+        }
+    }
+
     const saveContribution = async (subRowData, parentId) => {
         let { newData, index: subRowIndex } = subRowData
         const types = returnArrayOfType(newData.type)
@@ -624,23 +619,23 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         </div>
     )
 
-    const academicDialogFooter = (
+    const addContributionDialogFooter = (
         <>
             <Button
                 label="Cancel"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideDialog}
+                onClick={hideContributionDialog}
             />
             <Button
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={saveContribution}
+                onClick={addContribution}
             />
         </>
     )
-    const deleteAcademicDialogFooter = (
+    const deleteContributionDialogFooter = (
         <>
             <Button
                 label="No"
@@ -656,7 +651,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             />
         </>
     )
-    const deleteAcademicsDialogFooter = (
+    const deleteContributionsDialogFooter = (
         <>
             <Button
                 label="No"
@@ -857,11 +852,101 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     )}
 
                     <Dialog
+                        visible={userSaveDialog}
+                        style={{ width: '450px' }}
+                        header="User Details"
+                        modal
+                        className="p-fluid"
+                        footer={addContributionDialogFooter}
+                        onHide={hideContributionDialog}
+                    >
+                        <div className="field">
+                            <label htmlFor="name">Name</label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="name"
+                                    value={user.name}
+                                    onChange={(e) => onInputChange(e, 'name')}
+                                    required
+                                    autoFocus
+                                    className={classNames({
+                                        'p-invalid': submitted && !user.name,
+                                    })}
+                                />
+                                {submitted && !user.name && (
+                                    <small className="p-invalid">
+                                        Name is required.
+                                    </small>
+                                )}
+                                <i className="pi pi-fw pi-user" />
+                            </span>
+                        </div>
+                        <div className="field">
+                            <label htmlFor="email">Email</label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="email"
+                                    value={user.email}
+                                    onChange={(e) => onInputChange(e, 'email')}
+                                    required
+                                    autoFocus
+                                    className={classNames(
+                                        {
+                                            'p-invalid':
+                                                submitted && !user.email,
+                                        },
+                                        {
+                                            'p-invalid1':
+                                                submitted && user.email,
+                                        }
+                                    )}
+                                />
+                                {(submitted && !user.email && (
+                                    <small className="p-invalid">
+                                        Email is required.
+                                    </small>
+                                )) ||
+                                    (submitted &&
+                                        user.email &&
+                                        !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(
+                                            user.email
+                                        ) && (
+                                            <small className="p-invalid1">
+                                                Invalid email address. E.g.
+                                                example@email.com
+                                            </small>
+                                        ))}
+                                <i className="pi pi-envelope" />
+                            </span>
+                        </div>
+                        <div className="field">
+                            <label htmlFor="role">Role</label>
+                            <Dropdown
+                                id="role"
+                                value={role}
+                                options={roles}
+                                onChange={(e) => onInputChange(e, 'role')}
+                                required
+                                autoFocus
+                                optionLabel="name"
+                                placeholder="Select a Role"
+                                className={classNames({
+                                    'p-invalid': submitted && !user.role,
+                                })}
+                            />
+                            {submitted && !user.role && (
+                                <small className="p-invalid">
+                                    Role is required.
+                                </small>
+                            )}
+                        </div>
+                    </Dialog>
+                    <Dialog
                         visible={deleteAcademicDialog}
                         style={{ width: '450px' }}
                         header="Confirm"
                         modal
-                        footer={deleteAcademicDialogFooter}
+                        footer={deleteContributionDialogFooter}
                         onHide={hideDeleteAcademicDialog}
                     >
                         <div className="flex align-items-center justify-content-center">
@@ -883,7 +968,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         style={{ width: '450px' }}
                         header="Confirm"
                         modal
-                        footer={deleteAcademicsDialogFooter}
+                        footer={deleteContributionsDialogFooter}
                         onHide={hideDeleteAcademicsDialog}
                     >
                         <div className="flex align-items-center justify-content-center">
