@@ -13,11 +13,12 @@ import jwt from 'jsonwebtoken'
 import { returnFetchContributionsHook } from '../../queries/academic/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
-import { CREATE_UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createUpdateStudentContributionAdmin'
+import { CREATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createStudentContributionAdmin'
 import { useMutation } from '@apollo/client'
 import { DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Dropdown } from 'primereact/dropdown'
+import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStudentContribution.dto'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -58,6 +59,11 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const [contributionEnums, setContributionEnums] = useState([])
+    const [selectedContributionType, setSelectedContributionType] = useState({
+        TEACHER: null,
+        SOCIETY_HEAD: null,
+        CAREER_COUNSELLOR: null,
+    })
     const [headers, setHeaders] = useState<HeadRowInterface[]>(
         [] as HeadRowInterface[]
     )
@@ -104,14 +110,24 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     ] = useMutation(DELETE_STUDENT_CONTRIBUTION)
 
     const [
-        contributionAddUpdateFunction,
+        contributionAddFunction,
         {
-            data: contributionAddUpdateData,
-            loading: contributionAddUpdateLoading,
-            error: contributionAddUpdateError,
-            reset: contributionAddUpdateReset,
+            data: contributionAddData,
+            loading: contributionAddLoading,
+            error: contributionAddError,
+            reset: contributionAddReset,
         },
-    ] = useMutation(CREATE_UPDATE_STUDENT_CONTRIBUTIONS)
+    ] = useMutation(CREATE_STUDENT_CONTRIBUTIONS)
+
+    const [
+        contributionUpdateFunction,
+        {
+            data: contributionUpdateData,
+            loading: contributionUpdateLoading,
+            error: contributionUpdateError,
+            reset: contributionUpdateReset,
+        },
+    ] = useMutation(UPDATE_STUDENT_CONTRIBUTIONS)
 
     const returnHeadRecordsDataOfUserType = async () => {
         switch (userType) {
@@ -171,8 +187,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     }
                 })
 
-                console.log(headRows)
                 setHeaders(headRows)
+                setPageLimit(total)
                 setTotalRecords(total)
             } catch (error) {
                 console.log(error)
@@ -238,60 +254,136 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setDeleteContributionsDialog(false)
     }
 
-    const saveContribution = async (rowData) => {
-        // setSubmitted(true)
-        console.log(rowData)
-        // if (subRowRecord.contribution) {
-        //     let _academics = [...headers]
-        //     let _academic = { ...subRowRecord }
-        //     if (subRowRecord.id) {
-        //         const index = findIndexById(subRowRecord.id)
+    const returnArrayOfType = (type) => {
+        const types = {
+            TEACHER: null,
+            SOCIETY_HEAD: null,
+            CAREER_COUNSELLOR: null,
+        }
+        switch (userType) {
+            case 'TEACHER':
+                types['TEACHER'] = type
+                break
+            case 'SOCIETY_HEAD':
+                types['SOCIETY_HEAD'] = type
+                break
+            case 'CAREER_COUNSELLOR':
+                types['CAREER_COUNSELLOR'] = type
+                break
+            default:
+                break
+        }
+        return types
+    }
 
-        //         _academics[index] = _academic
-        //         try {
-        //             await contributionAddUpdateFunction({
-        //                 variables: {
-        //                     CreateUpdateStudentInput: {
-        //                         contributionType: {
-        //                             type: userType,
-        //                             contributionType: userType,
-        //                             teacherContributionType: 'RESEARCH',
-        //                             societyHeadContributionType:
-        //                                 'UNIVERSITY_EVENT',
-        //                             careerCounsellorContributionType: null,
-        //                         },
-        //                         contribution: 'Hosted FCAP speed programming',
-        //                         title: 'Daira 2023',
-        //                         contributor: 'Rehan Farooq',
-        //                         studentId: '19F0256',
-        //                     },
-        //                 },
-        //             })
-        //             if (toast.current) {
-        //                 toast.current?.show({
-        //                     severity: 'success',
-        //                     summary: 'Successful',
-        //                     detail: 'Academic Profile Updated',
-        //                     life: 3000,
-        //                 })
-        //             }
-        //         } catch (error) {
-        //             if (toast.current) {
-        //                 toast.current?.show({
-        //                     severity: 'error',
-        //                     summary: 'Error',
-        //                     detail: 'Academic Profile Not Updated',
-        //                     life: 3000,
-        //                 })
-        //             }
-        //             console.log(error)
-        //         }
-        //     }
+    // const addContribution = async () => {
+    //     setSubmitted(true)
+    //     if (subRowRecord.contribution) {
+    //         let _academics = [...headers]
+    //         let _academic = { ...subRowRecord }
+    //         if (subRowRecord.id) {
+    //             const index = findIndexById(subRowRecord.id)
 
-        //     setHeaders(_academics)
-        //     setAcademicDialog(false)
-        //     setHeaderRecord(HeaderRowRecordInterface)
-        // }
+    //             _academics[index] = _academic
+    //             try {
+    //                 await contributionAddFunction({
+    //                     variables: {
+    //                         CreateUpdateStudentInput: {
+    //                             contributionType: {
+    //                                 type: userType,
+    //                                 contributionType: userType,
+    //                                 teacherContributionType: 'RESEARCH',
+    //                                 societyHeadContributionType:
+    //                                     'UNIVERSITY_EVENT',
+    //                                 careerCounsellorContributionType: null,
+    //                             },
+    //                             contribution: 'Hosted FCAP speed programming',
+    //                             title: 'Daira 2023',
+    //                             contributor: 'Rehan Farooq',
+    //                             studentId: '19F0256',
+    //                         },
+    //                     },
+    //                 })
+    //                 if (toast.current) {
+    //                     toast.current?.show({
+    //                         severity: 'success',
+    //                         summary: 'Successful',
+    //                         detail: 'Academic Profile Updated',
+    //                         life: 3000,
+    //                     })
+    //                 }
+    //             } catch (error) {
+    //                 if (toast.current) {
+    //                     toast.current?.show({
+    //                         severity: 'error',
+    //                         summary: 'Error',
+    //                         detail: 'Academic Profile Not Updated',
+    //                         life: 3000,
+    //                     })
+    //                 }
+    //                 console.log(error)
+    //             }
+    //         }
+
+    //         setHeaders(_academics)
+    //         setAcademicDialog(false)
+    //         setHeaderRecord(HeaderRowRecordInterface)
+    //     }
+    // }
+    //
+    const saveContribution = async (subRowData, parentId) => {
+        let { newData, index: subRowIndex } = subRowData
+        const types = returnArrayOfType(newData.type)
+        if (newData.contribution) {
+            let _headers = [...headers]
+            let _subrow = { ...newData }
+            if (newData.id) {
+                const parentIndex = findIndexById(parentId)
+                _headers[parentIndex].subRows[subRowIndex] = _subrow
+                try {
+                    await contributionUpdateFunction({
+                        variables: {
+                            UpdateStudentInput: {
+                                contributionType: {
+                                    type: userType,
+                                    contributionType: userType,
+                                    teacherContributionType: types['TEACHER'],
+                                    societyHeadContributionType:
+                                        types['SOCIETY_HEAD'],
+                                    careerCounsellorContributionType:
+                                        types['CAREER_COUNSELLOR'],
+                                },
+                                id: newData.id,
+                                contribution: newData.contribution,
+                                title: newData.title,
+                                contributor: userSubType,
+                                studentId: parentId,
+                            },
+                        },
+                    })
+                    if (toast.current) {
+                        toast.current?.show({
+                            severity: 'success',
+                            summary: 'Successful',
+                            detail: 'Academic Profile Updated',
+                            life: 3000,
+                        })
+                    }
+                } catch (error) {
+                    if (toast.current) {
+                        toast.current?.show({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Academic Profile Not Updated',
+                            life: 3000,
+                        })
+                    }
+                    console.log(error)
+                }
+            }
+            setHeaders(_headers)
+            setHeaderRecord(HeaderRowRecordInterface)
+        }
     }
 
     const openAddUpdateUserDialog = () => {
@@ -299,10 +391,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setSubmitted(false)
         setAcademicDialog(true)
     }
-    // const editAcademic = (academic) => {
-    //     setHeaderRecord({ ...academic })
-    //     setAcademicDialog(true)
-    // }
 
     const confirmDeleteAcademic = (academic) => {
         setHeaderRecord(academic)
@@ -347,7 +435,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const findIndexById = (id) => {
         let index = -1
         for (let i = 0; i < headers.length; i++) {
-            if (headers[i].id === id) {
+            if (headers[i].studentId === id) {
                 index = i
                 break
             }
@@ -499,15 +587,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         )
     }
 
-    // const contributionTypeBodyTemplate = (rowData) => {
-    //     return (
-    //         <>
-    //             <span className="p-column-title">Contribution Type</span>
-    //             {rowData.type}
-    //         </>
-    //     )
-    // }
-
     const contributionDescriptionBodyTemplate = (rowData) => {
         return (
             <>
@@ -626,7 +705,9 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             <Dropdown
                 value={options.value}
                 options={contributionEnums}
-                onChange={(e) => options.editorCallback(e.value)}
+                onChange={(e) => {
+                    options.editorCallback(e.value)
+                }}
                 placeholder="Select a Type"
                 itemTemplate={(option) => {
                     return option
@@ -653,8 +734,18 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 <DataTable
                     value={rowData.subRows}
                     editMode="row"
-                    onRowEditComplete={saveContribution}
+                    onRowEditComplete={(subRowData) => {
+                        saveContribution(subRowData, rowData.studentId)
+                    }}
+                    selection={selectedSubRecords}
+                    onSelectionChange={(e) => setSelectedSubRecords(e.value)}
+                    className="datatable-responsive"
                 >
+                    <Column
+                        selectionMode="multiple"
+                        headerStyle={{ width: '4rem' }}
+                    ></Column>
+
                     <Column
                         field="id"
                         header="Contribution ID"
@@ -731,14 +822,14 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                             responsiveLayout="scroll"
                             emptyMessage="No Contributions found."
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users"
+                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} contributions"
                             className="datatable-responsive"
                             defaultValue={1}
                             paginator
                             rows={pageLimit}
                             first={page * pageLimit}
                             onPage={onPageChange}
-                            rowsPerPageOptions={[5, 10, 25]}
+                            rowsPerPageOptions={[5, 10, totalRecords]}
                         >
                             <Column expander style={{ width: '5em' }} />
                             <Column
