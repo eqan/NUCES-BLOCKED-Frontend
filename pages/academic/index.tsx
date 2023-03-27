@@ -78,14 +78,28 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const mapSubRowToSubRowRecord = (
-        subRow: AddContributionDialogInterface
+        data: object,
+        contributionType: string
     ) => {
+        const nonEmptyArrays = Object.values(data).filter(
+            (arr) => arr.length !== 0
+        )
+
+        const desiredObject = nonEmptyArrays[0].map(
+            ({ id, contribution, title, updatedAt }) => ({
+                id,
+                contribution,
+                title,
+                updatedAt,
+            })
+        )[0]
+        console.log(desiredObject)
         return {
-            id: subRow.id,
-            title: subRow.title,
-            type: subRow.type,
-            contribution: subRow.contribution,
-            date: subRow.date,
+            id: desiredObject.id,
+            title: desiredObject.title,
+            type: contributionType,
+            contribution: desiredObject.contribution,
+            date: desiredObject.updatedAt,
         }
     }
 
@@ -347,9 +361,10 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     },
                 })
                 newContribution = newContribution.data.CreateContribution
-                const mappedData: SubRowInterface =
-                    mapSubRowToSubRowRecord(newContribution)
-                _subRows = _subRows.filter((item) => (item.id = mappedData.id))
+                const mappedData: SubRowInterface = mapSubRowToSubRowRecord(
+                    newContribution,
+                    addContributionData?.type?.type
+                )
                 _subRows.push(mappedData)
                 _headers[parentIndex].subRows = _subRows
                 if (toast.current) {
@@ -479,7 +494,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setHeaders(_academics)
     }
 
-    const findIndexById = (id) => {
+    const findIndexById = (id: any) => {
         let index = -1
         for (let i = 0; i < headers.length; i++) {
             if (headers[i].studentId === id) {

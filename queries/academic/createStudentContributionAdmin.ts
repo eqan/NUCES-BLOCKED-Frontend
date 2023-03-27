@@ -3,24 +3,26 @@ import { gql } from '@apollo/client'
 export const CREATE_STUDENT_CONTRIBUTIONS = gql`
     mutation CreateContribution($CreateStudentInput: ContributionDto!) {
         CreateContribution(CreateStudentInput: $CreateStudentInput) {
-            id
             CareerCounsellorContributions {
                 id
-                studentId
                 careerCounsellorContributionType
                 contribution
+                title
+                updatedAt
             }
             TeachersContributions {
                 id
-                studentId
                 teacherContributionType
                 contribution
+                title
+                updatedAt
             }
             SocietyHeadsContributions {
                 id
-                studentId
                 societyHeadContributionType
                 contribution
+                title
+                updatedAt
             }
         }
     }
