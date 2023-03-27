@@ -42,10 +42,12 @@ interface SubRowInterface {
 }
 
 interface AddContributionDialogInterface {
+    id: string
     studentId: string
     title: string
     type: string
     contribution: string
+    date: string
 }
 
 interface Props {
@@ -67,10 +69,24 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     let AddContributionDialogInterface = {
+        id: '',
         studentId: '',
         title: '',
         type: '',
         contribution: '',
+        date: '',
+    }
+
+    const mapSubRowToSubRowRecord = (
+        subRow: AddContributionDialogInterface
+    ) => {
+        return {
+            id: subRow.id,
+            title: subRow.title,
+            type: subRow.type,
+            contribution: subRow.contribution,
+            date: subRow.date,
+        }
     }
 
     const [contributionEnums, setContributionEnums] = useState([])
@@ -306,31 +322,41 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const addContribution = async () => {
         setSubmitted(true)
         if (addContributionData.contribution) {
-            let _academics = [...headers]
-            let _academic = { ...subRowRecord }
+            let _headers = [...headers]
+            const types = returnArrayOfType(addContributionData.type.type)
+            const parentIndex = findIndexById(addContributionData.studentId)
+            let _subRows = _headers[parentIndex].subRows
             try {
-                await contributionAddFunction({
+                let newContribution = await contributionAddFunction({
                     variables: {
-                        CreateUpdateStudentInput: {
+                        CreateStudentInput: {
                             contributionType: {
                                 type: userType,
                                 contributionType: userType,
-                                teacherContributionType: 'RESEARCH',
-                                societyHeadContributionType: 'UNIVERSITY_EVENT',
-                                careerCounsellorContributionType: null,
+                                teacherContributionType: types['TEACHER'],
+                                societyHeadContributionType:
+                                    types['SOCIETY_HEAD'],
+                                careerCounsellorContributionType:
+                                    types['CAREER_COUNSELLOR'],
                             },
-                            contribution: 'Hosted FCAP speed programming',
-                            title: 'Daira 2023',
-                            contributor: 'Rehan Farooq',
-                            studentId: '19F0256',
+                            contribution: addContributionData.contribution,
+                            title: addContributionData.title,
+                            contributor: userSubType,
+                            studentId: addContributionData.studentId,
                         },
                     },
                 })
+                newContribution = newContribution.data.CreateContribution
+                const mappedData: SubRowInterface =
+                    mapSubRowToSubRowRecord(newContribution)
+                _subRows = _subRows.filter((item) => (item.id = mappedData.id))
+                _subRows.push(mappedData)
+                _headers[parentIndex].subRows = _subRows
                 if (toast.current) {
                     toast.current?.show({
                         severity: 'success',
                         summary: 'Successful',
-                        detail: 'Academic Profile Updated',
+                        detail: 'Contribution Added',
                         life: 3000,
                     })
                 }
@@ -339,14 +365,14 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     toast.current?.show({
                         severity: 'error',
                         summary: 'Error',
-                        detail: 'Academic Profile Not Updated',
+                        detail: 'Contribution couldnt be added!',
                         life: 3000,
                     })
                 }
                 console.log(error)
             }
 
-            setHeaders(_academics)
+            setHeaders(_headers)
             setAddContributionDialog(false)
             setHeaderRecord(HeaderRowRecordInterface)
         }
@@ -386,7 +412,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         toast.current?.show({
                             severity: 'success',
                             summary: 'Successful',
-                            detail: 'Academic Profile Updated',
+                            detail: 'Contribution Updated',
                             life: 3000,
                         })
                     }
@@ -395,7 +421,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         toast.current?.show({
                             severity: 'error',
                             summary: 'Error',
-                            detail: 'Academic Profile Not Updated',
+                            detail: 'Contribution Not Updated',
                             life: 3000,
                         })
                     }
@@ -632,10 +658,9 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || ''
         let _contribution = { ...addContributionData }
-        let stringbe
+        let stringbe = ''
         if (name == 'studentId') {
             let i
-            stringbe = ''
             for (i = 0; i < val.length; i++) {
                 if (i != 2) {
                     if (i >= 1) {
@@ -659,9 +684,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         return
                     }
                 }
-            }
-            if (stringbe.length > 7) {
-                return
             }
             _contribution[`${name}`] = stringbe
             setAddContributionData(_contribution)
