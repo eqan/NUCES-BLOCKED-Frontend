@@ -20,7 +20,6 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { Skeleton } from 'primereact/skeleton'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 

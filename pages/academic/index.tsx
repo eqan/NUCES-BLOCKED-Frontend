@@ -19,6 +19,7 @@ import { DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStuden
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Dropdown } from 'primereact/dropdown'
 import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStudentContribution.dto'
+import { classNames } from 'primereact/utils'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -40,6 +41,13 @@ interface SubRowInterface {
     date: string
 }
 
+interface AddContributionDialogInterface {
+    studentId: string
+    title: string
+    type: string
+    contribution: string
+}
+
 interface Props {
     userType: string
     userSubType: string
@@ -58,13 +66,24 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         subRows: [],
     }
 
+    let AddContributionDialogInterface = {
+        studentId: '',
+        title: '',
+        type: '',
+        contribution: '',
+    }
+
     const [contributionEnums, setContributionEnums] = useState([])
+    const [contributionEnumsForDialog, setContributionEnumsForDialog] =
+        useState([])
     const [headers, setHeaders] = useState<HeadRowInterface[]>(
         [] as HeadRowInterface[]
     )
+    const [addContributionData, setAddContributionData] =
+        useState<AddContributionDialogInterface>(AddContributionDialogInterface)
     const [expandedRows, setExpandedRows] =
         useState<DataTableExpandedRows>(null)
-    const [academicDialog, setAcademicDialog] = useState(false)
+    const [addContributionDialog, setAddContributionDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [deleteAcademicDialog, setDeleteContributionDialog] = useState(false)
     const [deleteAcademicsDialog, setDeleteContributionsDialog] =
@@ -197,11 +216,19 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         switch (userType) {
             case 'TEACHER':
                 setContributionEnums(['TA_SHIP', 'RESEARCH'])
+                setContributionEnumsForDialog([
+                    { type: 'TA_SHIP' },
+                    { type: 'RESEARCH' },
+                ])
                 break
             case 'SOCIETY_HEAD':
                 setContributionEnums([
                     'UNIVERSITY_EVENT',
                     'COMPETITION_ACHIEVEMENT',
+                ])
+                setContributionEnumsForDialog([
+                    { type: 'UNIVERSITY_EVENT' },
+                    { type: 'COMPETITION_ACHIEVEMENT' },
                 ])
                 break
             case 'CAREER_COUNSELLOR':
@@ -209,6 +236,11 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     'EXCHANGE_PROGRAM',
                     'INTERNSHIP',
                     'FELLOWSHIP_PROGRAM',
+                ])
+                setContributionEnumsForDialog([
+                    { type: 'EXCHANGE_PROGRAM' },
+                    { type: 'INTERNSHIP' },
+                    { type: 'FELLOWSHIP_PROGRAM' },
                 ])
                 break
             default:
@@ -238,7 +270,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const hideContributionDialog = () => {
         setSubmitted(false)
-        setAcademicDialog(false)
+        setAddContributionDialog(false)
     }
 
     const hideDeleteAcademicDialog = () => {
@@ -273,55 +305,49 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const addContribution = async () => {
         setSubmitted(true)
-        if (subRowRecord.contribution) {
+        if (addContributionData.contribution) {
             let _academics = [...headers]
             let _academic = { ...subRowRecord }
-            if (subRowRecord.id) {
-                const index = findIndexById(subRowRecord.id)
-
-                _academics[index] = _academic
-                try {
-                    await contributionAddFunction({
-                        variables: {
-                            CreateUpdateStudentInput: {
-                                contributionType: {
-                                    type: userType,
-                                    contributionType: userType,
-                                    teacherContributionType: 'RESEARCH',
-                                    societyHeadContributionType:
-                                        'UNIVERSITY_EVENT',
-                                    careerCounsellorContributionType: null,
-                                },
-                                contribution: 'Hosted FCAP speed programming',
-                                title: 'Daira 2023',
-                                contributor: 'Rehan Farooq',
-                                studentId: '19F0256',
+            try {
+                await contributionAddFunction({
+                    variables: {
+                        CreateUpdateStudentInput: {
+                            contributionType: {
+                                type: userType,
+                                contributionType: userType,
+                                teacherContributionType: 'RESEARCH',
+                                societyHeadContributionType: 'UNIVERSITY_EVENT',
+                                careerCounsellorContributionType: null,
                             },
+                            contribution: 'Hosted FCAP speed programming',
+                            title: 'Daira 2023',
+                            contributor: 'Rehan Farooq',
+                            studentId: '19F0256',
                         },
+                    },
+                })
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'success',
+                        summary: 'Successful',
+                        detail: 'Academic Profile Updated',
+                        life: 3000,
                     })
-                    if (toast.current) {
-                        toast.current?.show({
-                            severity: 'success',
-                            summary: 'Successful',
-                            detail: 'Academic Profile Updated',
-                            life: 3000,
-                        })
-                    }
-                } catch (error) {
-                    if (toast.current) {
-                        toast.current?.show({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Academic Profile Not Updated',
-                            life: 3000,
-                        })
-                    }
-                    console.log(error)
                 }
+            } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Academic Profile Not Updated',
+                        life: 3000,
+                    })
+                }
+                console.log(error)
             }
 
             setHeaders(_academics)
-            setAcademicDialog(false)
+            setAddContributionDialog(false)
             setHeaderRecord(HeaderRowRecordInterface)
         }
     }
@@ -384,7 +410,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const openAddUpdateUserDialog = () => {
         // setAcademic(SubRowRecordInterface)
         setSubmitted(false)
-        setAcademicDialog(true)
+        setAddContributionDialog(true)
     }
 
     const confirmDeleteAcademic = (academic) => {
@@ -601,6 +627,48 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 />
             </>
         )
+    }
+
+    const onInputChange = (e, name) => {
+        const val = (e.target && e.target.value) || ''
+        let _contribution = { ...addContributionData }
+        let stringbe
+        if (name == 'studentId') {
+            let i
+            stringbe = ''
+            for (i = 0; i < val.length; i++) {
+                if (i != 2) {
+                    if (i >= 1) {
+                        if (!(val[i] >= '0' && val[i] <= '9')) {
+                            return
+                        }
+                        stringbe += val[i]
+                    } else {
+                        if (!(val[i] >= '1' && val[i] <= '9')) {
+                            return
+                        }
+                        stringbe += val[i]
+                    }
+                } else if (i == 2) {
+                    if (
+                        (val[i] >= 'a' && val[i] <= 'z') ||
+                        (val[i] >= 'A' && val[i] <= 'Z')
+                    ) {
+                        stringbe += val[i].toUpperCase()
+                    } else {
+                        return
+                    }
+                }
+            }
+            if (stringbe.length > 7) {
+                return
+            }
+            _contribution[`${name}`] = stringbe
+            setAddContributionData(_contribution)
+            return
+        }
+        _contribution[`${name}`] = val
+        setAddContributionData(_contribution)
     }
 
     const header = (
@@ -852,7 +920,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     )}
 
                     <Dialog
-                        visible={userSaveDialog}
+                        visible={addContributionDialog}
                         style={{ width: '450px' }}
                         header="User Details"
                         modal
@@ -861,84 +929,118 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         onHide={hideContributionDialog}
                     >
                         <div className="field">
-                            <label htmlFor="name">Name</label>
+                            <label htmlFor="studentId">Student ID</label>
                             <span className="p-input-icon-right">
                                 <InputText
-                                    id="name"
-                                    value={user.name}
-                                    onChange={(e) => onInputChange(e, 'name')}
+                                    id="studentId"
+                                    value={addContributionData.studentId}
+                                    onChange={(e) =>
+                                        onInputChange(e, 'studentId')
+                                    }
                                     required
                                     autoFocus
                                     className={classNames({
-                                        'p-invalid': submitted && !user.name,
+                                        'p-invalid':
+                                            submitted &&
+                                            !addContributionData.studentId,
                                     })}
                                 />
-                                {submitted && !user.name && (
-                                    <small className="p-invalid">
-                                        Name is required.
-                                    </small>
-                                )}
+                                {submitted &&
+                                    !addContributionData.studentId && (
+                                        <small className="p-invalid">
+                                            StudentId is required.
+                                        </small>
+                                    )}
                                 <i className="pi pi-fw pi-user" />
                             </span>
                         </div>
+
                         <div className="field">
-                            <label htmlFor="email">Email</label>
+                            <label htmlFor="title">Contribution Title</label>
                             <span className="p-input-icon-right">
                                 <InputText
-                                    id="email"
-                                    value={user.email}
-                                    onChange={(e) => onInputChange(e, 'email')}
+                                    id="title"
+                                    value={addContributionData.title}
                                     required
+                                    onChange={(e) => onInputChange(e, 'title')}
                                     autoFocus
                                     className={classNames(
                                         {
                                             'p-invalid':
-                                                submitted && !user.email,
+                                                submitted &&
+                                                !addContributionData.title,
                                         },
                                         {
                                             'p-invalid1':
-                                                submitted && user.email,
+                                                submitted &&
+                                                addContributionData.title,
                                         }
                                     )}
                                 />
-                                {(submitted && !user.email && (
+                                {submitted && !addContributionData.title && (
                                     <small className="p-invalid">
-                                        Email is required.
+                                        Contribution Title is required.
                                     </small>
-                                )) ||
-                                    (submitted &&
-                                        user.email &&
-                                        !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(
-                                            user.email
-                                        ) && (
-                                            <small className="p-invalid1">
-                                                Invalid email address. E.g.
-                                                example@email.com
-                                            </small>
-                                        ))}
-                                <i className="pi pi-envelope" />
+                                )}
                             </span>
                         </div>
                         <div className="field">
-                            <label htmlFor="role">Role</label>
+                            <label htmlFor="type">Contribution Type</label>
                             <Dropdown
-                                id="role"
-                                value={role}
-                                options={roles}
-                                onChange={(e) => onInputChange(e, 'role')}
+                                id="type"
+                                value={addContributionData.type}
+                                options={contributionEnumsForDialog}
                                 required
                                 autoFocus
-                                optionLabel="name"
-                                placeholder="Select a Role"
+                                onChange={(e) => onInputChange(e, 'type')}
+                                optionLabel="type"
+                                placeholder="Select a type"
                                 className={classNames({
-                                    'p-invalid': submitted && !user.role,
+                                    'p-invalid':
+                                        submitted && !addContributionData.type,
                                 })}
                             />
-                            {submitted && !user.role && (
+                            {submitted && !addContributionData.type && (
                                 <small className="p-invalid">
-                                    Role is required.
+                                    Contribution Type is required.
                                 </small>
                             )}
+                        </div>
+                        <div className="field">
+                            <label htmlFor="contribution">
+                                Contribution Description
+                            </label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="contribution"
+                                    value={addContributionData.contribution}
+                                    required
+                                    autoFocus
+                                    onChange={(e) =>
+                                        onInputChange(e, 'contribution')
+                                    }
+                                    className={classNames(
+                                        {
+                                            'p-invalid':
+                                                submitted &&
+                                                !addContributionData.contribution,
+                                        },
+                                        {
+                                            'p-invalid1':
+                                                submitted &&
+                                                addContributionData.contribution,
+                                        }
+                                    )}
+                                />
+                                {submitted &&
+                                    !addContributionData.contribution && (
+                                        <small className="p-invalid">
+                                            Contribution Description is
+                                            required.
+                                        </small>
+                                    )}
+                                <i className="pi pi-bars" />
+                            </span>
                         </div>
                     </Dialog>
                     <Dialog
