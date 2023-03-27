@@ -116,9 +116,11 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const [addContributionDialog, setAddContributionDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [deleteAcademicDialog, setDeleteContributionDialog] = useState(false)
-    const [deleteAcademicsDialog, setDeleteContributionsDialog] =
+    const [deleteContributionsDialog, setDeleteContributionsDialog] =
         useState(false)
-    const [subRowRecord, setHeaderRecord] = useState(HeaderRowRecordInterface)
+    const [selectedHeadRowRecord, setSelectedHeadRowRecord] = useState(
+        HeaderRowRecordInterface
+    )
     const [selectedSubRecords, setSelectedSubRecords] = useState<
         HeadRowInterface[]
     >([])
@@ -303,11 +305,11 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setAddContributionDialog(false)
     }
 
-    const hideDeleteAcademicDialog = () => {
+    const hideDeleteContributionDialog = () => {
         setDeleteContributionDialog(false)
     }
 
-    const hideDeleteAcademicsDialog = () => {
+    const hideDeleteContributionsDialog = () => {
         setDeleteContributionsDialog(false)
     }
 
@@ -389,7 +391,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
             setHeaders(_headers)
             setAddContributionDialog(false)
-            setHeaderRecord(HeaderRowRecordInterface)
+            setSelectedHeadRowRecord(HeaderRowRecordInterface)
         }
     }
 
@@ -444,7 +446,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 }
             }
             setHeaders(_headers)
-            setHeaderRecord(HeaderRowRecordInterface)
+            setSelectedHeadRowRecord(HeaderRowRecordInterface)
         }
     }
 
@@ -454,22 +456,34 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setAddContributionDialog(true)
     }
 
-    const confirmDeleteAcademic = (academic) => {
-        setHeaderRecord(academic)
+    const confirmDeleteContribution = (rowData) => {
+        setSelectedHeadRowRecord(rowData)
         setDeleteContributionDialog(true)
     }
 
-    const deleteAcademic = async () => {
-        let _academics = headers.filter((val) => val.id !== subRowRecord.id)
+    const deleteContribution = async () => {
+        let _headers = [...headers]
+        console.log(selectedHeadRowRecord)
         try {
+            const matchingStudent = _headers.find(({ subRows }) =>
+                subRows.find(({ id }) => id === selectedHeadRowRecord.id)
+            )?.studentId
+            const parentIndex = findIndexById(matchingStudent)
+            console.log(parentIndex)
+            let _subRows = _headers[parentIndex].subRows
+            _subRows = _subRows.filter(
+                (val) => val.id !== selectedHeadRowRecord.id
+            )
             await contributionDeleteFunction({
                 variables: {
                     DeleteContributionInput: {
+                        contributionId: selectedHeadRowRecord.id,
                         contributionType: userType,
-                        studentId: subRowRecord.id,
+                        studentId: matchingStudent,
                     },
                 },
             })
+            _headers[parentIndex].subRows = _subRows
             if (toast.current && !contributionDeleteError) {
                 toast.current.show({
                     severity: 'success',
@@ -489,9 +503,9 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             }
             console.log(error)
         }
-        setHeaderRecord(HeaderRowRecordInterface)
+        setSelectedHeadRowRecord(HeaderRowRecordInterface)
         setDeleteContributionDialog(false)
-        setHeaders(_academics)
+        setHeaders(_headers)
     }
 
     const findIndexById = (id: any) => {
@@ -658,13 +672,13 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         )
     }
 
-    const deleteAcademicButtonTemplate = (rowData) => {
+    const deleteContributionButtonTemplate = (rowData) => {
         return (
             <>
                 <Button
                     icon="pi pi-trash"
                     className="p-button-rounded p-button-danger"
-                    onClick={() => confirmDeleteAcademic(rowData)}
+                    onClick={() => confirmDeleteContribution(rowData)}
                 />
             </>
         )
@@ -746,13 +760,13 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 label="No"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideDeleteAcademicDialog}
+                onClick={hideDeleteContributionDialog}
             />
             <Button
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteAcademic}
+                onClick={deleteContribution}
             />
         </>
     )
@@ -762,7 +776,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 label="No"
                 icon="pi pi-times"
                 className="p-button-text"
-                onClick={hideDeleteAcademicsDialog}
+                onClick={hideDeleteContributionsDialog}
             />
             <Button
                 label="Yes"
@@ -884,7 +898,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         bodyStyle={{ textAlign: 'right' }}
                     ></Column>
                     <Column
-                        body={deleteAcademicButtonTemplate}
+                        body={deleteContributionButtonTemplate}
                         bodyStyle={{ textAlign: 'left' }}
                     ></Column>
                 </DataTable>
@@ -1086,39 +1100,39 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         header="Confirm"
                         modal
                         footer={deleteContributionDialogFooter}
-                        onHide={hideDeleteAcademicDialog}
+                        onHide={hideDeleteContributionDialog}
                     >
                         <div className="flex align-items-center justify-content-center">
                             <i
                                 className="pi pi-exclamation-triangle mr-3"
                                 style={{ fontSize: '2rem' }}
                             />
-                            {subRowRecord && (
+                            {selectedHeadRowRecord && (
                                 <span>
                                     Are you sure you want to delete{' '}
-                                    <b>{subRowRecord.name}</b>?
+                                    <b>{selectedHeadRowRecord.id}</b>?
                                 </span>
                             )}
                         </div>
                     </Dialog>
 
                     <Dialog
-                        visible={deleteAcademicsDialog}
+                        visible={deleteContributionsDialog}
                         style={{ width: '450px' }}
                         header="Confirm"
                         modal
                         footer={deleteContributionsDialogFooter}
-                        onHide={hideDeleteAcademicsDialog}
+                        onHide={hideDeleteContributionsDialog}
                     >
                         <div className="flex align-items-center justify-content-center">
                             <i
                                 className="pi pi-exclamation-triangle mr-3"
                                 style={{ fontSize: '2rem' }}
                             />
-                            {subRowRecord && (
+                            {selectedHeadRowRecord && (
                                 <span>
                                     Are you sure you want to delete the selected
-                                    Academic Profile?
+                                    Contributions ?
                                 </span>
                             )}
                         </div>
