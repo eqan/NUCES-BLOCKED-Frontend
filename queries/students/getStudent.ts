@@ -8,6 +8,7 @@ export const GET_STUDENTS = gql`
                 email
                 name
                 cgpa
+                batch
                 updatedAt
             }
             total

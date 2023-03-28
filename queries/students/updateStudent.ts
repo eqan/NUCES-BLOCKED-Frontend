@@ -7,6 +7,7 @@ export const UPDATE_STUDENT = gql`
             email
             name
             cgpa
+            batch
         }
     }
 `

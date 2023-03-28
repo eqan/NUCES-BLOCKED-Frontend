@@ -199,7 +199,7 @@ const Layout: React.FC<Props> = (props) => {
                     applyScale={null}
                 />
                 <div ref={sidebarRef} className="layout-sidebar">
-                    <AppSidebar userType={props.userType} />
+                    <AppSidebar userType={props?.userType} />
                 </div>
                 <div className="layout-main-container">
                     <div className="layout-main">{props.children}</div>

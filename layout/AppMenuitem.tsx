@@ -89,7 +89,7 @@ const AppMenuitem: React.FC<Props> = (props) => {
                 <ul>
                     {item.items.map((child, i) => {
                         if (
-                            props.userType === 'ADMIN' ||
+                            props?.userType === 'ADMIN' ||
                             child.label.toString() === 'Home Page' ||
                             child.label.toString() === 'Academic Profile'
                         )
@@ -99,7 +99,7 @@ const AppMenuitem: React.FC<Props> = (props) => {
                                     index={i}
                                     parentKey={key}
                                     key={child.label}
-                                    userType={props.userType}
+                                    userType={props?.userType}
                                 />
                             )
                     })}

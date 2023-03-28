@@ -10,16 +10,9 @@ import { useApollo } from '../apollo-client'
 import { ApolloProvider } from '@apollo/client'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../layout/context/requireAuthetication'
-import { gql } from '@apollo/client'
 import apolloClient from '../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_DATA } from '../queries/users/getUser'
-
-const GET_USER_TYPE = gql`
-    query ($userEmail: String!) {
-        GetUserTypeByUserEmail(userEmail: $userEmail)
-    }
-`
 
 interface Props {
     Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode }
@@ -41,7 +34,7 @@ const MyApp: FC<Props> = ({ Component, pageProps, usertype }) => {
         return (
             <ApolloProvider client={apolloClient}>
                 <LayoutProvider>
-                    <Layout Component {...pageProps} usertype={'usertype'}>
+                    <Layout Component {...pageProps} usertype={usertype}>
                         <Component {...pageProps} />
                     </Layout>
                 </LayoutProvider>
@@ -71,7 +64,6 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     })
                     .then((result) => {
                         userData = result.data.GetUserDataByUserEmail
-                        console.log('This is user type', result.data)
                     })
                     .catch((error) => {
                         console.log(error)
