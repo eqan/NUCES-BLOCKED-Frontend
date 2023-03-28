@@ -20,6 +20,7 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Dropdown } from 'primereact/dropdown'
 import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStudentContribution.dto'
 import { classNames } from 'primereact/utils'
+import { match } from 'assert'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -39,6 +40,7 @@ interface SubRowInterface {
     type: string
     contribution: string
     date: string
+    studentId: string
 }
 
 interface AddContributionDialogInterface {
@@ -79,7 +81,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const mapSubRowToSubRowRecord = (
         data: object,
-        contributionType: string
+        contributionType: string,
+        studentId: string
     ) => {
         const nonEmptyArrays = Object.values(data).filter(
             (arr) => arr.length !== 0
@@ -100,6 +103,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             type: contributionType,
             contribution: desiredObject.contribution,
             date: desiredObject.updatedAt,
+            studentId: studentId,
         }
     }
 
@@ -121,7 +125,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const [selectedHeadRowRecord, setSelectedHeadRowRecord] = useState(
         HeaderRowRecordInterface
     )
-    const [selectedSubRecords, setSelectedSubRecords] = useState<
+    const [selectedHeadRecords, setSelectedSubRecords] = useState<
         HeadRowInterface[]
     >([])
     const [submitted, setSubmitted] = useState(false)
@@ -222,6 +226,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         type: item.teacherContributionType,
                         contribution: item.contribution,
                         date: item.updatedAt,
+                        studentId: item.studentId,
                     }))
 
                     // Create a new object that matches the HeadRowInterface and include the mapped sub-rows
@@ -365,7 +370,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 newContribution = newContribution.data.CreateContribution
                 const mappedData: SubRowInterface = mapSubRowToSubRowRecord(
                     newContribution,
-                    addContributionData?.type?.type
+                    addContributionData?.type?.type,
+                    addContributionData.studentId
                 )
                 _subRows.push(mappedData)
                 _headers[parentIndex].subRows = _subRows
@@ -451,7 +457,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const openAddUpdateUserDialog = () => {
-        // setAcademic(SubRowRecordInterface)
+        setSelectedHeadRowRecord(HeaderRowRecordInterface)
         setSubmitted(false)
         setAddContributionDialog(true)
     }
@@ -463,24 +469,21 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const deleteContribution = async () => {
         let _headers = [...headers]
-        console.log(selectedHeadRowRecord)
         try {
-            const matchingStudent = _headers.find(({ subRows }) =>
-                subRows.find(({ id }) => id === selectedHeadRowRecord.id)
-            )?.studentId
-            const parentIndex = findIndexById(matchingStudent)
-            console.log(parentIndex)
+            const parentIndex = findIndexById(selectedHeadRowRecord.studentId)
             let _subRows = _headers[parentIndex].subRows
             _subRows = _subRows.filter(
                 (val) => val.id !== selectedHeadRowRecord.id
             )
             await contributionDeleteFunction({
                 variables: {
-                    DeleteContributionInput: {
-                        contributionId: selectedHeadRowRecord.id,
-                        contributionType: userType,
-                        studentId: matchingStudent,
-                    },
+                    deleteContributionInputs: [
+                        {
+                            contributionId: selectedHeadRowRecord.id,
+                            contributionType: userType,
+                            studentId: selectedHeadRowRecord.studentId,
+                        },
+                    ],
                 },
             })
             _headers[parentIndex].subRows = _subRows
@@ -488,7 +491,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
-                    detail: 'Academic Profile Deleted',
+                    detail: 'Contribution Deleted',
                     life: 3000,
                 })
             }
@@ -497,7 +500,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 toast.current?.show({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Academic Profile Not Deleted',
+                    detail: 'Contribution Not Deleted',
                     life: 3000,
                 })
             }
@@ -506,6 +509,57 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setSelectedHeadRowRecord(HeaderRowRecordInterface)
         setDeleteContributionDialog(false)
         setHeaders(_headers)
+    }
+
+    const deleteSelectedContributions = async () => {
+        let _headers = [...headers]
+        let _subRowsToDelete: { id: string; studentId: string }[] = []
+        selectedHeadRecords.forEach((record) => {
+            const parentIndex = findIndexById(record.studentId)
+            const subRows = _headers[parentIndex].subRows
+            _subRowsToDelete.push(
+                ...subRows
+                    .filter((val) => val.id === record.id)
+                    .map((val) => ({
+                        contributionId: val.id,
+                        studentId: record.studentId,
+                        contributionType: userType,
+                    }))
+            )
+            _headers[parentIndex].subRows = subRows.filter(
+                (val) => val.id !== record.id
+            )
+        })
+
+        try {
+            await contributionDeleteFunction({
+                variables: {
+                    deleteContributionInputs: _subRowsToDelete,
+                },
+            })
+
+            if (toast.current && !contributionDeleteError) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: 'Contributions Deleted',
+                    life: 3000,
+                })
+            }
+        } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Contributions Not Deleted',
+                    life: 3000,
+                })
+            }
+            console.log(error)
+        }
+        setSelectedSubRecords([])
+        setHeaders(_headers)
+        setDeleteContributionsDialog(false)
     }
 
     const findIndexById = (id: any) => {
@@ -529,45 +583,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setDeleteContributionsDialog(true)
     }
 
-    const deleteSelectedContributions = async () => {
-        let _academics = headers.filter(
-            (val) => !selectedSubRecords.includes(val)
-        )
-        try {
-            selectedSubRecords.map(async (academic) => {
-                await contributionDeleteFunction({
-                    variables: {
-                        DeleteContributionInput: {
-                            contributionType: userType,
-                            studentId: academic.id,
-                        },
-                    },
-                })
-            })
-            if (toast.current && !contributionDeleteError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Academic Profile Deleted',
-                    life: 3000,
-                })
-            }
-        } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Academic Profile Not Deleted',
-                    life: 3000,
-                })
-            }
-            console.log(error)
-        }
-        setSelectedSubRecords([])
-        setHeaders(_academics)
-        setDeleteContributionsDialog(false)
-    }
-
     const onPageChange = (event) => {
         setPage(event.first / event.rows)
         setPageLimit(event.rows)
@@ -575,7 +590,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const leftToolbarTemplate = () => {
         return (
-            <React.Fragment>
+            <>
                 <div className="my-2">
                     <Button
                         label="New"
@@ -589,24 +604,24 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         className="p-button-danger"
                         onClick={confirmDeleteSelected}
                         disabled={
-                            !selectedSubRecords || !selectedSubRecords.length
+                            !selectedHeadRecords || !selectedHeadRecords.length
                         }
                     />
                 </div>
-            </React.Fragment>
+            </>
         )
     }
 
     const rightToolbarTemplate = () => {
         return (
-            <React.Fragment>
+            <>
                 <Button
                     label="Export"
                     icon="pi pi-upload"
                     className="p-button-help"
                     onClick={exportCSV}
                 />
-            </React.Fragment>
+            </>
         )
     }
 
@@ -851,7 +866,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     onRowEditComplete={(subRowData) => {
                         saveContribution(subRowData, rowData.studentId)
                     }}
-                    selection={selectedSubRecords}
+                    selection={selectedHeadRecords}
                     onSelectionChange={(e) => setSelectedSubRecords(e.value)}
                     className="datatable-responsive"
                 >
@@ -1109,8 +1124,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                             />
                             {selectedHeadRowRecord && (
                                 <span>
-                                    Are you sure you want to delete{' '}
-                                    <b>{selectedHeadRowRecord.id}</b>?
+                                    Are you sure you want to delete selected
+                                    contribution?
                                 </span>
                             )}
                         </div>
