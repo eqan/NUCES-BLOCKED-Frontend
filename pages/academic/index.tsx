@@ -20,7 +20,6 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Dropdown } from 'primereact/dropdown'
 import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStudentContribution.dto'
 import { classNames } from 'primereact/utils'
-import { match } from 'assert'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -119,7 +118,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         useState<DataTableExpandedRows>(null)
     const [addContributionDialog, setAddContributionDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
-    const [deleteAcademicDialog, setDeleteContributionDialog] = useState(false)
+    const [deleteContributionDialog, setDeleteContributionDialog] =
+        useState(false)
     const [deleteContributionsDialog, setDeleteContributionsDialog] =
         useState(false)
     const [selectedHeadRowRecord, setSelectedHeadRowRecord] = useState(
@@ -1110,7 +1110,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         </div>
                     </Dialog>
                     <Dialog
-                        visible={deleteAcademicDialog}
+                        visible={deleteContributionDialog}
                         style={{ width: '450px' }}
                         header="Confirm"
                         modal
