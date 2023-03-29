@@ -7,6 +7,7 @@ export const CREATE_STUDENT = gql`
             email
             name
             cgpa
+            batch
         }
     }
 `

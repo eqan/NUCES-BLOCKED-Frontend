@@ -13,13 +13,13 @@ import { classNames } from 'primereact/utils'
 import jwt from 'jsonwebtoken'
 import React, { useEffect, useRef, useState } from 'react'
 import { CREATE_STUDENT } from '../../queries/students/addStudent'
-import { returnFetchStudentsHook } from '../../queries/students/getStudent'
+import { returnFetchStudentsHook } from '../../queries/students/getStudents'
 import { DELETE_STUDENT } from '../../queries/students/removeStudent'
-import { GET_USER_TYPE } from '../../queries/users/getUserType'
 import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
+import { GET_USER_DATA } from '../../queries/users/getUser'
 
 interface Props {
     userType: String
@@ -31,6 +31,7 @@ interface StudentInterface {
     rollno: string
     email: string
     date: string
+    batch: string
     cgpa: string
 }
 
@@ -41,6 +42,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
         rollno: '',
         email: '',
         cgpa: '',
+        batch: '',
         date: '',
     }
 
@@ -51,6 +53,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
             rollno: student.id,
             email: student.email,
             cgpa: student.cgpa,
+            batch: student.batch,
             date: student.updatedAt,
         }
     }
@@ -137,6 +140,16 @@ const StudentRecords: React.FC<Props> = (userType) => {
     }, [studentsData, studentsLoading])
 
     useEffect(() => {
+        if (
+            userType == 'TEACHER' ||
+            userType == 'CAREER_COUNSELLOR' ||
+            userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
+
+    useEffect(() => {
         const handleRouteChange = () => {
             studentsRefetchHook()
         }
@@ -196,6 +209,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
                                 name: _student.name,
                                 email: _student.email,
                                 cgpa: _student.cgpa,
+                                batch: _student.batch,
                             },
                         },
                     })
@@ -217,6 +231,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
                                 email: _student.email,
                                 name: _student.name,
                                 cgpa: _student.cgpa,
+                                batch: _student.batch,
                             },
                         },
                     })
@@ -395,6 +410,17 @@ const StudentRecords: React.FC<Props> = (userType) => {
         }
     }
 
+    const validateYear = () => {
+        if (student.batch) {
+            let temp = student.batch
+            let today = new Date()
+            if (!(temp >= 2014 && temp <= today.getFullYear())) {
+                return 0
+            }
+            return 1
+        }
+    }
+
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || ''
         let _student = { ...student }
@@ -421,6 +447,21 @@ const StudentRecords: React.FC<Props> = (userType) => {
                         stringbe += '0'
                     }
                 }
+            }
+            if (stringbe.length > 4) {
+                return
+            }
+            _student[`${name}`] = stringbe
+            setStudent(_student)
+            return
+        } else if (name == 'batch') {
+            let i
+            let stringbe = ''
+            for (i = 0; i < val.length; i++) {
+                if (!(val[i] >= '0' && val[i] <= '9')) {
+                    return
+                }
+                stringbe += val[i]
             }
             if (stringbe.length > 4) {
                 return
@@ -613,6 +654,14 @@ const StudentRecords: React.FC<Props> = (userType) => {
             </>
         )
     }
+    const batchBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">Batch</span>
+                {rowData.batch}
+            </>
+        )
+    }
     const emailBodyTemplate = (rowData) => {
         return (
             <>
@@ -799,6 +848,12 @@ const StudentRecords: React.FC<Props> = (userType) => {
                                 headerStyle={{ minWidth: '15rem' }}
                             ></Column>
                             <Column
+                                field="batch"
+                                header="Batch"
+                                body={batchBodyTemplate}
+                                sortable
+                            ></Column>
+                            <Column
                                 field="cgpa"
                                 header="CGPA"
                                 body={cgpaBodyTemplate}
@@ -915,6 +970,44 @@ const StudentRecords: React.FC<Props> = (userType) => {
                                 <i className="pi pi-envelope" />
                             </span>
                         </div>
+
+                        <div className="field">
+                            <label htmlFor="batch">Batch</label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="year"
+                                    value={student.batch}
+                                    onChange={(e) => onInputChange(e, 'batch')}
+                                    required
+                                    autoFocus
+                                    className={classNames(
+                                        {
+                                            'p-invalid':
+                                                submitted && !student.batch,
+                                        },
+                                        {
+                                            'p-invalid1':
+                                                submitted && student.batch,
+                                        }
+                                    )}
+                                />
+                                {(submitted && !student.batch && (
+                                    <small className="p-invalid">
+                                        Student batch is required.
+                                    </small>
+                                )) ||
+                                    (submitted &&
+                                        student.batch &&
+                                        !validateYear() && (
+                                            <small className="p-invalid1">
+                                                Invalid year, range from 1990 to
+                                                Current Year
+                                            </small>
+                                        ))}
+                                <i className="pi pi-fw pi-calendar" />
+                            </span>
+                        </div>
+
                         <div className="field">
                             <label htmlFor="cgpa">CGPA</label>
                             <span className="p-input-icon-right">
@@ -933,7 +1026,6 @@ const StudentRecords: React.FC<Props> = (userType) => {
                                         CGPA is required.
                                     </small>
                                 )}
-                                <i className="pi pi-fw pi-star" />
                             </span>
                         </div>
                     </Dialog>
@@ -993,22 +1085,25 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         if (req.headers.cookie) {
             const tokens = req.headers.cookie.split(';')
             const token = tokens.find((token) => token.includes('access_token'))
-            let userType = ''
+            let userData = ''
             if (token) {
                 const userEmail = jwt.decode(
                     token.split('=')[1]?.toString()
                 ).email
                 await apolloClient
                     .query({
-                        query: GET_USER_TYPE,
+                        query: GET_USER_DATA,
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userType = result.data.GetUserTypeByUserEmail.toString()
+                        userData = result.data.GetUserDataByUserEmail
+                    })
+                    .catch((error) => {
+                        console.log(error)
                     })
             }
             return {
-                props: { userType },
+                props: { userType: userData?.type },
             }
         }
     }

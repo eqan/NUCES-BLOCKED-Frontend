@@ -19,6 +19,7 @@ import { requireAuthentication } from '../../../layout/context/requireAutheticat
 import apolloClient from '../../../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_TYPE } from '../../../queries/users/getUserType'
+import { GET_USER_DATA } from '../../../queries/users/getUser'
 
 interface Props {
     userType: String
@@ -135,6 +136,15 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
         }
     }, [certificatesData, certificatesLoading])
 
+    useEffect(() => {
+        if (
+            userType == 'TEACHER' ||
+            userType == 'CAREER_COUNSELLOR' ||
+            userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
     useEffect(() => {
         const handleRouteChange = () => {
             certificatesRefetchHook()
@@ -788,22 +798,25 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         if (req.headers.cookie) {
             const tokens = req.headers.cookie.split(';')
             const token = tokens.find((token) => token.includes('access_token'))
-            let userType = ''
+            let userData = ''
             if (token) {
                 const userEmail = jwt.decode(
                     token.split('=')[1]?.toString()
                 ).email
                 await apolloClient
                     .query({
-                        query: GET_USER_TYPE,
+                        query: GET_USER_DATA,
                         variables: { userEmail },
                     })
                     .then((result) => {
-                        userType = result.data.GetUserTypeByUserEmail.toString()
+                        userData = result.data.GetUserDataByUserEmail
+                    })
+                    .catch((error) => {
+                        console.log(error)
                     })
             }
             return {
-                props: { userType },
+                props: { userType: userData?.type },
             }
         }
     }

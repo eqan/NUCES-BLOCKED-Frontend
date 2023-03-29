@@ -112,7 +112,7 @@ const LoginPage = () => {
                                 />
 
                                 <label
-                                    htmlFor="password1"
+                                    htmlFor="password"
                                     className="block text-900 font-medium text-xl mb-2"
                                 >
                                     Password

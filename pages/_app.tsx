@@ -1,95 +1,77 @@
-import React, { FC } from 'react';
-import { LayoutProvider } from '../layout/context/layoutcontext';
-import Layout from '../layout/layout';
-import 'primereact/resources/primereact.css';
-import 'primeflex/primeflex.css';
-import 'primeicons/primeicons.css';
-import '../styles/layout/layout.scss';
-import '../styles/demo/Demos.scss';
-import { useApollo } from '../apollo-client';
-import { ApolloProvider } from '@apollo/client';
-import { GetServerSideProps } from 'next';
-import { requireAuthentication } from '../layout/context/requireAuthetication';
-import { gql } from '@apollo/client';
-import apolloClient from '../apollo-client';
-import jwt from 'jsonwebtoken';
-
-const GET_USER_TYPE = gql`
-  query ($userEmail: String!) {
-    GetUserDataByUserEmail(userEmail: $userEmail)
-    type
-    imgUrl
-  }
-`;
+import React, { FC } from 'react'
+import { LayoutProvider } from '../layout/context/layoutcontext'
+import Layout from '../layout/layout'
+import 'primereact/resources/primereact.css'
+import 'primeflex/primeflex.css'
+import 'primeicons/primeicons.css'
+import '../styles/layout/layout.scss'
+import '../styles/demo/Demos.scss'
+import { useApollo } from '../apollo-client'
+import { ApolloProvider } from '@apollo/client'
+import { GetServerSideProps } from 'next'
+import { requireAuthentication } from '../layout/context/requireAuthetication'
+import apolloClient from '../apollo-client'
+import jwt from 'jsonwebtoken'
+import { GET_USER_DATA } from '../queries/users/getUser'
 
 interface Props {
-  Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode };
-  pageProps: any;
-  usertype: string;
-  imgUrl: string;
+    Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode }
+    pageProps: any
+    usertype: string
 }
 
-const MyApp: FC<Props> = ({ Component, pageProps, usertype, imgUrl }) => {
-  const apolloClient = useApollo(pageProps.initialApolloState);
-  if (Component.getLayout) {
-    return (
-      <ApolloProvider client={apolloClient}>
-        <LayoutProvider>
-          {Component.getLayout(<Component {...pageProps} />)}
-        </LayoutProvider>
-      </ApolloProvider>
-    );
-  } else {
-    return (
-      <ApolloProvider client={apolloClient}>
-        <LayoutProvider>
-          <Layout
-            Component
-            {...pageProps}
-            usertype={'usertype'}
-            imgUrl={'imgUrl'}
-          >
-            <Component {...pageProps} />
-          </Layout>
-        </LayoutProvider>
-      </ApolloProvider>
-    );
-  }
-};
+const MyApp: FC<Props> = ({ Component, pageProps, usertype }) => {
+    const apolloClient = useApollo(pageProps.initialApolloState)
+    if (Component.getLayout) {
+        return (
+            <ApolloProvider client={apolloClient}>
+                <LayoutProvider>
+                    {Component.getLayout(<Component {...pageProps} />)}
+                </LayoutProvider>
+            </ApolloProvider>
+        )
+    } else {
+        return (
+            <ApolloProvider client={apolloClient}>
+                <LayoutProvider>
+                    <Layout Component {...pageProps} usertype={usertype}>
+                        <Component {...pageProps} />
+                    </Layout>
+                </LayoutProvider>
+            </ApolloProvider>
+        )
+    }
+}
 
-export default MyApp;
+export default MyApp
 
 export const getServerSideProps: GetServerSideProps = requireAuthentication(
-  async (ctx) => {
-    const { req } = ctx;
-    if (req.headers.cookie) {
-      const tokens = req.headers.cookie.split(';');
-      const token = tokens.find((token) => token.includes('access_token'));
-      let userType = '';
-      let imgUrl = '';
-      if (token) {
-        const userEmail = jwt
-          .decode(tokens[1].split('=')[1].toString())
-          .email.toString();
-        await apolloClient
-          .query({
-            query: GET_USER_TYPE,
-            variables: { userEmail },
-          })
-          .then((result) => {
-            [userType, imgUrl] = result.data.GetUserDataByUserEmail;
-            if (imgUrl == '') {
-              imgUrl = 'https://tinyurl.com/3vhjjtf2';
+    async (ctx) => {
+        const { req } = ctx
+        console.log(ctx)
+        if (req.headers.cookie) {
+            const tokens = req.headers.cookie.split(';')
+            const token = tokens.find((token) => token.includes('access_token'))
+            let userData = ''
+            if (token) {
+                const userEmail = jwt
+                    .decode(tokens[1].split('=')[1].toString())
+                    .email.toString()
+                await apolloClient
+                    .query({
+                        query: GET_USER_DATA,
+                        variables: { userEmail },
+                    })
+                    .then((result) => {
+                        userData = result.data.GetUserDataByUserEmail
+                    })
+                    .catch((error) => {
+                        console.log(error)
+                    })
             }
-            //console.log(imgUrl);
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-      }
-      return {
-        props: { userType, imgUrl },
-      };
+            return {
+                props: { userType: userData?.type },
+            }
+        }
     }
-  },
-);
+)
