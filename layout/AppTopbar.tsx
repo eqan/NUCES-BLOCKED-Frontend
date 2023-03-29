@@ -14,7 +14,7 @@ import { Menu } from 'primereact/menu'
 import { Avatar } from 'primereact/avatar'
 import { Dropdown } from 'primereact/dropdown'
 import { Button } from 'primereact/button'
-// import { ethers } from 'ethers'
+import { ethers } from 'ethers'
 
 interface Theme {
     name: string
@@ -35,9 +35,12 @@ interface AppTopbarProps {
     ) => void
     applyScale: () => void
     menu: React.RefObject<Menu>
+    userType: String
+    imgUrl: String
 }
 
 const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
+    //console.log(props.userType)
     const { layoutConfig, setLayoutConfig, layoutState, onMenuToggle } =
         useContext(LayoutContext)
     const menubuttonRef = useRef(null)
@@ -215,20 +218,26 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                         layoutState.profileSidebarVisible,
                 })}
             >
-                {toggleShowMetaMaskButton ? (
-                    <Button
-                        className="bg-bluegray-600 hover:bg-bluegray-400 border-bluegray-700"
-                        onClick={connectToMetaMask}
-                    >
-                        <img
-                            alt="logo"
-                            src={`${contextPath}/metamask.png`}
-                            className="h-2rem"
-                        ></img>
-                        <span style={{ fontWeight: 'bold' }}>
-                            Connect Wallet
-                        </span>
-                    </Button>
+                {props.userType === 'ADMIN' ? (
+                    <>
+                        {toggleShowMetaMaskButton ? (
+                            <Button
+                                className="bg-bluegray-600 hover:bg-bluegray-400 border-bluegray-700"
+                                onClick={connectToMetaMask}
+                            >
+                                <img
+                                    alt="logo"
+                                    src={`${contextPath}/metamask.png`}
+                                    className="h-2rem"
+                                />
+                                <span style={{ fontWeight: 'bold' }}>
+                                    Connect Wallet
+                                </span>
+                            </Button>
+                        ) : (
+                            <div />
+                        )}
+                    </>
                 ) : (
                     <div />
                 )}
@@ -240,7 +249,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     onClick={toggleMenu}
                 >
                     <Avatar
-                        image={`${contextPath}/demo/images/avatar/admin.png`}
+                        image={`${props.imgUrl}`}
                         size="large"
                         shape="circle"
                     ></Avatar>
