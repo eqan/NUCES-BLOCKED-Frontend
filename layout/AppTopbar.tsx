@@ -14,7 +14,7 @@ import { Menu } from 'primereact/menu'
 import { Avatar } from 'primereact/avatar'
 import { Dropdown } from 'primereact/dropdown'
 import { Button } from 'primereact/button'
-import { ethers } from 'ethers'
+// import { ethers } from 'ethers'
 
 interface Theme {
     name: string
