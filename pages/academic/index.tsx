@@ -14,12 +14,13 @@ import { returnFetchContributionsHook } from '../../queries/academic/getStudentC
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { CREATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createStudentContributionAdmin'
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Dropdown } from 'primereact/dropdown'
 import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStudentContribution.dto'
 import { classNames } from 'primereact/utils'
+import { returnFetchStudentHook } from '../../queries/students/getStudent'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -129,6 +130,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         HeadRowInterface[]
     >([])
     const [submitted, setSubmitted] = useState(false)
+    const [fetchStudentDataId, setFetchStudentDataId] = useState<string>(null)
+    const [fetchStudentData, setFetchStudentData] = useState<string>(null)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
@@ -136,6 +139,13 @@ const AcademicContributionsRecords: React.FC<Props> = ({
 
     const toast = useRef<Toast>(null)
     const dt = useRef<DataTable>(null)
+    const [
+        studentData,
+        studentDataLoading,
+        studentDataError,
+        studentDataRefetch,
+    ] = returnFetchStudentHook(fetchStudentDataId)
+
     const [
         contributionsData,
         contributionsLoading,
@@ -237,7 +247,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         subRows: subRows,
                     }
                 })
-
                 setHeaders(headRows)
                 setPageLimit(total)
                 setTotalRecords(total)
@@ -284,6 +293,17 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 break
         }
     }, [])
+
+    useEffect(() => {
+        try {
+            if (!studentDataLoading && studentData) {
+                const data = studentData?.GetStudentDataByUserId
+                setFetchStudentData(data)
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }, [studentData, studentDataLoading])
 
     useEffect(() => {
         if (!contributionsLoading && contributionsData) {
@@ -340,12 +360,35 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         return types
     }
 
+    const findIndexById = (id: any) => {
+        let index = -1
+        for (let i = 0; i < headers.length; i++) {
+            if (headers[i].studentId === id) {
+                index = i
+                break
+            }
+        }
+        return index
+    }
+
     const addContribution = async () => {
         setSubmitted(true)
         if (addContributionData.contribution) {
             let _headers = [...headers]
+
             const types = returnArrayOfType(addContributionData.type.type)
-            const parentIndex = findIndexById(addContributionData.studentId)
+            let parentIndex = findIndexById(addContributionData.studentId)
+
+            if (!_headers[parentIndex]) {
+                const headerRow: HeadRowInterface = {
+                    studentId: addContributionData.studentId,
+                    name: fetchStudentData.name,
+                    email: fetchStudentData.email,
+                    subRows: [],
+                }
+                parentIndex = _headers.push(headerRow) - 1
+            }
+
             let _subRows = _headers[parentIndex].subRows
             try {
                 let newContribution = await contributionAddFunction({
@@ -375,6 +418,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 )
                 _subRows.push(mappedData)
                 _headers[parentIndex].subRows = _subRows
+                setPageLimit(pageLimit + 1)
                 if (toast.current) {
                     toast.current?.show({
                         severity: 'success',
@@ -562,17 +606,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         setDeleteContributionsDialog(false)
     }
 
-    const findIndexById = (id: any) => {
-        let index = -1
-        for (let i = 0; i < headers.length; i++) {
-            if (headers[i].studentId === id) {
-                index = i
-                break
-            }
-        }
-        return index
-    }
-
     const exportCSV = () => {
         if (dt.current) {
             dt.current.exportCSV()
@@ -729,6 +762,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     }
                 }
             }
+            setFetchStudentDataId(stringbe)
             _contribution[`${name}`] = stringbe
             setAddContributionData(_contribution)
             return
@@ -1147,7 +1181,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                             {selectedHeadRowRecord && (
                                 <span>
                                     Are you sure you want to delete the selected
-                                    Contributions ?
+                                    Contributions?
                                 </span>
                             )}
                         </div>
