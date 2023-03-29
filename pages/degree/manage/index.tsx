@@ -137,6 +137,15 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
     }, [certificatesData, certificatesLoading])
 
     useEffect(() => {
+        if (
+            userType == 'TEACHER' ||
+            userType == 'CAREER_COUNSELLOR' ||
+            userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
+    useEffect(() => {
         const handleRouteChange = () => {
             certificatesRefetchHook()
         }

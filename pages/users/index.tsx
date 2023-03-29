@@ -9,7 +9,9 @@ import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
+import { FileUpload } from 'primereact/fileupload'
 import React, { useEffect, useRef, useState } from 'react'
+import { useEventListener } from 'primereact/hooks'
 import { useRouter } from 'next/router'
 import { returnFetchUsersHook } from '../../queries/users/getUsers'
 import { DELETE_USER } from '../../queries/users/removeUsers'
@@ -20,7 +22,10 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
+import getConfig from 'next/config'
 import { Skeleton } from 'primereact/skeleton'
+import { Image as PrimeImage } from 'primereact/image'
+import { Panel } from 'primereact/panel'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 
 interface Props {
@@ -53,9 +58,11 @@ const UserRecords: React.FC<Props> = (userType) => {
             password: user.password,
             role: user.type,
             email: user.email,
-            imgUrl: user?.imgUrl || 'https://www.linkedin.com/in/noms',
+            imgUrl: user.imgUrl,
         }
     }
+    const contextPath = getConfig().publicRuntimeConfig.contextPath
+    const img: string = `${contextPath}/image.png`
     const router = useRouter()
     const [users, setUsers] = useState<UserInterface[]>([])
     const [userSaveDialog, setSaveUserDialog] = useState(false)
@@ -70,9 +77,13 @@ const UserRecords: React.FC<Props> = (userType) => {
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
-
+    const [actualfile, setActualfile] = useState('')
+    const [imgfile, setImgFile] = useState<string>(img)
+    const [previewimg, setPreviewImg] = useState(img)
+    const elementRef = useRef<string>(null)
     const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable>(null)
+    const imgref = useRef(null)
 
     const [usersData, usersLoading, usersFetchingError, usersRefetchHook] =
         returnFetchUsersHook(globalFilter, page + 1, pageLimit)
@@ -132,6 +143,16 @@ const UserRecords: React.FC<Props> = (userType) => {
     }, [usersData, usersLoading])
 
     useEffect(() => {
+        if (
+            userType == 'TEACHER' ||
+            userType == 'CAREER_COUNSELLOR' ||
+            userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
+
+    useEffect(() => {
         const handleRouteChange = () => {
             usersRefetchHook()
         }
@@ -148,6 +169,7 @@ const UserRecords: React.FC<Props> = (userType) => {
     const openAddUpdateUserDialog = () => {
         setUser(UserRecordInterface)
         setRole('')
+        handleReset()
         setSubmitted(false)
         setSaveUserDialog(true)
     }
@@ -174,7 +196,8 @@ const UserRecords: React.FC<Props> = (userType) => {
             user.email &&
             user.role &&
             user.password &&
-            validatepass(user.password)
+            validatepass(user.password) &&
+            imgfile != img
         ) {
             let _users = [...users]
             let _user = { ...user }
@@ -183,7 +206,7 @@ const UserRecords: React.FC<Props> = (userType) => {
             try {
                 const index = findIndexById(_user.id)
                 successMessage = 'User Added!'
-                errorMessage = 'User Not Added!'
+                errorMessage = 'User With this email already created!'
                 if (index == -1) {
                     _users[user.id] = _user
                     let newUser = await createuserFunction({
@@ -193,7 +216,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 email: _user.email,
                                 password: _user.password,
                                 type: _user.role,
-                                imgUrl: 'https://www.instagram.com/p/Csaadsad/',
+                                imgUrl: _user.imgUrl,
                             },
                         },
                     })
@@ -202,6 +225,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                         mapUserToUserRecord(newUser)
                     _users = _users.filter((item) => (item.id = mappedData.id))
                     _users.push(mappedData)
+                    console.log('create', _users)
                 } else {
                     _users[index] = _user
                     successMessage = 'User Updated!'
@@ -213,6 +237,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 name: _user.name,
                                 password: _user.password,
                                 type: _user.role,
+                                imgUrl: _user.imgUrl,
                             },
                         },
                     })
@@ -226,6 +251,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                         life: 3000,
                     })
             } catch (error) {
+                console.log(error)
                 if (toast.current) {
                     toast.current?.show({
                         severity: 'error',
@@ -234,7 +260,6 @@ const UserRecords: React.FC<Props> = (userType) => {
                         life: 3000,
                     })
                 }
-                console.log(error)
             }
 
             setSaveUserDialog(false)
@@ -346,9 +371,13 @@ const UserRecords: React.FC<Props> = (userType) => {
         setDeleteUsersDialog(false)
     }
 
-    const onInputChange = (e, name) => {
+    const onInputChange = async (e, name) => {
         const val = (e.target && e.target.value) || ''
         let _user = { ...user }
+        if (name == 'img') {
+            _user['imgUrl'] = e.slice(5, e.length)
+            setUser(_user)
+        }
         if (name == 'role') {
             _user[`${name}`] = val.name
             setUser(_user)
@@ -442,10 +471,17 @@ const UserRecords: React.FC<Props> = (userType) => {
     }
 
     const nameBodyTemplate = (rowData) => {
+        console.log(rowData.imgUrl)
         return (
             <>
-                <span className="p-column-title">Full Name</span>
-                {rowData.name}
+                <div className="flex align-items-center gap-2">
+                    <img
+                        alt={rowData.name}
+                        src={`${rowData.imgUrl}`}
+                        width="32"
+                    />
+                    <span>{rowData.name}</span>
+                </div>
             </>
         )
     }
@@ -473,7 +509,10 @@ const UserRecords: React.FC<Props> = (userType) => {
                 <Button
                     icon="pi pi-pencil"
                     className="p-button-rounded p-button-success mr-2"
-                    onClick={() => editUser(rowData)}
+                    onClick={() => {
+                        handleReset()
+                        editUser(rowData)
+                    }}
                 />
                 <Button
                     icon="pi pi-trash"
@@ -602,6 +641,86 @@ const UserRecords: React.FC<Props> = (userType) => {
             </>
         )
     }
+    const resizeImage = (
+        file: File,
+        maxWidth: number,
+        maxHeight: number
+    ): Promise<Blob> => {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')
+            const img = new Image()
+
+            img.onload = () => {
+                let width = img.width
+                let height = img.height
+
+                if (width > maxWidth && maxWidth != 0) {
+                    width = maxWidth
+                }
+                if (height > maxHeight && maxHeight != 0) {
+                    height = maxHeight
+                }
+                console.log(`Resizing image to ${width}x${height}`)
+
+                canvas.width = width
+                canvas.height = height
+
+                ctx?.drawImage(img, 0, 0, width, height)
+
+                canvas.toBlob(
+                    (blob) => {
+                        resolve(blob as Blob)
+                    },
+                    'image/jpeg',
+                    0.9
+                )
+            }
+
+            img.src = URL.createObjectURL(file)
+        })
+    }
+
+    const uploadHandler = async ({ files }) => {
+        handleReset()
+        const file = files[0]
+        setActualfile(file)
+        const resizedimgP = await resizeImage(file, 0, 0)
+        setPreviewImg(URL.createObjectURL(resizedimgP))
+        const resizedimgA = await resizeImage(file, 150, 150)
+        setImgFile(URL.createObjectURL(resizedimgA))
+        onInputChange(file, 'img')
+    }
+    const handleReset = () => {
+        if (imgref.current != null) imgref.current.clear() // call the clear method on file upload ref
+        setImgFile(img)
+        setPreviewImg(img)
+    }
+    const [imageLoadListener, imageUnloadListener] = useEventListener({
+        target: elementRef,
+        type: 'mousedown',
+        listener: async () => {
+            await setHover(true)
+        },
+    })
+
+    useEffect(() => {
+        imageLoadListener()
+
+        return () => {
+            imageUnloadListener()
+        }
+    }, [imageLoadListener, imageUnloadListener])
+
+    useEffect(() => {
+        if (
+            userType == 'TEACHER' ||
+            userType == 'CAREER_COUNSELLOR' ||
+            userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
 
     return (
         <div className="grid crud-demo">
@@ -652,6 +771,10 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 sortable
                                 body={nameBodyTemplate}
                                 headerStyle={{ minWidth: '15rem' }}
+                                showFilterMatchModes={false}
+                                filterMenuStyle={{ width: '14rem' }}
+                                style={{ minWidth: '14rem' }}
+                                filter
                             ></Column>
                             <Column
                                 field="email"
@@ -676,127 +799,196 @@ const UserRecords: React.FC<Props> = (userType) => {
 
                     <Dialog
                         visible={userSaveDialog}
-                        style={{ width: '450px' }}
+                        style={{ width: '800px' }}
                         header="User Details"
                         modal
                         className="p-fluid"
                         footer={saveUserDialogFooter}
                         onHide={hideUserDialog}
                     >
-                        <div className="field">
-                            <label htmlFor="name">Name</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="name"
-                                    value={user.name}
-                                    onChange={(e) => onInputChange(e, 'name')}
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid': submitted && !user.name,
-                                    })}
-                                />
-                                {submitted && !user.name && (
-                                    <small className="p-invalid">
-                                        Name is required.
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-user" />
-                            </span>
-                        </div>
-                        <div className="field">
-                            <label htmlFor="email">Email</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="email"
-                                    value={user.email}
-                                    onChange={(e) => onInputChange(e, 'email')}
-                                    required
-                                    autoFocus
-                                    className={classNames(
-                                        {
-                                            'p-invalid':
-                                                submitted && !user.email,
-                                        },
-                                        {
-                                            'p-invalid1':
-                                                submitted && user.email,
+                        <div className="grid line-height-3">
+                            <div className="col-6">
+                                <div className="field">
+                                    <label htmlFor="name">Name</label>
+                                    <span className="p-input-icon-right">
+                                        <InputText
+                                            id="name"
+                                            value={user.name}
+                                            onChange={(e) =>
+                                                onInputChange(e, 'name')
+                                            }
+                                            required
+                                            autoFocus
+                                            className={classNames({
+                                                'p-invalid':
+                                                    submitted && !user.name,
+                                            })}
+                                        />
+                                        {submitted && !user.name && (
+                                            <small className="p-invalid">
+                                                Name is required.
+                                            </small>
+                                        )}
+                                        <i className="pi pi-fw pi-user" />
+                                    </span>
+                                </div>
+                                <div className="field">
+                                    <label htmlFor="email">Email</label>
+                                    <span className="p-input-icon-right">
+                                        <InputText
+                                            id="email"
+                                            value={user.email}
+                                            onChange={(e) =>
+                                                onInputChange(e, 'email')
+                                            }
+                                            required
+                                            autoFocus
+                                            className={classNames(
+                                                {
+                                                    'p-invalid':
+                                                        submitted &&
+                                                        !user.email,
+                                                },
+                                                {
+                                                    'p-invalid1':
+                                                        submitted && user.email,
+                                                }
+                                            )}
+                                        />
+                                        {(submitted && !user.email && (
+                                            <small className="p-invalid">
+                                                Email is required.
+                                            </small>
+                                        )) ||
+                                            (submitted &&
+                                                user.email &&
+                                                !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(
+                                                    user.email
+                                                ) && (
+                                                    <small className="p-invalid1">
+                                                        Invalid email address.
+                                                        E.g. example@email.com
+                                                    </small>
+                                                ))}
+                                        <i className="pi pi-envelope" />
+                                    </span>
+                                </div>
+                                <div className="field">
+                                    <label htmlFor="email">Password</label>
+                                    <Password
+                                        id="password"
+                                        name="password"
+                                        value={user.password}
+                                        onChange={(e) =>
+                                            onInputChange(e, 'password')
                                         }
-                                    )}
-                                />
-                                {(submitted && !user.email && (
-                                    <small className="p-invalid">
-                                        Email is required.
-                                    </small>
-                                )) ||
-                                    (submitted &&
-                                        user.email &&
-                                        !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(
-                                            user.email
-                                        ) && (
+                                        toggleMask
+                                        required
+                                        autoFocus
+                                        className={classNames(
+                                            {
+                                                'p-invalid':
+                                                    submitted && !user.password,
+                                            },
+                                            {
+                                                'p-invalid1': validatepass(
+                                                    user.password
+                                                ),
+                                            }
+                                        )}
+                                        header={passwordHeader}
+                                        footer={passwordFooter}
+                                    />
+                                    {(submitted && !user.password && (
+                                        <small className="p-invalid">
+                                            Password is required.
+                                        </small>
+                                    )) ||
+                                        (!validatepass(user.password) && (
                                             <small className="p-invalid1">
-                                                Invalid email address. E.g.
-                                                example@email.com
+                                                Password isn't Too Strong.
                                             </small>
                                         ))}
-                                <i className="pi pi-envelope" />
-                            </span>
-                        </div>
-                        <div className="field">
-                            <label htmlFor="email">Password</label>
-                            <Password
-                                id="password"
-                                name="password"
-                                value={user.password}
-                                onChange={(e) => onInputChange(e, 'password')}
-                                toggleMask
-                                required
-                                autoFocus
-                                className={classNames(
-                                    {
-                                        'p-invalid':
-                                            submitted && !user.password,
-                                    },
-                                    {
-                                        'p-invalid1': validatepass(
-                                            user.password
-                                        ),
-                                    }
-                                )}
-                                header={passwordHeader}
-                                footer={passwordFooter}
-                            />
-                            {(submitted && !user.password && (
-                                <small className="p-invalid">
-                                    Password is required.
-                                </small>
-                            )) ||
-                                (!validatepass(user.password) && (
-                                    <small className="p-invalid1">
-                                        Password isn't Too Strong.
-                                    </small>
-                                ))}
-                        </div>
-                        <div className="field">
-                            <label htmlFor="role">Role</label>
-                            <Dropdown
-                                id="role"
-                                value={role}
-                                options={roles}
-                                onChange={(e) => onInputChange(e, 'role')}
-                                required
-                                autoFocus
-                                optionLabel="name"
-                                placeholder="Select a Role"
-                                className={classNames({
-                                    'p-invalid': submitted && !user.role,
-                                })}
-                            />
-                            {submitted && !user.role && (
-                                <small className="p-invalid">
-                                    Role is required.
-                                </small>
-                            )}
+                                </div>
+                                <div className="field">
+                                    <label htmlFor="role">Role</label>
+                                    <Dropdown
+                                        id="role"
+                                        value={role}
+                                        options={roles}
+                                        onChange={(e) =>
+                                            onInputChange(e, 'role')
+                                        }
+                                        required
+                                        autoFocus
+                                        optionLabel="name"
+                                        placeholder="Select a Role"
+                                        className={classNames({
+                                            'p-invalid':
+                                                submitted && !user.role,
+                                        })}
+                                    />
+                                    {submitted && !user.role && (
+                                        <small className="p-invalid">
+                                            Role is required.
+                                        </small>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="col-6">
+                                <div className="field align-content-center">
+                                    <Panel header=" " className=" pb-2 pt-2">
+                                        <div
+                                            style={{
+                                                textAlign: 'center',
+                                            }}
+                                        >
+                                            {imgfile == img ? (
+                                                <PrimeImage
+                                                    src={`${imgfile}`}
+                                                    zoomSrc={`${previewimg}`}
+                                                    width="250"
+                                                    style={{
+                                                        align: 'center',
+                                                    }}
+                                                />
+                                            ) : (
+                                                <PrimeImage
+                                                    src={`${imgfile}`}
+                                                    zoomSrc={`${previewimg}`}
+                                                    width="250"
+                                                    style={{
+                                                        align: 'center',
+                                                    }}
+                                                    preview
+                                                />
+                                            )}
+                                        </div>
+                                    </Panel>
+                                    <div
+                                        ref={elementRef}
+                                        style={{
+                                            textAlign: 'center',
+                                        }}
+                                    >
+                                        <FileUpload
+                                            ref={imgref}
+                                            mode="basic"
+                                            name="img"
+                                            accept="image/*"
+                                            maxFileSize={1000000}
+                                            chooseOptions={{
+                                                label: 'Browse',
+                                                icon: 'pi pi-download',
+                                            }}
+                                            chooseLabel="Browse"
+                                            customUpload={true}
+                                            uploadHandler={uploadHandler}
+                                            auto
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </Dialog>
 

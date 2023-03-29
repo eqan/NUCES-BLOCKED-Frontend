@@ -12,7 +12,8 @@ import PrimeReact from 'primereact/api'
 
 interface Props {
     children: React.ReactNode
-    userType: string | null
+    userType: string
+    imgUrl: string
 }
 interface ButtonMenu {
     menubutton: HTMLButtonElement
@@ -193,13 +194,15 @@ const Layout: React.FC<Props> = (props) => {
                     selectedTheme={layoutConfig.theme}
                     onThemeChange={null}
                     toggleMenu={null}
-                    changeTheme={null}
+                    changeTheme={'light'}
                     menu={null}
                     replaceLink={null}
                     applyScale={null}
+                    userType={props.userType}
+                    imgUrl={props.imgUrl}
                 />
                 <div ref={sidebarRef} className="layout-sidebar">
-                    <AppSidebar userType={props?.userType} />
+                    <AppSidebar userType={props.userType} />
                 </div>
                 <div className="layout-main-container">
                     <div className="layout-main">{props.children}</div>

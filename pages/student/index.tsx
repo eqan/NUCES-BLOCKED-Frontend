@@ -140,6 +140,16 @@ const StudentRecords: React.FC<Props> = (userType) => {
     }, [studentsData, studentsLoading])
 
     useEffect(() => {
+        if (
+            userType == 'TEACHER' ||
+            userType == 'CAREER_COUNSELLOR' ||
+            userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
+
+    useEffect(() => {
         const handleRouteChange = () => {
             studentsRefetchHook()
         }

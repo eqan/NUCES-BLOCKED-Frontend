@@ -179,6 +179,15 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
     }, [resultsRefetchHook, router.events])
 
+    useEffect(() => {
+        if (
+            userType == 'TEACHER' ||
+            userType == 'CAREER_COUNSELLOR' ||
+            userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
     useEffect(() => {}, [globalFilter])
 
     const openNewAddResultDialog = () => {

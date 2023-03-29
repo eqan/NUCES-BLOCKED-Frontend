@@ -47,7 +47,6 @@ const AppMenuitem: React.FC<Props> = (props) => {
         if (item.to && router.pathname === item.to) {
             setActiveMenu(key)
         }
-
         const onRouteChange = (url) => {
             if (item.to && item.to === url) {
                 setActiveMenu(key)
@@ -89,9 +88,11 @@ const AppMenuitem: React.FC<Props> = (props) => {
                 <ul>
                     {item.items.map((child, i) => {
                         if (
-                            props?.userType === 'ADMIN' ||
+                            (props.userType === 'ADMIN' &&
+                                child.label.toString() != 'Academic Profile') ||
                             child.label.toString() === 'Home Page' ||
-                            child.label.toString() === 'Academic Profile'
+                            (child.label.toString() === 'Academic Profile' &&
+                                props.userType != 'ADMIN')
                         )
                             return (
                                 <AppMenuitem
@@ -99,7 +100,7 @@ const AppMenuitem: React.FC<Props> = (props) => {
                                     index={i}
                                     parentKey={key}
                                     key={child.label}
-                                    userType={props?.userType}
+                                    userType={props.userType}
                                 />
                             )
                     })}

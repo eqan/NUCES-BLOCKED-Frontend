@@ -312,6 +312,12 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }, [contributionsData, contributionsLoading])
 
     useEffect(() => {
+        if (userType.toString() == 'ADMIN') {
+            router.push('/pages/notfound')
+        }
+    }, [userType])
+
+    useEffect(() => {
         const handleRouteChange = () => {
             contributionsRefetchHook()
         }
