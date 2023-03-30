@@ -252,7 +252,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         _id: (index += 1),
                         id: item.id,
                         title: item.title,
-                        type: returnContributionType(item)
+                        type: returnContributionType(item),
                         contribution: item.contribution,
                         date: item.updatedAt,
                         studentId: item.studentId,
