@@ -35,6 +35,7 @@ interface HeadRowInterface {
 }
 
 interface SubRowInterface {
+    _id: string
     id: string
     title: string
     type: string
@@ -44,6 +45,7 @@ interface SubRowInterface {
 }
 
 interface AddContributionDialogInterface {
+    _id: string
     id: string
     studentId: string
     title: string
@@ -71,40 +73,13 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     let AddContributionDialogInterface = {
+        _id: '',
         id: '',
         studentId: '',
         title: '',
         type: '',
         contribution: '',
         date: '',
-    }
-
-    const mapSubRowToSubRowRecord = (
-        data: object,
-        contributionType: string,
-        studentId: string
-    ) => {
-        const nonEmptyArrays = Object.values(data).filter(
-            (arr) => arr.length !== 0
-        )
-
-        const desiredObject = nonEmptyArrays[0].map(
-            ({ id, contribution, title, updatedAt }) => ({
-                id,
-                contribution,
-                title,
-                updatedAt,
-            })
-        )[0]
-        console.log(desiredObject)
-        return {
-            id: desiredObject.id,
-            title: desiredObject.title,
-            type: contributionType,
-            contribution: desiredObject.contribution,
-            date: desiredObject.updatedAt,
-            studentId: studentId,
-        }
     }
 
     const [contributionEnums, setContributionEnums] = useState([])
@@ -189,6 +164,36 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         },
     ] = useMutation(UPDATE_STUDENT_CONTRIBUTIONS)
 
+    const mapSubRowToSubRowRecord = (
+        data: object,
+        contributionType: string,
+        studentId: string,
+        parentIndex: number
+    ) => {
+        const nonEmptyArrays = Object.values(data).filter(
+            (arr) => arr.length !== 0
+        )
+
+        const desiredObject = nonEmptyArrays[0].map(
+            ({ id, contribution, title, updatedAt }) => ({
+                id,
+                contribution,
+                title,
+                updatedAt,
+            })
+        )[0]
+        console.log(desiredObject)
+        return {
+            _id: headers[parentIndex].subRows.length,
+            id: desiredObject.id,
+            title: desiredObject.title,
+            type: contributionType,
+            contribution: desiredObject.contribution,
+            date: desiredObject.updatedAt,
+            studentId: studentId,
+        }
+    }
+
     const returnHeadRecordsDataOfUserType = async () => {
         switch (userType) {
             case 'TEACHER':
@@ -211,6 +216,19 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         }
     }
 
+    const returnContributionType = (item) => {
+        switch (userType) {
+            case 'TEACHER':
+                return item.teacherContributionType
+            case 'CAREER_COUNSELLOR':
+                return item.careerCounsellorContributionType
+            case 'SOCIETY_HEAD':
+                return item.societyHeadContributionType
+            default:
+                return null
+        }
+    }
+
     const fetchData = async () => {
         setIsLoading(true)
         if (!contributionsLoading) {
@@ -226,14 +244,15 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     acc[item.studentId].push(item)
                     return acc
                 }, {})
-
                 // Map each group to a HeadRowInterface object
                 const headRows = Object.values(groupedData).map((group) => {
+                    let index = -1
                     // Map the sub-rows for this group
                     const subRows = group.map((item) => ({
+                        _id: (index += 1),
                         id: item.id,
                         title: item.title,
-                        type: item.teacherContributionType,
+                        type: returnContributionType(item),
                         contribution: item.contribution,
                         date: item.updatedAt,
                         studentId: item.studentId,
@@ -420,7 +439,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 const mappedData: SubRowInterface = mapSubRowToSubRowRecord(
                     newContribution,
                     addContributionData?.type?.type,
-                    addContributionData.studentId
+                    addContributionData.studentId,
+                    parentIndex
                 )
                 _subRows.push(mappedData)
                 _headers[parentIndex].subRows = _subRows
@@ -703,7 +723,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         return (
             <>
                 <span className="p-column-title">Contribution ID</span>
-                {rowData.id}
+                {rowData._id}
             </>
         )
     }
@@ -784,9 +804,9 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 <i className="pi pi-search" />
                 <InputText
                     type="search"
-                    onInput={async (e) => {
+                    onInput={(e) =>
                         setGlobalFilter((e.target as HTMLInputElement).value)
-                    }}
+                    }
                     placeholder="Search..."
                 />
             </span>
