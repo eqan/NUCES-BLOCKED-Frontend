@@ -241,14 +241,11 @@ const UserRecords: React.FC<Props> = (userType) => {
 
     const setUserSubType = () => {
         let _user = { ...user }
-        if ('SOCIETY_HEAD') {
-            _user.subType = user.subType
-            setUser(_user)
-        } else {
+        if (_user.role != 'SOCIETY_HEAD') {
             _user.subType = user.email
             setUser(_user)
         }
-        console.log(_user.subType)
+        return _user.subType
     }
 
     const saveUser = async () => {
@@ -263,11 +260,11 @@ const UserRecords: React.FC<Props> = (userType) => {
             validatepass(user.password) &&
             imgfile != img
         ) {
+            const userSubType = setUserSubType()
             let _users = [...users]
             let _user = { ...user }
             let successMessage = ''
             let errorMessage = ''
-            setUserSubType()
             try {
                 const index = findIndexById(_user.id)
                 successMessage = 'User Added!'
@@ -282,7 +279,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 email: _user.email,
                                 password: _user.password,
                                 type: _user.role,
-                                subType: _user.subType,
+                                subType: userSubType,
                                 imgUrl: url,
                             },
                         },
@@ -290,9 +287,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                     newUser = newUser.data.CreateUser
                     const mappedData: UserInterface =
                         mapUserToUserRecord(newUser)
-                    _users = _users.filter((item) => (item.id = mappedData.id))
                     _users.push(mappedData)
-                    console.log('create', _users)
                 } else {
                     _users[index] = _user
                     successMessage = 'User Updated!'

@@ -9,6 +9,7 @@ export const CREATE_USER = gql`
             password
             type
             imgUrl
+            subType
         }
     }
 `
