@@ -10,6 +10,7 @@ export const GET_USERS = gql`
                 password
                 type
                 imgUrl
+                subType
             }
             total
         }

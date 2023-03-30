@@ -27,6 +27,9 @@ import { Skeleton } from 'primereact/skeleton'
 import { Image as PrimeImage } from 'primereact/image'
 import { Panel } from 'primereact/panel'
 import { GET_USER_DATA } from '../../queries/users/getUser'
+import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
+import { NFTStorage } from 'nft.storage'
+import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 
 interface Props {
     userType: String
@@ -39,6 +42,7 @@ interface UserInterface {
     role: string
     email: string
     imgUrl: string
+    subType: string
 }
 
 const UserRecords: React.FC<Props> = (userType) => {
@@ -49,6 +53,7 @@ const UserRecords: React.FC<Props> = (userType) => {
         role: '',
         email: '',
         imgUrl: '',
+        subType: '',
     }
 
     const mapUserToUserRecord = (user: UserInterface) => {
@@ -59,6 +64,7 @@ const UserRecords: React.FC<Props> = (userType) => {
             role: user.type,
             email: user.email,
             imgUrl: user.imgUrl,
+            subType: user.subType,
         }
     }
     const contextPath = getConfig().publicRuntimeConfig.contextPath
@@ -68,6 +74,7 @@ const UserRecords: React.FC<Props> = (userType) => {
     const [userSaveDialog, setSaveUserDialog] = useState(false)
     const [deleteUserDialog, setDeleteUserDialog] = useState(false)
     const [deleteUsersDialog, setDeleteUsersDialog] = useState(false)
+    const [uploading, setUploading] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [user, setUser] = useState(UserRecordInterface)
     const [role, setRole] = useState<any>('')
@@ -187,6 +194,60 @@ const UserRecords: React.FC<Props> = (userType) => {
         setDeleteUsersDialog(false)
     }
 
+    const handleUpload = async (id) => {
+        let url = null
+        try {
+            setUploading(true)
+
+            const nftstorage = new NFTStorage({
+                token: NFT_STORAGE_TOKEN,
+            })
+            const binaryFileWithMetaData = new File([actualfile], id + '.png', {
+                type: 'image/png',
+            })
+
+            const metadata = {
+                name: id,
+                description: `User profile image of ${id}`,
+            }
+            const value = await nftstorage.store({
+                image: binaryFileWithMetaData,
+                name: metadata.name,
+                description: metadata.description,
+            })
+            console.log(value.url)
+            url = await extractActualDataFromIPFS(value.url, '.png')
+            handleReset()
+            if (toast.current)
+                toast.current.show({
+                    severity: 'info',
+                    summary: 'Success',
+                    detail: 'File Uploaded',
+                    life: 3000,
+                })
+        } catch (error) {
+            if (toast.current)
+                toast.current.show({
+                    severity: 'error',
+                    summary: 'error',
+                    detail: 'File Not Uploaded',
+                    life: 3000,
+                })
+            console.error(error)
+        }
+        setUploading(false)
+        return url
+    }
+
+    const setUserSubType = () => {
+        let _user = { ...user }
+        if (_user.role != 'SOCIETY_HEAD') {
+            _user.subType = user.email
+            setUser(_user)
+        }
+        return _user.subType
+    }
+
     const saveUser = async () => {
         setSubmitted(true)
 
@@ -199,6 +260,7 @@ const UserRecords: React.FC<Props> = (userType) => {
             validatepass(user.password) &&
             imgfile != img
         ) {
+            const userSubType = setUserSubType()
             let _users = [...users]
             let _user = { ...user }
             let successMessage = ''
@@ -207,6 +269,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                 const index = findIndexById(_user.id)
                 successMessage = 'User Added!'
                 errorMessage = 'User With this email already created!'
+                const url = await handleUpload(_user.email)
                 if (index == -1) {
                     _users[user.id] = _user
                     let newUser = await createuserFunction({
@@ -216,16 +279,15 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 email: _user.email,
                                 password: _user.password,
                                 type: _user.role,
-                                imgUrl: _user.imgUrl,
+                                subType: userSubType,
+                                imgUrl: url,
                             },
                         },
                     })
                     newUser = newUser.data.CreateUser
                     const mappedData: UserInterface =
                         mapUserToUserRecord(newUser)
-                    _users = _users.filter((item) => (item.id = mappedData.id))
                     _users.push(mappedData)
-                    console.log('create', _users)
                 } else {
                     _users[index] = _user
                     successMessage = 'User Updated!'
@@ -383,7 +445,7 @@ const UserRecords: React.FC<Props> = (userType) => {
             setUser(_user)
             setRole(val)
             return
-        } else if (name == 'name') {
+        } else if (name == 'name' || name == 'subType') {
             let i
             let stringbe = ''
             for (i = 0; i < val.length; i++) {
@@ -471,7 +533,6 @@ const UserRecords: React.FC<Props> = (userType) => {
     }
 
     const nameBodyTemplate = (rowData) => {
-        console.log(rowData.imgUrl)
         return (
             <>
                 <div className="flex align-items-center gap-2">
@@ -936,8 +997,38 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 </div>
                             </div>
                             <div className="col-6">
+                                {user['role'] == 'SOCIETY_HEAD' ? (
+                                    <div className="field">
+                                        <label htmlFor="subType">
+                                            Society Name
+                                        </label>
+                                        <span className="p-input-icon-right">
+                                            <InputText
+                                                id="subType"
+                                                value={user.subType}
+                                                onChange={(e) =>
+                                                    onInputChange(e, 'subType')
+                                                }
+                                                required
+                                                autoFocus
+                                                className={classNames({
+                                                    'p-invalid':
+                                                        submitted &&
+                                                        !user.subType,
+                                                })}
+                                            />
+                                            {submitted && !user.subType && (
+                                                <small className="p-invalid">
+                                                    Society name is required.
+                                                </small>
+                                            )}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <></>
+                                )}
                                 <div className="field align-content-center">
-                                    <Panel header=" " className=" pb-2 pt-2">
+                                    <Panel header=" " className=" pb-4">
                                         <div
                                             style={{
                                                 textAlign: 'center',

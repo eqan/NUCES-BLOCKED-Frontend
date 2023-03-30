@@ -254,7 +254,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 newResult = newResult.data['CreateResult']
                 const mappedData: ResultsInterface =
                     mapSemesterToSemesterRecord(newResult)
-                _results = _results.filter((item) => (item.id = mappedData.id))
                 _results.push(mappedData)
                 setResults(_results)
                 if (toast.current)

@@ -9,6 +9,7 @@ export const UPDATE_USER = gql`
             password
             type
             imgUrl
+            subType
         }
     }
 `
