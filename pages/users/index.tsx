@@ -42,7 +42,7 @@ interface UserInterface {
     role: string
     email: string
     imgUrl: string
-    userSubType: string
+    subType: string
 }
 
 const UserRecords: React.FC<Props> = (userType) => {
@@ -53,7 +53,7 @@ const UserRecords: React.FC<Props> = (userType) => {
         role: '',
         email: '',
         imgUrl: '',
-        userSubType: '',
+        subType: '',
     }
 
     const mapUserToUserRecord = (user: UserInterface) => {
@@ -64,7 +64,7 @@ const UserRecords: React.FC<Props> = (userType) => {
             role: user.type,
             email: user.email,
             imgUrl: user.imgUrl,
-            userSubType: user.userSubType,
+            subType: user.subType,
         }
     }
     const contextPath = getConfig().publicRuntimeConfig.contextPath
@@ -239,7 +239,17 @@ const UserRecords: React.FC<Props> = (userType) => {
         return url
     }
 
-    const getUserSubType = () => {}
+    const setUserSubType = () => {
+        let _user = { ...user }
+        if ('SOCIETY_HEAD') {
+            _user.subType = user.subType
+            setUser(_user)
+        } else {
+            _user.subType = user.email
+            setUser(_user)
+        }
+        console.log(_user.subType)
+    }
 
     const saveUser = async () => {
         setSubmitted(true)
@@ -257,6 +267,7 @@ const UserRecords: React.FC<Props> = (userType) => {
             let _user = { ...user }
             let successMessage = ''
             let errorMessage = ''
+            setUserSubType()
             try {
                 const index = findIndexById(_user.id)
                 successMessage = 'User Added!'
@@ -271,7 +282,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 email: _user.email,
                                 password: _user.password,
                                 type: _user.role,
-                                subType: null,
+                                subType: _user.subType,
                                 imgUrl: url,
                             },
                         },
@@ -527,7 +538,6 @@ const UserRecords: React.FC<Props> = (userType) => {
     }
 
     const nameBodyTemplate = (rowData) => {
-        console.log(rowData.imgUrl)
         return (
             <>
                 <div className="flex align-items-center gap-2">
@@ -1000,7 +1010,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                                         <span className="p-input-icon-right">
                                             <InputText
                                                 id="subType"
-                                                value={user.userSubType}
+                                                value={user.subType}
                                                 onChange={(e) =>
                                                     onInputChange(e, 'subType')
                                                 }
@@ -1008,12 +1018,13 @@ const UserRecords: React.FC<Props> = (userType) => {
                                                 autoFocus
                                                 className={classNames({
                                                     'p-invalid':
-                                                        submitted && !user.name,
+                                                        submitted &&
+                                                        !user.subType,
                                                 })}
                                             />
-                                            {submitted && !user.userSubType && (
+                                            {submitted && !user.subType && (
                                                 <small className="p-invalid">
-                                                    Society Head is required.
+                                                    Society name is required.
                                                 </small>
                                             )}
                                         </span>
