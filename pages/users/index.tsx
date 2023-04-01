@@ -299,7 +299,7 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 name: _user.name,
                                 password: _user.password,
                                 type: _user.role,
-                                imgUrl: _user.imgUrl,
+                                imgUrl: url,
                             },
                         },
                     })
@@ -835,7 +835,6 @@ const UserRecords: React.FC<Props> = (userType) => {
                                 showFilterMatchModes={false}
                                 filterMenuStyle={{ width: '14rem' }}
                                 style={{ minWidth: '14rem' }}
-                                filter
                             ></Column>
                             <Column
                                 field="email"
