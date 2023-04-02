@@ -4,7 +4,7 @@ import { DataTable } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { FileUpload } from 'primereact/fileupload'
 import { InputText } from 'primereact/inputtext'
-import { Toast } from 'primereact/toast'
+// import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
@@ -31,6 +31,7 @@ import { BigNumber, ethers } from 'ethers'
 import ABI from '../../contracts/SemesterStore.json'
 import { DeployedContracts } from '../../contracts/deployedAddresses'
 import { GET_USER_DATA } from '../../queries/users/getUser'
+import { Toaster, toast } from 'sonner'
 
 interface ResultsInterface {
     id: string
@@ -80,7 +81,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
-    const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
     const [uploading, setUploading] = useState(false)
     const [contract, setContract] = useState(null)
@@ -230,8 +230,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }
 
     const addResult = async () => {
-        setSubmitted(true)
-        if (result.semester && result.year) {
+        if (result.semester && result.year && file) {
+            setSubmitted(true)
+            setAddResultDialog(false)
             stopCronJobFunction()
             let _results = [...results]
             let _result = { ...result }
@@ -266,50 +267,23 @@ const SemesterResult: React.FC<Props> = (userType) => {
                             mapSemesterToSemesterRecord(newResult)
                         _results.push(mappedData)
                         setResults(_results)
-                        if (toast.current)
-                            toast.current.show({
-                                severity: 'success',
-                                summary: 'Successful',
-                                detail: 'Result Added!',
-                                life: 3000,
-                            })
                     } catch (error) {
-                        if (toast.current) {
-                            toast.current?.show({
-                                severity: 'error',
-                                summary: 'Error',
-                                detail: 'Result Not Added!',
-                                life: 3000,
-                            })
-                        }
                         console.log(error)
+                        throw new Error(error.message)
                     }
                 } else {
-                    if (toast.current) {
-                        toast.current?.show({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Gas fees may not be sufficient, check your wallet!',
-                            life: 3000,
-                        })
-                    }
+                    throw new Error(
+                        'Gas fees may not be sufficient, check your wallet!'
+                    )
                 }
             } catch (error) {
                 console.log(error)
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Wallet not connected!',
-                        life: 3000,
-                    })
-                }
+                throw new Error(error.message)
             }
         }
-
         startCronJobFunction()
-        setAddResultDialog(false)
         setResult(ResultsRecordInterface)
+        return 'Result has been added!'
     }
 
     const updateResult = async () => {
@@ -604,7 +578,17 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={addResult}
+                onClick={() => {
+                    toast.promise(addResult, {
+                        loading: 'Result is being added...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -765,7 +749,7 @@ const SemesterResult: React.FC<Props> = (userType) => {
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toast ref={toast} />
+                    <Toaster richColors />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}
