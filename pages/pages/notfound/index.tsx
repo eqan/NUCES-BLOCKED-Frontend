@@ -9,8 +9,8 @@ const NotFoundPage = () => {
         <div className="surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden">
             <div className="flex flex-column align-items-center justify-content-center">
                 <img
-                    src={`${contextPath}/demo/images/notfound/logo-blue.svg`}
-                    alt="Sakai logo"
+                    src={`${contextPath}/logo.png`}
+                    alt="NUCES BLOCKED"
                     className="mb-5 w-6rem flex-shrink-0"
                 />
                 <div
@@ -62,5 +62,4 @@ const NotFoundPage = () => {
 NotFoundPage.getLayout = function getLayout(page) {
     return <React.Fragment>{page}</React.Fragment>
 }
-
 export default NotFoundPage

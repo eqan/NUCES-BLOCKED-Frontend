@@ -1,22 +1,35 @@
 import { Button } from 'primereact/button'
 import { Menu } from 'primereact/menu'
-import React, { useRef } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../layout/context/requireAuthetication'
 import apolloClient from '../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_DATA } from '../queries/users/getUser'
+import { useRouter } from 'next/router'
 
 interface Props {
     userType: string | null
     userEmail: string | null
     userName: string | null
+    userimg: string | null
 }
 
-const dashboard: React.FC<Props> = ({ userType, userName, userEmail }) => {
+const dashboard: React.FC<Props> = (props) => {
+    const router = useRouter()
+    useEffect(() => {
+        if (
+            props.userType !== 'TEACHER' &&
+            props.userType !== 'CAREER_COUNSELLOR' &&
+            props.userType !== 'SOCIETY_HEAD' &&
+            props.userType !== 'ADMIN'
+        ) {
+            router.push('/auth/login')
+        }
+    }, [props.userType])
+    console.log(props)
     // const menu1 = useRef<Menu>(null)
     // const menu2 = useRef<Menu>(null)
-
     return (
         <div className="grid">
             {/* {userType['userType'] == 'ADMIN' ? (
@@ -125,7 +138,9 @@ const dashboard: React.FC<Props> = ({ userType, userName, userEmail }) => {
                                 <span className="text-900 font-medium mr-2 mb-1 md:mb-0">
                                     Name
                                 </span>
-                                <div className="mt-1 text-600">{userName}</div>
+                                <div className="mt-1 text-600">
+                                    {props ? props.userName : <></>}
+                                </div>
                             </div>
                         </li>
                         <li className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-4">
@@ -133,7 +148,9 @@ const dashboard: React.FC<Props> = ({ userType, userName, userEmail }) => {
                                 <span className="text-900 font-medium mr-2 mb-1 md:mb-0">
                                     Email
                                 </span>
-                                <div className="mt-1 text-600">{userEmail}</div>
+                                <div className="mt-1 text-600">
+                                    {props ? props.userEmail : <></>}
+                                </div>
                             </div>
                         </li>
                         <li className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-4">
@@ -141,7 +158,9 @@ const dashboard: React.FC<Props> = ({ userType, userName, userEmail }) => {
                                 <span className="text-900 font-medium mr-2 mb-1 md:mb-0">
                                     Role
                                 </span>
-                                <div className="mt-1 text-600">{userType}</div>
+                                <div className="mt-1 text-600">
+                                    {props ? props.userType : <></>}
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -218,12 +237,11 @@ const dashboard: React.FC<Props> = ({ userType, userName, userEmail }) => {
         </div>
     )
 }
-export default dashboard
 export const getServerSideProps: GetServerSideProps = requireAuthentication(
     async (ctx) => {
         const { req } = ctx
-        if (req.headers.cookie) {
-            const tokens = req.headers.cookie.split(';')
+        if (req.rawHeaders) {
+            const tokens = req.rawHeaders
             const token = tokens.find((token) => token.includes('access_token'))
             let userData = ''
             if (token) {
@@ -244,11 +262,14 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
             }
             return {
                 props: {
-                    userType: userData?.type,
-                    userEmail: userData?.email,
-                    userName: userData?.name,
+                    userType: userData?.type || null,
+                    userName: userData?.name || null,
+                    userEmail: userData?.email || null,
+                    userimg: userData?.imgUrl || null,
                 },
             }
         }
     }
 )
+
+export default dashboard

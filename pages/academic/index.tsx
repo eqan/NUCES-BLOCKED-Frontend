@@ -55,14 +55,12 @@ interface AddContributionDialogInterface {
 }
 
 interface Props {
-    userType: string
-    userSubType: string
+    userType: string | null
+    userSubType: string | null
+    userimg: string | null
 }
 
-const AcademicContributionsRecords: React.FC<Props> = ({
-    userType,
-    userSubType,
-}) => {
+const AcademicContributionsRecords: React.FC<Props> = (props) => {
     const router = useRouter()
 
     let HeaderRowRecordInterface = {
@@ -126,8 +124,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         contributionsFetchingError,
         contributionsRefetchHook,
     ] = returnFetchContributionsHook(
-        userSubType,
-        userType,
+        props ? props.userSubType : null,
+        props ? props.userType : null,
         page + 1,
         pageLimit,
         globalFilter
@@ -194,37 +192,41 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const returnHeadRecordsDataOfUserType = async () => {
-        switch (userType) {
-            case 'TEACHER':
-                return (
-                    contributionsData?.GetAllContributions
-                        .teachersContribution || []
-                )
-            case 'CAREER_COUNSELLOR':
-                return (
-                    contributionsData?.GetAllContributions
-                        .careerCounsellorContributions || []
-                )
-            case 'SOCIETY_HEAD':
-                return (
-                    contributionsData?.GetAllContributions
-                        .societyHeadsContributions || []
-                )
-            default:
-                return null
+        if (props) {
+            switch (props.userType) {
+                case 'TEACHER':
+                    return (
+                        contributionsData?.GetAllContributions
+                            .teachersContribution || []
+                    )
+                case 'CAREER_COUNSELLOR':
+                    return (
+                        contributionsData?.GetAllContributions
+                            .careerCounsellorContributions || []
+                    )
+                case 'SOCIETY_HEAD':
+                    return (
+                        contributionsData?.GetAllContributions
+                            .societyHeadsContributions || []
+                    )
+                default:
+                    return null
+            }
         }
     }
 
     const returnContributionType = (item) => {
-        switch (userType) {
-            case 'TEACHER':
-                return item.teacherContributionType
-            case 'CAREER_COUNSELLOR':
-                return item.careerCounsellorContributionType
-            case 'SOCIETY_HEAD':
-                return item.societyHeadContributionType
-            default:
-                return null
+        if (props) {
+            switch (props.userType) {
+                case 'TEACHER':
+                    return item.teacherContributionType
+                case 'CAREER_COUNSELLOR':
+                    return item.careerCounsellorContributionType
+                case 'SOCIETY_HEAD':
+                    return item.societyHeadContributionType
+                default:
+                    return null
+            }
         }
     }
 
@@ -277,38 +279,40 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     useEffect(() => {
-        switch (userType) {
-            case 'TEACHER':
-                setContributionEnums(['TA_SHIP', 'RESEARCH'])
-                setContributionEnumsForDialog([
-                    { type: 'TA_SHIP' },
-                    { type: 'RESEARCH' },
-                ])
-                break
-            case 'SOCIETY_HEAD':
-                setContributionEnums([
-                    'UNIVERSITY_EVENT',
-                    'COMPETITION_ACHIEVEMENT',
-                ])
-                setContributionEnumsForDialog([
-                    { type: 'UNIVERSITY_EVENT' },
-                    { type: 'COMPETITION_ACHIEVEMENT' },
-                ])
-                break
-            case 'CAREER_COUNSELLOR':
-                setContributionEnums([
-                    'EXCHANGE_PROGRAM',
-                    'INTERNSHIP',
-                    'FELLOWSHIP_PROGRAM',
-                ])
-                setContributionEnumsForDialog([
-                    { type: 'EXCHANGE_PROGRAM' },
-                    { type: 'INTERNSHIP' },
-                    { type: 'FELLOWSHIP_PROGRAM' },
-                ])
-                break
-            default:
-                break
+        if (props) {
+            switch (props.userType) {
+                case 'TEACHER':
+                    setContributionEnums(['TA_SHIP', 'RESEARCH'])
+                    setContributionEnumsForDialog([
+                        { type: 'TA_SHIP' },
+                        { type: 'RESEARCH' },
+                    ])
+                    break
+                case 'SOCIETY_HEAD':
+                    setContributionEnums([
+                        'UNIVERSITY_EVENT',
+                        'COMPETITION_ACHIEVEMENT',
+                    ])
+                    setContributionEnumsForDialog([
+                        { type: 'UNIVERSITY_EVENT' },
+                        { type: 'COMPETITION_ACHIEVEMENT' },
+                    ])
+                    break
+                case 'CAREER_COUNSELLOR':
+                    setContributionEnums([
+                        'EXCHANGE_PROGRAM',
+                        'INTERNSHIP',
+                        'FELLOWSHIP_PROGRAM',
+                    ])
+                    setContributionEnumsForDialog([
+                        { type: 'EXCHANGE_PROGRAM' },
+                        { type: 'INTERNSHIP' },
+                        { type: 'FELLOWSHIP_PROGRAM' },
+                    ])
+                    break
+                default:
+                    break
+            }
         }
     }, [])
 
@@ -330,10 +334,21 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }, [contributionsData, contributionsLoading])
 
     useEffect(() => {
-        if (userType.toString() == 'ADMIN') {
-            router.push('/pages/notfound')
+        if (!props) {
+            router.push('/auth/login')
+        } else {
+            if (props.userType == 'ADMIN') {
+                router.push('/pages/notfound')
+            } else if (
+                props.userType !== 'TEACHER' &&
+                props.userType !== 'CAREER_COUNSELLOR' &&
+                props.userType !== 'SOCIETY_HEAD'
+            ) {
+                router.push('/auth/login')
+            }
         }
-    }, [userType])
+    }, [props])
+    console.log(props)
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -368,18 +383,20 @@ const AcademicContributionsRecords: React.FC<Props> = ({
             SOCIETY_HEAD: null,
             CAREER_COUNSELLOR: null,
         }
-        switch (userType) {
-            case 'TEACHER':
-                types['TEACHER'] = type
-                break
-            case 'SOCIETY_HEAD':
-                types['SOCIETY_HEAD'] = type
-                break
-            case 'CAREER_COUNSELLOR':
-                types['CAREER_COUNSELLOR'] = type
-                break
-            default:
-                break
+        if (props) {
+            switch (props.userType) {
+                case 'TEACHER':
+                    types['TEACHER'] = type
+                    break
+                case 'SOCIETY_HEAD':
+                    types['SOCIETY_HEAD'] = type
+                    break
+                case 'CAREER_COUNSELLOR':
+                    types['CAREER_COUNSELLOR'] = type
+                    break
+                default:
+                    break
+            }
         }
         return types
     }
@@ -425,8 +442,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     variables: {
                         CreateStudentInput: {
                             contributionType: {
-                                type: userType,
-                                contributionType: userType,
+                                type: props.userType,
+                                contributionType: props.userType,
                                 teacherContributionType: types['TEACHER'],
                                 societyHeadContributionType:
                                     types['SOCIETY_HEAD'],
@@ -435,7 +452,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                             },
                             contribution: addContributionData.contribution,
                             title: addContributionData.title,
-                            contributor: userSubType,
+                            contributor: props.userSubType,
                             studentId: addContributionData.studentId,
                         },
                     },
@@ -482,8 +499,8 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                         variables: {
                             UpdateStudentInput: {
                                 contributionType: {
-                                    type: userType,
-                                    contributionType: userType,
+                                    type: props.userType,
+                                    contributionType: props.userType,
                                     teacherContributionType: types['TEACHER'],
                                     societyHeadContributionType:
                                         types['SOCIETY_HEAD'],
@@ -493,7 +510,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                                 id: newData.id,
                                 contribution: newData.contribution,
                                 title: newData.title,
-                                contributor: userSubType,
+                                contributor: props.userSubType,
                                 studentId: parentId,
                             },
                         },
@@ -536,7 +553,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     deleteContributionInputs: [
                         {
                             contributionId: selectedHeadRowRecord.id,
-                            contributionType: userType,
+                            contributionType: props.userType,
                             studentId: selectedHeadRowRecord.studentId,
                         },
                     ],
@@ -569,7 +586,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     .map((val) => ({
                         contributionId: val.id,
                         studentId: record.studentId,
-                        contributionType: userType,
+                        contributionType: props.userType,
                     }))
             )
             _headers[parentIndex].subRows = subRows.filter(
@@ -987,7 +1004,11 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         )
     }
 
-    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+    const theme = {
+        if(localStorage) {
+            localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+        },
+    }
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -1251,8 +1272,9 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
             }
             return {
                 props: {
-                    userType: userData?.type,
-                    userSubType: userData?.subType,
+                    userType: userData?.type || null,
+                    userSubType: userData?.subType || null,
+                    userimg: userData?.imgUrl || null,
                 },
             }
         }

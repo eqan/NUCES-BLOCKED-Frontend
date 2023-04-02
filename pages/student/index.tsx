@@ -6,6 +6,7 @@ import { DataTable } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { FileUpload } from 'primereact/fileupload'
 import { InputText } from 'primereact/inputtext'
+import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { Skeleton } from 'primereact/skeleton'
 import { classNames } from 'primereact/utils'
@@ -22,7 +23,8 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { toast, Toaster } from 'sonner'
 
 interface Props {
-    userType: String
+    userType: string | null
+    userimg: string | null
 }
 
 interface StudentInterface {
@@ -35,7 +37,7 @@ interface StudentInterface {
     cgpa: string
 }
 
-const StudentRecords: React.FC<Props> = (userType) => {
+const StudentRecords: React.FC<Props> = (props) => {
     let StudentRecordInterface = {
         id: '',
         name: '',
@@ -73,6 +75,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
+    const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
 
     const [
@@ -140,13 +143,15 @@ const StudentRecords: React.FC<Props> = (userType) => {
 
     useEffect(() => {
         if (
-            userType == 'TEACHER' ||
-            userType == 'CAREER_COUNSELLOR' ||
-            userType == 'SOCIETY_HEAD'
+            props.userType == 'TEACHER' ||
+            props.userType == 'CAREER_COUNSELLOR' ||
+            props.userType == 'SOCIETY_HEAD'
         ) {
             router.push('/pages/notfound')
+        } else if (props.userType !== 'ADMIN') {
+            router.push('/auth/login')
         }
-    }, [userType])
+    }, [props.userType])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -198,6 +203,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
             try {
                 const index = findIndexById(_student.id)
                 if (index == -1) {
+                    successMessage = 'Student Added!'
+                    errorMessage = 'Student Not Added!'
                     _students[_student.rollno] = _student
                     let newStudent = await createStudentFunction({
                         variables: {
@@ -219,6 +226,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
                     _students.push(mappedData)
                     message = 'Student Added!'
                 } else {
+                    successMessage = 'Student Updated!'
+                    errorMessage = 'Student Not Updated!'
                     _students[index] = _student
                     await updateStudentFunction({
                         variables: {
@@ -237,6 +246,14 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 setStudent(StudentRecordInterface)
                 return message
             } catch (error) {
+                if (toast.current) {
+                    toast.current?.show({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
+                        life: 3000,
+                    })
+                }
                 console.log(error)
                 throw new Error(error.message)
             }
@@ -271,9 +288,18 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 throw new Error(studentDeleteDataError.message)
             }
         } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Student Not Deleted',
+                    life: 3000,
+                })
+            }
             console.log(error)
             throw new Error(error.message)
         }
+        setDeleteStudentDialog(false)
         setStudent(StudentRecordInterface)
         return 'Student is removed!'
     }
@@ -318,10 +344,19 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 throw new Error(studentCreateDataError.message)
             }
         } catch (error) {
+            if (toast.current) {
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Student Not Deleted',
+                    life: 3000,
+                })
+            }
             console.log(error)
             throw new Error(error.message)
         }
         setStudents(_students)
+        setDeleteStudentsDialog(false)
         setSelectedStudents([])
         return 'Selected students are removed!'
     }
@@ -555,6 +590,13 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 _students.push(_importedData[i])
             }
             setStudents(_students)
+            if (toast.current)
+                toast.current.show({
+                    severity: 'info',
+                    summary: 'Success',
+                    detail: 'File Uploaded',
+                    life: 3000,
+                })
         }
 
         reader.readAsText(file, 'UTF-8')
@@ -766,7 +808,11 @@ const StudentRecords: React.FC<Props> = (userType) => {
         )
     }
 
-    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+    const theme = {
+        if(localStorage) {
+            localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+        },
+    }
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -1089,7 +1135,10 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     })
             }
             return {
-                props: { userType: userData?.type },
+                props: {
+                    userType: userData?.type || null,
+                    userimg: userData?.imgUrl || null,
+                },
             }
         }
     }

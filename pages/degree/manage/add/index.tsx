@@ -2,21 +2,34 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ProgressBar } from 'primereact/progressbar'
 import { Toast } from 'primereact/toast'
 import { GetServerSideProps } from 'next'
+import { useRouter } from 'next/router'
 import { requireAuthentication } from '../../../../layout/context/requireAuthetication'
-import { gql } from '@apollo/client'
 import apolloClient from '../../../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from '../../../../queries/users/getUserType'
 import { GET_USER_DATA } from '../../../../queries/users/getUser'
 
 interface Props {
-    userType: string
+    userType: string | null
+    userimg: string | null
 }
 
-const MiscDemo: React.FC<Props> = (userType) => {
+const MiscDemo: React.FC<Props> = (props) => {
+    const router = useRouter()
     const [value, setValue] = useState<number>(0)
     const toast = useRef<Toast | null>(null)
     const interval = useRef<any | null | undefined>(null)
+
+    useEffect(() => {
+        if (
+            props.userType == 'TEACHER' ||
+            props.userType == 'CAREER_COUNSELLOR' ||
+            props.userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        } else if (props.userType !== 'ADMIN') {
+            router.push('/auth/login')
+        }
+    }, [props.userType])
 
     useEffect(() => {
         let val = value
@@ -78,7 +91,10 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     })
             }
             return {
-                props: { userType: userData?.type },
+                props: {
+                    userType: userData?.type || null,
+                    userimg: userData?.imgUrl || null,
+                },
             }
         }
     }

@@ -41,10 +41,11 @@ interface ResultsInterface {
     date: string
 }
 interface Props {
-    userType: String
+    userType: string | null
+    userimg: string | null
 }
 
-const SemesterResult: React.FC<Props> = (userType) => {
+const SemesterResult: React.FC<Props> = (props) => {
     let ResultsRecordInterface = {
         id: '',
         semester: '',
@@ -182,13 +183,15 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     useEffect(() => {
         if (
-            userType == 'TEACHER' ||
-            userType == 'CAREER_COUNSELLOR' ||
-            userType == 'SOCIETY_HEAD'
+            props.userType == 'TEACHER' ||
+            props.userType == 'CAREER_COUNSELLOR' ||
+            props.userType == 'SOCIETY_HEAD'
         ) {
             router.push('/pages/notfound')
+        } else if (props.userType !== 'ADMIN') {
+            router.push('/auth/login')
         }
-    }, [userType])
+    }, [props.userType])
     useEffect(() => {}, [globalFilter])
 
     const openNewAddResultDialog = () => {
@@ -741,7 +744,11 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
         return url
     }
-    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+    const theme = {
+        if(localStorage) {
+            localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+        },
+    }
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
     return (
         <div className="grid crud-demo">
@@ -997,7 +1004,10 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     })
             }
             return {
-                props: { userType: userData?.type },
+                props: {
+                    userType: userData?.type || null,
+                    userimg: userData?.imgUrl || null,
+                },
             }
         }
     }

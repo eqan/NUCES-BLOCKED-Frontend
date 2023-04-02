@@ -12,8 +12,6 @@ import PrimeReact from 'primereact/api'
 
 interface Props {
     children: React.ReactNode
-    userType: string
-    imgUrl: string
 }
 interface ButtonMenu {
     menubutton: HTMLButtonElement
@@ -158,7 +156,6 @@ const Layout: React.FC<Props> = (props) => {
         'p-input-filled': layoutConfig.inputStyle === 'filled',
         'p-ripple-disabled': !layoutConfig.ripple,
     })
-
     return (
         <React.Fragment>
             <Head>
@@ -199,7 +196,7 @@ const Layout: React.FC<Props> = (props) => {
                     replaceLink={null}
                     applyScale={null}
                     userType={props.userType}
-                    imgUrl={props.imgUrl}
+                    userimg={props.userimg}
                 />
                 <div ref={sidebarRef} className="layout-sidebar">
                     <AppSidebar userType={props.userType} />
