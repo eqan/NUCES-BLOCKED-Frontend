@@ -86,7 +86,6 @@ const UserRecords: React.FC<Props> = (userType) => {
     const [actualfile, setActualfile] = useState('')
     const [imgfile, setImgFile] = useState<string>(img)
     const [previewimg, setPreviewImg] = useState(img)
-    const elementRef = useRef<string>(null)
     const dt = useRef<DataTable>(null)
     const imgref = useRef(null)
 
@@ -730,11 +729,8 @@ const UserRecords: React.FC<Props> = (userType) => {
         setPreviewImg(img)
     }
     const [imageLoadListener, imageUnloadListener] = useEventListener({
-        target: elementRef,
         type: 'mousedown',
-        listener: async () => {
-            await setHover(true)
-        },
+        listener: async () => {},
     })
 
     useEffect(() => {
@@ -1028,7 +1024,6 @@ const UserRecords: React.FC<Props> = (userType) => {
                                         </div>
                                     </Panel>
                                     <div
-                                        ref={elementRef}
                                         style={{
                                             textAlign: 'center',
                                         }}
