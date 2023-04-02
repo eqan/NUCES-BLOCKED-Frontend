@@ -372,6 +372,7 @@ const UserRecords: React.FC<Props> = (userType) => {
         }
         setSelectedUsers([])
         setUsers(_users)
+        return 'Selected users have been deleted!'
     }
 
     const onInputChange = async (e, name) => {
