@@ -13,7 +13,7 @@ import { returnFetchContributionsHook } from '../../queries/academic/getStudentC
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { CREATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createStudentContributionAdmin'
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { DELETE_STUDENT_CONTRIBUTION } from '../../queries/academic/deleteStudentContributionAdmin'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Dropdown } from 'primereact/dropdown'
@@ -987,11 +987,12 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         )
     }
 
+    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
     return (
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toaster richColors />
+                    <Toaster richColors theme={theme} />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}

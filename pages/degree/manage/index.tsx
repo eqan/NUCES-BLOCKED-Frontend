@@ -5,7 +5,6 @@ import { DataTable } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { InputText } from 'primereact/inputtext'
 import { Skeleton } from 'primereact/skeleton'
-import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
 import React, { useEffect, useRef, useState } from 'react'
@@ -18,8 +17,8 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../../layout/context/requireAuthetication'
 import apolloClient from '../../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_TYPE } from '../../../queries/users/getUserType'
 import { GET_USER_DATA } from '../../../queries/users/getUser'
+import { Toaster, toast } from 'sonner'
 
 interface Props {
     userType: String
@@ -68,8 +67,6 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
-
-    const toast = useRef<Toast>(null)
     const dt = useRef<DataTable>(null)
 
     const [
@@ -145,6 +142,7 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
             router.push('/pages/notfound')
         }
     }, [userType])
+
     useEffect(() => {
         const handleRouteChange = () => {
             certificatesRefetchHook()
@@ -184,9 +182,9 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
     }
 
     const addDegree = async () => {
-        setSubmitted(true)
-
-        if (degree.hash && degree.rollno) {
+        if (degree.hash && degree.rollno && degree.name && degree.rollno) {
+            setSubmitted(true)
+            setAddDegreeDialog(false)
             let _degrees = [...degrees]
             let _degree = { ...degree }
             try {
@@ -207,34 +205,19 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                 )
                 _degrees.push(mappedData)
                 setDegrees(_degrees)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: ' Certificate Updated',
-                        life: 3000,
-                    })
             } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Certificate Not Updated',
-                        life: 3000,
-                    })
-                }
                 console.log(error)
+                throw new Error(error.message)
             }
 
-            setAddDegreeDialog(false)
             setDegree(CertificateRecordInterface)
         }
+        return 'Degree Added!'
     }
 
     const updateDegree = async () => {
-        setSubmitted(true)
-
         if (degree.hash) {
+            setSubmitted(true)
             let _degrees = [...degrees]
             let _degree = { ...degree }
             try {
@@ -249,28 +232,15 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                     },
                 })
                 setDegrees(_degrees)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: ' Certificate Updated',
-                        life: 3000,
-                    })
             } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Certificate Not Updated',
-                        life: 3000,
-                    })
-                }
                 console.log(error)
+                throw new Error(error.message)
             }
 
             setUpdateDegreeDialog(false)
             setDegree(CertificateRecordInterface)
         }
+        return 'Degree Updated!'
     }
 
     const editDegree = (degree) => {
@@ -285,6 +255,7 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
 
     const deleteDegree = async () => {
         let _degrees = degrees.filter((val) => val.id !== degree.id)
+        setDeleteDegreeDialog(false)
         try {
             await deleteCertificateFunction({
                 variables: {
@@ -294,27 +265,15 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                 },
             })
             setDegrees(_degrees)
-            if (toast.current && !certificateDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Certificate Deleted',
-                    life: 3000,
-                })
+            if (certificateDeleteDataError) {
+                throw new Error(certificateDeleteDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Certificate Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
-        setDeleteDegreeDialog(false)
         setDegree(CertificateRecordInterface)
+        return 'Degree removed!'
     }
 
     const findIndexById = (id) => {
@@ -342,7 +301,7 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
         let _toBeDeletedDegrees = degrees
             .filter((val) => selectedDegrees.includes(val))
             .map((val) => val.id)
-
+        setDeleteDegreesDialog(false)
         try {
             await deleteCertificateFunction({
                 variables: {
@@ -352,28 +311,16 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                 },
             })
 
-            if (toast.current && !certificateDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Certificate Deleted',
-                    life: 3000,
-                })
+            if (certificateDeleteDataError) {
+                throw new Error(certificateDeleteDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Certificate Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
         setSelectedDegrees([])
         setDegrees(_degrees)
-        setDeleteDegreesDialog(false)
+        return 'Selected degrees removed!'
     }
 
     const onInputChange = (e, name) => {
@@ -499,7 +446,17 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={addDegree}
+                onClick={() => {
+                    toast.promise(addDegree, {
+                        loading: 'Degree is being added...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -516,7 +473,17 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={updateDegree}
+                onClick={() => {
+                    toast.promise(updateDegree, {
+                        loading: 'Degree is being updated...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -532,7 +499,17 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteDegree}
+                onClick={() => {
+                    toast.promise(deleteDegree, {
+                        loading: 'Degree is being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -548,7 +525,17 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteSelectedDegrees}
+                onClick={() => {
+                    toast.promise(deleteSelectedDegrees, {
+                        loading: 'Selected degrees are being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -582,11 +569,12 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
         )
     }
 
+    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
     return (
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toast ref={toast} />
+                    <Toaster richColors theme={theme} />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}

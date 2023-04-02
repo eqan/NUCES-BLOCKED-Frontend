@@ -741,13 +741,13 @@ const SemesterResult: React.FC<Props> = (userType) => {
         }
         return url
     }
-
+    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
     return (
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toaster richColors />
+                    <Toaster richColors theme={theme} />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}
