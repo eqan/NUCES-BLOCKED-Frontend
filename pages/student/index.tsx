@@ -234,13 +234,15 @@ const StudentRecords: React.FC<Props> = (userType) => {
                     message = 'Student Updated!'
                 }
                 setStudents(_students)
+                setStudent(StudentRecordInterface)
                 return message
             } catch (error) {
                 console.log(error)
                 throw new Error(error.message)
             }
+        } else {
+            throw new Error('Please fill all the fields to proceed!')
         }
-        setStudent(StudentRecordInterface)
     }
 
     const editStudent = (student) => {

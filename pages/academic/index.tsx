@@ -3,7 +3,6 @@ import { Column } from 'primereact/column'
 import { DataTable, DataTableExpandedRows } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { InputText } from 'primereact/inputtext'
-import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import React, { useEffect, useRef, useState } from 'react'
 import { GetServerSideProps } from 'next'
@@ -21,6 +20,7 @@ import { Dropdown } from 'primereact/dropdown'
 import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStudentContribution.dto'
 import { classNames } from 'primereact/utils'
 import { returnFetchStudentHook } from '../../queries/students/getStudent'
+import { toast, Toaster } from 'sonner'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -112,7 +112,6 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
 
-    const toast = useRef<Toast>(null)
     const dt = useRef<DataTable>(null)
     const [
         studentData,
@@ -397,8 +396,14 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const addContribution = async () => {
-        setSubmitted(true)
-        if (addContributionData.contribution) {
+        if (
+            addContributionData.contribution &&
+            addContributionData.studentId &&
+            addContributionData.type &&
+            addContributionData.title
+        ) {
+            setSubmitted(true)
+            setAddContributionDialog(false)
             let _headers = [...headers]
 
             const types = returnArrayOfType(addContributionData.type.type)
@@ -445,36 +450,28 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 _subRows.push(mappedData)
                 _headers[parentIndex].subRows = _subRows
                 setPageLimit(pageLimit + 1)
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Contribution Added',
-                        life: 3000,
-                    })
-                }
+                setHeaders(_headers)
+                setSelectedHeadRowRecord(HeaderRowRecordInterface)
             } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Contribution couldnt be added!',
-                        life: 3000,
-                    })
-                }
                 console.log(error)
+                throw new Error(error.message)
             }
-
-            setHeaders(_headers)
-            setAddContributionDialog(false)
-            setSelectedHeadRowRecord(HeaderRowRecordInterface)
+        } else {
+            throw new Error('Please fill all the fields to proceed!')
         }
+        return 'Contribution Added!'
     }
 
     const saveContribution = async (subRowData, parentId) => {
         let { newData, index: subRowIndex } = subRowData
         const types = returnArrayOfType(newData.type)
-        if (newData.contribution) {
+        if (
+            newData.contribution &&
+            newData.id &&
+            newData.type &&
+            newData.title &&
+            parentId
+        ) {
             let _headers = [...headers]
             let _subrow = { ...newData }
             if (newData.id) {
@@ -501,29 +498,17 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                             },
                         },
                     })
-                    if (toast.current) {
-                        toast.current?.show({
-                            severity: 'success',
-                            summary: 'Successful',
-                            detail: 'Contribution Updated',
-                            life: 3000,
-                        })
-                    }
+                    setHeaders(_headers)
+                    setSelectedHeadRowRecord(HeaderRowRecordInterface)
                 } catch (error) {
-                    if (toast.current) {
-                        toast.current?.show({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: 'Contribution Not Updated',
-                            life: 3000,
-                        })
-                    }
                     console.log(error)
+                    throw new Error(error.message)
                 }
             }
-            setHeaders(_headers)
-            setSelectedHeadRowRecord(HeaderRowRecordInterface)
+        } else {
+            throw new Error('Please fill all the fields to proceed!')
         }
+        return 'Contribution Updated!'
     }
 
     const openAddUpdateUserDialog = () => {
@@ -538,6 +523,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
     }
 
     const deleteContribution = async () => {
+        setDeleteContributionDialog(false)
         let _headers = [...headers]
         try {
             const parentIndex = findIndexById(selectedHeadRowRecord.studentId)
@@ -557,31 +543,21 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 },
             })
             _headers[parentIndex].subRows = _subRows
-            if (toast.current && !contributionDeleteError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Contribution Deleted',
-                    life: 3000,
-                })
+            if (contributionDeleteError) {
+                console.log(contributionDeleteData.message)
+                throw new Error(contributionDeleteData.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Contribution Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(contributionDeleteData.message)
         }
         setSelectedHeadRowRecord(HeaderRowRecordInterface)
-        setDeleteContributionDialog(false)
         setHeaders(_headers)
+        return 'Contribution removed!'
     }
 
     const deleteSelectedContributions = async () => {
+        setDeleteContributionsDialog(false)
         let _headers = [...headers]
         let _subRowsToDelete: { id: string; studentId: string }[] = []
         selectedHeadRecords.forEach((record) => {
@@ -608,28 +584,17 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 },
             })
 
-            if (toast.current && !contributionDeleteError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Contributions Deleted',
-                    life: 3000,
-                })
+            if (contributionDeleteError) {
+                console.log(contributionDeleteError.message)
+                throw new Error(contributionDeleteError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Contributions Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
         setSelectedSubRecords([])
         setHeaders(_headers)
-        setDeleteContributionsDialog(false)
+        return 'Selected contributions removed!'
     }
 
     const exportCSV = () => {
@@ -825,7 +790,17 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={addContribution}
+                onClick={() => {
+                    toast.promise(addContribution, {
+                        loading: 'Contribution is being added...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -841,7 +816,17 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteContribution}
+                onClick={() => {
+                    toast.promise(deleteContribution, {
+                        loading: 'Contribution is being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -857,7 +842,17 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteSelectedContributions}
+                onClick={() => {
+                    toast.promise(deleteSelectedContributions, {
+                        loading: 'Selected contributions are being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -924,7 +919,18 @@ const AcademicContributionsRecords: React.FC<Props> = ({
                     value={rowData.subRows}
                     editMode="row"
                     onRowEditComplete={(subRowData) => {
-                        saveContribution(subRowData, rowData.studentId)
+                        toast.promise(
+                            saveContribution(subRowData, rowData.studentId),
+                            {
+                                loading: 'Contribution is being updated...',
+                                success: (data) => {
+                                    return data
+                                },
+                                error: (error) => {
+                                    return error.message
+                                },
+                            }
+                        )
                     }}
                     selection={selectedHeadRecords}
                     onSelectionChange={(e) => setSelectedSubRecords(e.value)}
@@ -985,7 +991,7 @@ const AcademicContributionsRecords: React.FC<Props> = ({
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toast ref={toast} />
+                    <Toaster richColors />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}
