@@ -4,7 +4,6 @@ import { DataTable } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { FileUpload } from 'primereact/fileupload'
 import { InputText } from 'primereact/inputtext'
-// import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
@@ -27,7 +26,7 @@ import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import FileSaver from 'file-saver'
 import axios from 'axios'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
-import { BigNumber, ethers } from 'ethers'
+import { ethers } from 'ethers'
 import ABI from '../../contracts/SemesterStore.json'
 import { DeployedContracts } from '../../contracts/deployedAddresses'
 import { GET_USER_DATA } from '../../queries/users/getUser'
@@ -508,7 +507,17 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 <Button
                     icon="pi pi-arrow-down"
                     className="p-button-rounded p-button-success mr-2"
-                    onClick={() => downloadSemesterResult(rowData)}
+                    onClick={() => {
+                        toast.promise(downloadSemesterResult(rowData), {
+                            loading: 'Result is being downloaded...',
+                            success: (data) => {
+                                return data
+                            },
+                            error: (error) => {
+                                return error.message
+                            },
+                        })
+                    }}
                 />
                 <Button
                     icon="pi pi-arrow-up"
@@ -690,7 +699,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
             )
         } catch (error) {
             console.error(error)
+            throw new Error(error.message)
         }
+        return 'Result Downloaded!'
     }
 
     const uploadHandler = ({ files }) => {
@@ -727,22 +738,9 @@ const SemesterResult: React.FC<Props> = (userType) => {
             console.log(value.url)
             url = await extractActualDataFromIPFS(value.url, '.csv')
             handleReset()
-            if (toast.current)
-                toast.current.show({
-                    severity: 'info',
-                    summary: 'Success',
-                    detail: 'File Uploaded',
-                    life: 3000,
-                })
         } catch (error) {
-            if (toast.current)
-                toast.current.show({
-                    severity: 'error',
-                    summary: 'error',
-                    detail: 'File Not Uploaded',
-                    life: 3000,
-                })
-            console.error(error)
+            console.log(error)
+            throw new Error(error.message)
         }
         setUploading(false)
         return url
