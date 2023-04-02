@@ -182,7 +182,7 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
     }
 
     const addDegree = async () => {
-        if (degree.hash && degree.rollno && degree.name && degree.rollno) {
+        if (degree.hash && degree.rollno) {
             setSubmitted(true)
             setAddDegreeDialog(false)
             let _degrees = [...degrees]
@@ -782,30 +782,36 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
 
 export const getServerSideProps: GetServerSideProps = requireAuthentication(
     async (ctx) => {
-        const { req } = ctx
-        if (req.headers.cookie) {
-            const tokens = req.headers.cookie.split(';')
-            const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
-            if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
-                await apolloClient
-                    .query({
-                        query: GET_USER_DATA,
-                        variables: { userEmail },
-                    })
-                    .then((result) => {
-                        userData = result.data.GetUserDataByUserEmail
-                    })
-                    .catch((error) => {
-                        console.log(error)
-                    })
+        try {
+            const { req } = ctx
+            if (req.headers.cookie) {
+                const tokens = req.headers.cookie.split(';')
+                const token = tokens.find((token) =>
+                    token.includes('access_token')
+                )
+                let userData = ''
+                if (token) {
+                    const userEmail = jwt.decode(
+                        token.split('=')[1]?.toString()
+                    ).email
+                    await apolloClient
+                        .query({
+                            query: GET_USER_DATA,
+                            variables: { userEmail },
+                        })
+                        .then((result) => {
+                            userData = result.data.GetUserDataByUserEmail
+                        })
+                        .catch((error) => {
+                            console.log(error)
+                        })
+                }
+                return {
+                    props: { userType: userData?.type },
+                }
             }
-            return {
-                props: { userType: userData?.type },
-            }
+        } catch (error) {
+            console.log(error)
         }
     }
 )
