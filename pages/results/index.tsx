@@ -27,7 +27,7 @@ import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import FileSaver from 'file-saver'
 import axios from 'axios'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 import ABI from '../../contracts/SemesterStore.json'
 import { DeployedContracts } from '../../contracts/deployedAddresses'
 import { GET_USER_DATA } from '../../queries/users/getUser'
@@ -84,6 +84,8 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const dt = useRef<DataTable | null>(null)
     const [uploading, setUploading] = useState(false)
     const [contract, setContract] = useState(null)
+    const [provider, setProvider] = useState(null)
+    const [signer, setSigner] = useState(null)
 
     const [
         resultsData,
@@ -156,6 +158,8 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 signer
             )
             setContract(contractInstance)
+            setProvider(provider)
+            setSigner(signer)
         } else {
             console.error('Metamask not found')
         }
@@ -232,53 +236,80 @@ const SemesterResult: React.FC<Props> = (userType) => {
             let _results = [...results]
             let _result = { ...result }
             try {
-                const id = _result.semester + '_' + _result.year
-                _results[id] = _result
-                const url = await handleUpload(id)
-
-                let newResult = await createResultFunction({
-                    variables: {
-                        CreateResultInput: {
-                            year: _result.year.toString(),
-                            type: _result.semester,
-                            url: url,
-                        },
-                    },
-                })
-                await contract.functions.addSemester(
-                    _result.semester,
-                    _result.year,
-                    url,
-                    { from: sessionStorage.getItem('walletAddress') }
+                const balance = BigNumber.from(
+                    await provider.getBalance(signer.getAddress())
                 )
-                newResult = newResult.data['CreateResult']
-                const mappedData: ResultsInterface =
-                    mapSemesterToSemesterRecord(newResult)
-                _results.push(mappedData)
-                setResults(_results)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Result Added!',
-                        life: 3000,
-                    })
+                const minValue = BigNumber.from('100000000000000') // 0.0001 ETH
+                if (balance.gt(minValue)) {
+                    try {
+                        const id = _result.semester + '_' + _result.year
+                        _results[id] = _result
+                        const url = await handleUpload(id)
+
+                        let newResult = await createResultFunction({
+                            variables: {
+                                CreateResultInput: {
+                                    year: _result.year.toString(),
+                                    type: _result.semester,
+                                    url: url,
+                                },
+                            },
+                        })
+                        await contract.functions.addSemester(
+                            _result.semester,
+                            _result.year,
+                            url,
+                            { from: sessionStorage.getItem('walletAddress') }
+                        )
+                        newResult = newResult.data['CreateResult']
+                        const mappedData: ResultsInterface =
+                            mapSemesterToSemesterRecord(newResult)
+                        _results.push(mappedData)
+                        setResults(_results)
+                        if (toast.current)
+                            toast.current.show({
+                                severity: 'success',
+                                summary: 'Successful',
+                                detail: 'Result Added!',
+                                life: 3000,
+                            })
+                    } catch (error) {
+                        if (toast.current) {
+                            toast.current?.show({
+                                severity: 'error',
+                                summary: 'Error',
+                                detail: 'Result Not Added!',
+                                life: 3000,
+                            })
+                        }
+                        console.log(error)
+                    }
+                } else {
+                    if (toast.current) {
+                        toast.current?.show({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Gas fees may not be sufficient, check your wallet!',
+                            life: 3000,
+                        })
+                    }
+                }
             } catch (error) {
+                console.log(error)
                 if (toast.current) {
                     toast.current?.show({
                         severity: 'error',
                         summary: 'Error',
-                        detail: 'Result Not Added!',
+                        detail: 'Wallet not connected!',
                         life: 3000,
                     })
                 }
-                console.log(error)
             }
-
-            startCronJobFunction()
-            setAddResultDialog(false)
-            setResult(ResultsRecordInterface)
         }
+
+        startCronJobFunction()
+        setAddResultDialog(false)
+        setResult(ResultsRecordInterface)
     }
 
     const updateResult = async () => {
