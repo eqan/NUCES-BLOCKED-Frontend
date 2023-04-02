@@ -111,7 +111,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const onThemeChange = (e) => {
         setSelectedTheme(e.value)
         if (e.value.name == 'Dark') {
-            changeTheme('vela-blue', 'dark')
+            changeTheme('arya-blue', 'dark')
             localStorage.setItem('theme', 'Dark')
         } else {
             changeTheme('saga-blue', 'light')
@@ -121,7 +121,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
 
     const switchThemeOnStartup = (theme) => {
         if (theme == 'Dark') {
-            changeTheme('vela-blue', 'dark')
+            changeTheme('arya-blue', 'dark')
         } else {
             changeTheme('saga-blue', 'light')
         }
