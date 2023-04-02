@@ -5,7 +5,6 @@ import { Password } from 'primereact/password'
 import { Divider } from 'primereact/divider'
 import { Dialog } from 'primereact/dialog'
 import { InputText } from 'primereact/inputtext'
-import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
@@ -30,6 +29,7 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import { NFTStorage } from 'nft.storage'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
+import { Toaster, toast } from 'sonner'
 
 interface Props {
     userType: String
@@ -74,7 +74,6 @@ const UserRecords: React.FC<Props> = (userType) => {
     const [userSaveDialog, setSaveUserDialog] = useState(false)
     const [deleteUserDialog, setDeleteUserDialog] = useState(false)
     const [deleteUsersDialog, setDeleteUsersDialog] = useState(false)
-    const [uploading, setUploading] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [user, setUser] = useState(UserRecordInterface)
     const [role, setRole] = useState<any>('')
@@ -88,7 +87,6 @@ const UserRecords: React.FC<Props> = (userType) => {
     const [imgfile, setImgFile] = useState<string>(img)
     const [previewimg, setPreviewImg] = useState(img)
     const elementRef = useRef<string>(null)
-    const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable>(null)
     const imgref = useRef(null)
 
@@ -197,8 +195,6 @@ const UserRecords: React.FC<Props> = (userType) => {
     const handleUpload = async (id) => {
         let url = null
         try {
-            setUploading(true)
-
             const nftstorage = new NFTStorage({
                 token: NFT_STORAGE_TOKEN,
             })
@@ -218,24 +214,10 @@ const UserRecords: React.FC<Props> = (userType) => {
             console.log(value.url)
             url = await extractActualDataFromIPFS(value.url, '.png')
             handleReset()
-            if (toast.current)
-                toast.current.show({
-                    severity: 'info',
-                    summary: 'Success',
-                    detail: 'File Uploaded',
-                    life: 3000,
-                })
         } catch (error) {
-            if (toast.current)
-                toast.current.show({
-                    severity: 'error',
-                    summary: 'error',
-                    detail: 'File Not Uploaded',
-                    life: 3000,
-                })
             console.error(error)
+            throw new Error(error.message)
         }
-        setUploading(false)
         return url
     }
 
@@ -249,8 +231,7 @@ const UserRecords: React.FC<Props> = (userType) => {
     }
 
     const saveUser = async () => {
-        setSubmitted(true)
-
+        let message = ''
         if (
             user.name.trim() &&
             /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) &&
@@ -260,15 +241,14 @@ const UserRecords: React.FC<Props> = (userType) => {
             validatepass(user.password) &&
             imgfile != img
         ) {
+            setSubmitted(true)
+            setSaveUserDialog(false)
+
             const userSubType = setUserSubType()
             let _users = [...users]
             let _user = { ...user }
-            let successMessage = ''
-            let errorMessage = ''
             try {
                 const index = findIndexById(_user.id)
-                successMessage = 'User Added!'
-                errorMessage = 'User With this email already created!'
                 const url = await handleUpload(_user.email)
                 if (index == -1) {
                     _users[user.id] = _user
@@ -288,10 +268,9 @@ const UserRecords: React.FC<Props> = (userType) => {
                     const mappedData: UserInterface =
                         mapUserToUserRecord(newUser)
                     _users.push(mappedData)
+                    message = 'User has been added!'
                 } else {
                     _users[index] = _user
-                    successMessage = 'User Updated!'
-                    errorMessage = 'User Not Updated!'
                     await updateuserFunction({
                         variables: {
                             UpdateUserInput: {
@@ -303,30 +282,17 @@ const UserRecords: React.FC<Props> = (userType) => {
                             },
                         },
                     })
+                    message = 'User has been updated!'
+                    _user.imgUrl = url
                 }
                 setUsers(_users)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: successMessage,
-                        life: 3000,
-                    })
             } catch (error) {
                 console.log(error)
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 3000,
-                    })
-                }
+                throw new Error(error.message)
             }
-
-            setSaveUserDialog(false)
-            setUser(UserRecordInterface)
         }
+        setUser(UserRecordInterface)
+        return message
     }
 
     const editUser = (user) => {
@@ -342,6 +308,7 @@ const UserRecords: React.FC<Props> = (userType) => {
 
     const deleteUser = async () => {
         let _users = users.filter((val) => val.id !== user.id)
+        setDeleteUserDialog(false)
         try {
             await deleteuserFunction({
                 variables: {
@@ -351,28 +318,15 @@ const UserRecords: React.FC<Props> = (userType) => {
                 },
             })
             setUsers(_users)
-            if (toast.current && !userDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'User Deleted',
-                    life: 3000,
-                })
+            if (userDeleteDataError) {
+                throw new Error(userDeleteDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'User Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
-        setUsers(_users)
-        setDeleteUserDialog(false)
         setUser(UserRecordInterface)
+        return 'User has been deleted!'
     }
 
     const findIndexById = (id) => {
@@ -400,7 +354,7 @@ const UserRecords: React.FC<Props> = (userType) => {
         let _toBeDeletedUsers = users
             .filter((val) => selectedUsers.includes(val))
             .map((val) => val.id)
-
+        setDeleteUsersDialog(false)
         try {
             await deleteuserFunction({
                 variables: {
@@ -409,28 +363,15 @@ const UserRecords: React.FC<Props> = (userType) => {
                     },
                 },
             })
-            if (toast.current && !userDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'User Deleted',
-                    life: 3000,
-                })
+            if (userDeleteDataError) {
+                throw new Error(userDeleteDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'User Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
         setSelectedUsers([])
         setUsers(_users)
-        setDeleteUsersDialog(false)
     }
 
     const onInputChange = async (e, name) => {
@@ -612,7 +553,17 @@ const UserRecords: React.FC<Props> = (userType) => {
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={saveUser}
+                onClick={() => {
+                    toast.promise(saveUser, {
+                        loading: 'User is being added/modified...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -628,7 +579,17 @@ const UserRecords: React.FC<Props> = (userType) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteUser}
+                onClick={() => {
+                    toast.promise(deleteUser, {
+                        loading: 'User being removed ....',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -644,7 +605,17 @@ const UserRecords: React.FC<Props> = (userType) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteSelectedUsers}
+                onClick={() => {
+                    toast.promise(deleteSelectedUsers, {
+                        loading: 'Selected users are being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -787,7 +758,7 @@ const UserRecords: React.FC<Props> = (userType) => {
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toast ref={toast} />
+                    <Toaster richColors />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}

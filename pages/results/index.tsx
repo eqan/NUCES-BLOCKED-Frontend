@@ -82,7 +82,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
     const dt = useRef<DataTable | null>(null)
-    const [uploading, setUploading] = useState(false)
     const [contract, setContract] = useState(null)
     const [provider, setProvider] = useState(null)
 
@@ -717,8 +716,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const handleUpload = async (id) => {
         let url = null
         try {
-            setUploading(true)
-
             const nftstorage = new NFTStorage({
                 token: NFT_STORAGE_TOKEN,
             })
@@ -742,7 +739,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
             console.log(error)
             throw new Error(error.message)
         }
-        setUploading(false)
         return url
     }
 
