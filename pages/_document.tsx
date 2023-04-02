@@ -24,7 +24,7 @@ class MyDocument extends Document {
                 <Head>
                     <link
                         id="theme-css"
-                        href={`${contextPath}/themes/arya-blue/theme.css`}
+                        href={`${contextPath}/themes/saga-blue/theme.css`}
                         rel="stylesheet"
                     />
                     <link
