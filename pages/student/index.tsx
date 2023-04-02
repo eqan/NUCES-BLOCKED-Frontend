@@ -6,7 +6,6 @@ import { DataTable } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { FileUpload } from 'primereact/fileupload'
 import { InputText } from 'primereact/inputtext'
-import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { Skeleton } from 'primereact/skeleton'
 import { classNames } from 'primereact/utils'
@@ -20,6 +19,7 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import { GET_USER_DATA } from '../../queries/users/getUser'
+import { toast, Toaster } from 'sonner'
 
 interface Props {
     userType: String
@@ -73,7 +73,6 @@ const StudentRecords: React.FC<Props> = (userType) => {
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
-    const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
 
     const [
@@ -192,15 +191,13 @@ const StudentRecords: React.FC<Props> = (userType) => {
             student.rollno &&
             validateRollNo()
         ) {
+            setStudentDialog(false)
             let _students = [...students]
             let _student = { ...student }
-            let successMessage = ''
-            let errorMessage = ''
+            let message = ''
             try {
                 const index = findIndexById(_student.id)
                 if (index == -1) {
-                    successMessage = 'Student Added!'
-                    errorMessage = 'Student Not Added!'
                     _students[_student.rollno] = _student
                     let newStudent = await createStudentFunction({
                         variables: {
@@ -220,9 +217,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
                         (item) => (item.rollno = mappedData.rollno)
                     )
                     _students.push(mappedData)
+                    message = 'Student Added!'
                 } else {
-                    successMessage = 'Student Updated!'
-                    errorMessage = 'Student Not Updated!'
                     _students[index] = _student
                     await updateStudentFunction({
                         variables: {
@@ -235,29 +231,16 @@ const StudentRecords: React.FC<Props> = (userType) => {
                             },
                         },
                     })
+                    message = 'Student Updated!'
                 }
                 setStudents(_students)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: successMessage,
-                        life: 3000,
-                    })
+                return message
             } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 3000,
-                    })
-                }
                 console.log(error)
+                throw new Error(error.message)
             }
-            setStudentDialog(false)
-            setStudent(StudentRecordInterface)
         }
+        setStudent(StudentRecordInterface)
     }
 
     const editStudent = (student) => {
@@ -272,6 +255,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
 
     const deleteStudent = async () => {
         let _students = students.filter((val) => val.id !== student.id)
+        setDeleteStudentDialog(false)
         try {
             await deleteStudentFunction({
                 variables: {
@@ -281,27 +265,15 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 },
             })
             setStudents(_students)
-            if (toast.current && !studentDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Student Deleted',
-                    life: 3000,
-                })
+            if (studentDeleteDataError) {
+                throw new Error(studentDeleteDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Student Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
-        setDeleteStudentDialog(false)
         setStudent(StudentRecordInterface)
+        return 'Student is removed!'
     }
 
     const findIndexById = (id) => {
@@ -331,7 +303,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
         let _toBeDeletedStudents = students
             .filter((val) => selectedStudents.includes(val))
             .map((val) => val.id)
-
+        setDeleteStudentsDialog(false)
         try {
             await deleteStudentFunction({
                 variables: {
@@ -340,28 +312,16 @@ const StudentRecords: React.FC<Props> = (userType) => {
                     },
                 },
             })
-            if (toast.current && !studentDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Student Deleted',
-                    life: 3000,
-                })
+            if (studentDeleteDataError) {
+                throw new Error(studentCreateDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Student Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
         setStudents(_students)
-        setDeleteStudentsDialog(false)
         setSelectedStudents([])
+        return 'Selected students are removed!'
     }
 
     const validateRollNo = () => {
@@ -412,7 +372,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
 
     const validateYear = () => {
         if (student.batch) {
-            let temp = student.batch
+            let temp = parseInt(student.batch)
             let today = new Date()
             if (!(temp >= 2014 && temp <= today.getFullYear())) {
                 return 0
@@ -593,13 +553,6 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 _students.push(_importedData[i])
             }
             setStudents(_students)
-            if (toast.current)
-                toast.current.show({
-                    severity: 'info',
-                    summary: 'Success',
-                    detail: 'File Uploaded',
-                    life: 3000,
-                })
         }
 
         reader.readAsText(file, 'UTF-8')
@@ -716,7 +669,17 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={saveStudent}
+                onClick={() => {
+                    toast.promise(saveStudent, {
+                        loading: 'Result is being added/modified...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -732,7 +695,17 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteStudent}
+                onClick={() => {
+                    toast.promise(deleteStudent, {
+                        loading: 'Result is being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -748,7 +721,17 @@ const StudentRecords: React.FC<Props> = (userType) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteSelectedStudents}
+                onClick={() => {
+                    toast.promise(deleteSelectedStudents, {
+                        loading: 'Results are being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -785,7 +768,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toast ref={toast} />
+                    <Toaster richColors />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}
