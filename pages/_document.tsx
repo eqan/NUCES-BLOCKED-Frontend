@@ -4,12 +4,16 @@ import Document, { Head, Html, Main, NextScript } from 'next/document'
 
 class MyDocument extends Document {
     static async getInitialProps(ctx: any) {
-        const initialProps = await Document.getInitialProps(ctx).catch(
-            (error) => {
-                console.log(error)
-            }
-        )
-        return { ...initialProps }
+        try {
+            const initialProps = await Document.getInitialProps(ctx).catch(
+                (error) => {
+                    console.log(error)
+                }
+            )
+            return { ...initialProps }
+        } catch (error) {
+            console.log(error)
+        }
     }
 
     render() {
@@ -20,7 +24,7 @@ class MyDocument extends Document {
                 <Head>
                     <link
                         id="theme-css"
-                        href={`${contextPath}/themes/saga-blue/theme.css`}
+                        href={`${contextPath}/themes/arya-blue/theme.css`}
                         rel="stylesheet"
                     />
                     <link

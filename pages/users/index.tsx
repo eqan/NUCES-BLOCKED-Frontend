@@ -751,11 +751,12 @@ const UserRecords: React.FC<Props> = (userType) => {
         }
     }, [userType])
 
+    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
     return (
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toaster richColors />
+                    <Toaster richColors theme={theme} />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}
