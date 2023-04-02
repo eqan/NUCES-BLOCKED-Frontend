@@ -32,6 +32,7 @@ import ABI from '../../contracts/SemesterStore.json'
 import { DeployedContracts } from '../../contracts/deployedAddresses'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
+import { validateTransactionBalance } from '../../utils/checkEligibleTransaction'
 
 interface ResultsInterface {
     id: string
@@ -85,7 +86,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
     const [uploading, setUploading] = useState(false)
     const [contract, setContract] = useState(null)
     const [provider, setProvider] = useState(null)
-    const [signer, setSigner] = useState(null)
 
     const [
         resultsData,
@@ -159,7 +159,6 @@ const SemesterResult: React.FC<Props> = (userType) => {
             )
             setContract(contractInstance)
             setProvider(provider)
-            setSigner(signer)
         } else {
             console.error('Metamask not found')
         }
@@ -237,40 +236,31 @@ const SemesterResult: React.FC<Props> = (userType) => {
             let _results = [...results]
             let _result = { ...result }
             try {
-                const balance = BigNumber.from(
-                    await provider.getBalance(signer.getAddress())
-                )
-                const minValue = BigNumber.from('100000000000000') // 0.0001 ETH
-                if (balance.gt(minValue)) {
-                    try {
-                        const id = _result.semester + '_' + _result.year
-                        _results[id] = _result
-                        const url = await handleUpload(id)
+                if (validateTransactionBalance(provider)) {
+                    const id = _result.semester + '_' + _result.year
+                    _results[id] = _result
+                    const url = await handleUpload(id)
 
-                        let newResult = await createResultFunction({
-                            variables: {
-                                CreateResultInput: {
-                                    year: _result.year.toString(),
-                                    type: _result.semester,
-                                    url: url,
-                                },
+                    let newResult = await createResultFunction({
+                        variables: {
+                            CreateResultInput: {
+                                year: _result.year.toString(),
+                                type: _result.semester,
+                                url: url,
                             },
-                        })
-                        await contract.functions.addSemester(
-                            _result.semester,
-                            _result.year,
-                            url,
-                            { from: sessionStorage.getItem('walletAddress') }
-                        )
-                        newResult = newResult.data['CreateResult']
-                        const mappedData: ResultsInterface =
-                            mapSemesterToSemesterRecord(newResult)
-                        _results.push(mappedData)
-                        setResults(_results)
-                    } catch (error) {
-                        console.log(error)
-                        throw new Error(error.message)
-                    }
+                        },
+                    })
+                    await contract.functions.addSemester(
+                        _result.semester,
+                        _result.year,
+                        url,
+                        { from: sessionStorage.getItem('walletAddress') }
+                    )
+                    newResult = newResult.data['CreateResult']
+                    const mappedData: ResultsInterface =
+                        mapSemesterToSemesterRecord(newResult)
+                    _results.push(mappedData)
+                    setResults(_results)
                 } else {
                     throw new Error(
                         'Gas fees may not be sufficient, check your wallet!'
@@ -280,6 +270,8 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 console.log(error)
                 throw new Error(error.message)
             }
+        } else {
+            throw new Error('Please fill all the fields!')
         }
         startCronJobFunction()
         setResult(ResultsRecordInterface)
@@ -287,52 +279,45 @@ const SemesterResult: React.FC<Props> = (userType) => {
     }
 
     const updateResult = async () => {
-        console.log(result.id)
-        setSubmitted(true)
-
-        if (result.url) {
+        if (result.semester && result.year && file) {
+            setSubmitted(true)
+            setUpdateResultDialog(false)
             stopCronJobFunction()
             let _results = [...results]
             let _result = { ...result }
             try {
-                const index = findIndexById(_result.id)
-                const url = await handleUpload(result.id)
-                _results[index] = _result
-                await updateResultFunction({
-                    variables: {
-                        UpdateResultInput: {
-                            id: result.id,
-                            url: url,
+                if (validateTransactionBalance(provider)) {
+                    const index = findIndexById(_result.id)
+                    const url = await handleUpload(result.id)
+                    _results[index] = _result
+                    await updateResultFunction({
+                        variables: {
+                            UpdateResultInput: {
+                                id: result.id,
+                                url: url,
+                            },
                         },
-                    },
-                })
-                await contract.functions.updateSemester(result.id, url, {
-                    from: sessionStorage.getItem('walletAddress'),
-                })
-                setResults(_results)
-                if (toast.current)
-                    toast.current.show({
-                        severity: 'success',
-                        summary: 'Successful',
-                        detail: 'Result Updated!',
-                        life: 3000,
                     })
-            } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Result Not Updated!',
-                        life: 3000,
+                    await contract.functions.updateSemester(result.id, url, {
+                        from: sessionStorage.getItem('walletAddress'),
                     })
+                    setResults(_results)
+                } else {
+                    throw new Error(
+                        'Gas fees may not be sufficient, check your wallet!'
+                    )
                 }
+            } catch (error) {
                 console.log(error)
+                throw new Error(error.message)
             }
-
-            startCronJobFunction()
-            setUpdateResultDialog(false)
-            setResult(ResultsRecordInterface)
+        } else {
+            throw new Error('Please fill all the fields!')
         }
+
+        startCronJobFunction()
+        setResult(ResultsRecordInterface)
+        return 'Result has been updated!'
     }
 
     const uploadResult = (result) => {
@@ -348,39 +333,34 @@ const SemesterResult: React.FC<Props> = (userType) => {
 
     const deleteResult = async () => {
         let _results = results.filter((val) => val.id !== result.id)
+        setDeleteResultDialog(false)
         try {
-            await deleteResultFunction({
-                variables: {
-                    DeleteResultInput: {
-                        id: [result.id],
+            if (validateTransactionBalance(provider)) {
+                await deleteResultFunction({
+                    variables: {
+                        DeleteResultInput: {
+                            id: [result.id],
+                        },
                     },
-                },
-            })
-            await contract.functions.removeSemester(result.id, {
-                from: sessionStorage.getItem('walletAddress'),
-            })
-            setResults(_results)
-            if (toast.current && !resultDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Semester Result Deleted',
-                    life: 3000,
                 })
+                await contract.functions.removeSemester(result.id, {
+                    from: sessionStorage.getItem('walletAddress'),
+                })
+                setResults(_results)
+                if (resultDeleteDataError) {
+                    throw new Error(resultDeleteDataError.message)
+                }
+            } else {
+                throw new Error(
+                    'Gas fees may not be sufficient, check your wallet!'
+                )
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Semester Result Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
-        setDeleteResultDialog(false)
         setResult(ResultsRecordInterface)
+        return 'Result has been deleted!'
     }
 
     const findIndexById = (id) => {
@@ -408,38 +388,32 @@ const SemesterResult: React.FC<Props> = (userType) => {
         let _toBeDeletedResults = results
             .filter((val) => selectedResults.includes(val))
             .map((val) => val.id)
-
+        setDeleteResultsDialog(false)
         try {
-            await deleteResultFunction({
-                variables: {
-                    DeleteResultInput: {
-                        id: _toBeDeletedResults,
+            if (validateTransactionBalance(provider)) {
+                await deleteResultFunction({
+                    variables: {
+                        DeleteResultInput: {
+                            id: _toBeDeletedResults,
+                        },
                     },
-                },
-            })
-            await contract.functions.removeSemesters(_toBeDeletedResults)
-            if (toast.current && !resultDeleteDataError) {
-                toast.current.show({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Result Deleted',
-                    life: 3000,
                 })
+                await contract.functions.removeSemesters(_toBeDeletedResults)
+                if (resultDeleteDataError) {
+                    throw new Error(resultDeleteDataError.message)
+                }
+            } else {
+                throw new Error(
+                    'Gas fees may not be sufficient, check your wallet!'
+                )
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Result Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
+            throw new Error(error.message)
         }
         setResults(_results)
         setSelectedResults([])
-        setDeleteResultsDialog(false)
+        return 'Results have been deleted!'
     }
 
     const onInputChange = (e, name) => {
@@ -605,7 +579,17 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 label="Save"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={updateResult}
+                onClick={() => {
+                    toast.promise(updateResult, {
+                        loading: 'Result is being updated...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -621,7 +605,17 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteResult}
+                onClick={() => {
+                    toast.promise(deleteResult, {
+                        loading: 'Result is being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
@@ -637,7 +631,17 @@ const SemesterResult: React.FC<Props> = (userType) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={deleteSelectedResults}
+                onClick={() => {
+                    toast.promise(deleteSelectedResults, {
+                        loading: 'Results are being removed...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
             />
         </>
     )
