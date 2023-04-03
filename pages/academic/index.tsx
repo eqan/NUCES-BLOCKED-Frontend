@@ -1004,11 +1004,8 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         )
     }
 
-    const theme = {
-        if(localStorage) {
-            localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
-        },
-    }
+    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">

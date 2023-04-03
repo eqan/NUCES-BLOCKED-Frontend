@@ -6,7 +6,6 @@ import { DataTable } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { FileUpload } from 'primereact/fileupload'
 import { InputText } from 'primereact/inputtext'
-import { Toast } from 'primereact/toast'
 import { Toolbar } from 'primereact/toolbar'
 import { Skeleton } from 'primereact/skeleton'
 import { classNames } from 'primereact/utils'
@@ -75,7 +74,6 @@ const StudentRecords: React.FC<Props> = (props) => {
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
-    const toast = useRef<Toast | null>(null)
     const dt = useRef<DataTable | null>(null)
 
     const [
@@ -808,11 +806,8 @@ const StudentRecords: React.FC<Props> = (props) => {
         )
     }
 
-    const theme = {
-        if(localStorage) {
-            localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
-        },
-    }
+    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">

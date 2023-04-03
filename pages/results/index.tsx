@@ -744,11 +744,8 @@ const SemesterResult: React.FC<Props> = (props) => {
         }
         return url
     }
-    const theme = {
-        if(localStorage) {
-            localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
-        },
-    }
+    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
     return (
         <div className="grid crud-demo">

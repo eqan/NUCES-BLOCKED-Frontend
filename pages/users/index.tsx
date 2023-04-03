@@ -405,10 +405,10 @@ const UserRecords: React.FC<Props> = (props) => {
 
     const validatepass = (password: string) => {
         if (password.length > 8) {
-            let lowerCasecheck = `^(?=.*[a-z])`,
-                upperCasecheck = `^(?=.*[A-Z])`,
-                numericCheck = `^(?=.*[0-9])`,
-                symbolCheck = `(?=.*[@$!%*?&])`
+            let lowerCasecheck = new RegExp('^(?=.*[a-z])'),
+                upperCasecheck = new RegExp('^(?=.*[A-Z])'),
+                numericCheck = new RegExp('^(?=.*[0-9])'),
+                symbolCheck = new RegExp('(?=.*[@$!%*?&])')
             if (lowerCasecheck.test(password) == false) return false
             else if (upperCasecheck.test(password) == false) return false
             else if (numericCheck.test(password) == false) return false
@@ -729,11 +729,8 @@ const UserRecords: React.FC<Props> = (props) => {
             router.push('/auth/login')
         }
     }, [props.userType])
-    const theme = {
-        if(localStorage) {
-            localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
-        },
-    }
+    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
