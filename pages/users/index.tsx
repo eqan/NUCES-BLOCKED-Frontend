@@ -89,6 +89,10 @@ const UserRecords: React.FC<Props> = (props) => {
     const [previewimg, setPreviewImg] = useState(img)
     const dt = useRef<DataTable>(null)
     const imgref = useRef(null)
+    const lowerCasecheck = new RegExp('^(?=.*[a-z])')
+    const upperCasecheck = new RegExp('^(?=.*[A-Z])')
+    const numericCheck = new RegExp('^(?=.*[0-9])')
+    const symbolCheck = new RegExp('^(?=.*[@$!%*?&])')
 
     const [usersData, usersLoading, usersFetchingError, usersRefetchHook] =
         returnFetchUsersHook(globalFilter, page + 1, pageLimit)
@@ -191,7 +195,7 @@ const UserRecords: React.FC<Props> = (props) => {
             const binaryFileWithMetaData = new File([actualfile], id + '.png', {
                 type: 'image/png',
             })
-
+            console.log(binaryFileWithMetaData)
             const metadata = {
                 name: id,
                 description: `User profile image of ${id}`,
@@ -201,7 +205,7 @@ const UserRecords: React.FC<Props> = (props) => {
                 name: metadata.name,
                 description: metadata.description,
             })
-            console.log(value.url)
+            console.log(value)
             url = await extractActualDataFromIPFS(value.url, '.png')
             handleReset()
         } catch (error) {
@@ -281,19 +285,20 @@ const UserRecords: React.FC<Props> = (props) => {
                 throw new Error(error.message)
             }
         } else {
-            throw new Error('Please fill all the fields')
+            throw new Error('Please input all fields')
         }
         setUser(UserRecordInterface)
         return message
     }
 
-    const editUser = (user) => {
+    const editUser = async (user) => {
         setUser({ ...user })
         setRole({ name: user.role })
         handleReset()
         if (user.imgUrl) {
-            setImgFile(user.imgUrl)
             setPreviewImg(user.imgUrl)
+            const resizedimgA = await resizeImageByUrl(user.imgUrl, 150, 150)
+            setImgFile(URL.createObjectURL(resizedimgA))
         }
         setSaveUserDialog(true)
     }
@@ -407,15 +412,17 @@ const UserRecords: React.FC<Props> = (props) => {
 
     const validatepass = (password: string) => {
         if (password.length > 8) {
-            let lowerCasecheck = new RegExp('^(?=.*[a-z])'),
-                upperCasecheck = new RegExp('^(?=.*[A-Z])'),
-                numericCheck = new RegExp('^(?=.*[0-9])'),
-                symbolCheck = new RegExp('(?=.*[@$!%*?&])')
-            if (lowerCasecheck.test(password) == false) return false
-            else if (upperCasecheck.test(password) == false) return false
-            else if (numericCheck.test(password) == false) return false
-            else if (symbolCheck.test(password) == false) return false
-            else return true
+            if (lowerCasecheck.test(password) === false) {
+                return false
+            } else if (upperCasecheck.test(password) === false) {
+                return false
+            } else if (numericCheck.test(password) === false) {
+                return false
+            } else if (symbolCheck.test(password) === false) {
+                return false
+            } else {
+                return true
+            }
         }
     }
 
@@ -606,17 +613,28 @@ const UserRecords: React.FC<Props> = (props) => {
     }
 
     const passwordHeader = <h6>Pick a password</h6>
-    const passwordFooter = (
+    const passwordFooter = !validatepass(user.password) ? (
         <React.Fragment>
             <Divider />
             <p className="mt-2">Suggestions</p>
             <ul className="pl-2 ml-2 mt-0" style={{ lineHeight: '1.5' }}>
-                <li>At least one lowercase</li>
-                <li>At least one uppercase</li>
-                <li>At least one numeric</li>
+                {!lowerCasecheck.test(user.password) ? (
+                    <li>At least one lowercase</li>
+                ) : null}
+                {!upperCasecheck.test(user.password) ? (
+                    <li>At least one uppercase</li>
+                ) : null}
+                {!numericCheck.test(user.password) ? (
+                    <li>At least one numeric</li>
+                ) : null}
+                {!symbolCheck.test(user.password) ? (
+                    <li>At least one symbol</li>
+                ) : null}
                 <li>Minimum 8 characters</li>
             </ul>
         </React.Fragment>
+    ) : (
+        <></>
     )
 
     const roles = [
@@ -653,7 +671,51 @@ const UserRecords: React.FC<Props> = (props) => {
             </>
         )
     }
-    const resizeImage = (
+    const resizeImageByUrl = (
+        url: string,
+        maxWidth: number,
+        maxHeight: number
+    ): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const canvas = document.createElement('canvas')
+            const ctx = canvas.getContext('2d')
+            const img = new Image()
+            img.crossOrigin = 'anonymous'
+            img.src = url
+            img.onload = function () {
+                let width = img.width
+                let height = img.height
+
+                if (width > maxWidth && maxWidth != 0) {
+                    width = maxWidth
+                }
+                if (height > maxHeight && maxHeight != 0) {
+                    height = maxHeight
+                }
+
+                canvas.width = width
+                canvas.height = height
+
+                ctx?.drawImage(img, 0, 0, width, height)
+
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            resolve(blob as Blob)
+                        } else {
+                            reject(new Error('Failed to resize image'))
+                        }
+                    },
+                    'image/jpeg',
+                    1.0
+                )
+            }
+            img.onerror = function () {
+                reject(new Error('Failed to load image'))
+            }
+        })
+    }
+    const resizeImageByFile = (
         file: File,
         maxWidth: number,
         maxHeight: number
@@ -683,11 +745,10 @@ const UserRecords: React.FC<Props> = (props) => {
                     (blob) => {
                         resolve(blob as Blob)
                     },
-                    'image/jpeg',
+                    'image/png',
                     0.9
                 )
             }
-
             img.src = URL.createObjectURL(file)
         })
     }
@@ -696,9 +757,9 @@ const UserRecords: React.FC<Props> = (props) => {
         handleReset()
         const file = files[0]
         setActualfile(file)
-        const resizedimgP = await resizeImage(file, 0, 0)
+        const resizedimgP = await resizeImageByFile(file, 0, 0)
         setPreviewImg(URL.createObjectURL(resizedimgP))
-        const resizedimgA = await resizeImage(file, 150, 150)
+        const resizedimgA = await resizeImageByFile(file, 150, 150)
         setImgFile(URL.createObjectURL(resizedimgA))
         onInputChange(file, 'img')
     }
@@ -731,7 +792,12 @@ const UserRecords: React.FC<Props> = (props) => {
             router.push('/auth/login')
         }
     }, [props.userType])
-    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+
+    const theme =
+        typeof localStorage !== 'undefined' &&
+        localStorage.getItem('theme') === 'Dark'
+            ? 'dark'
+            : 'light'
 
     return (
         <div className="grid crud-demo">

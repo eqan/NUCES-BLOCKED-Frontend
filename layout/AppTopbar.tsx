@@ -35,11 +35,17 @@ interface AppTopbarProps {
     ) => void
     applyScale: () => void
     menu: React.RefObject<Menu>
+    userimg: string | null
 }
 
 const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
-    const { layoutConfig, setLayoutConfig, layoutState, onMenuToggle } =
-        useContext(LayoutContext)
+    const {
+        layoutConfig,
+        setLayoutConfig,
+        layoutState,
+        onMenuToggle,
+        showProfileSidebar,
+    } = useContext(LayoutContext)
     const menubuttonRef = useRef(null)
     const topbarmenuRef = useRef(null)
     const topbarmenubuttonRef = useRef(null)
@@ -178,19 +184,17 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
 
     return (
         <div className="layout-topbar">
-            <div style={{ width: 200 }}>
-                <Link href="/">
-                    <a className="layout-topbar-logo">
-                        <>
-                            <img
-                                src={`${contextPath}/layout/images/logo.png`}
-                                alt="logo"
-                            />
-                            <span>NUCES BLOCKED</span>
-                        </>
-                    </a>
-                </Link>
-            </div>
+            <Link href="/">
+                <a className="layout-topbar-logo">
+                    <>
+                        <img
+                            src={`${contextPath}/layout/images/logo.png`}
+                            alt="logo"
+                        />
+                        <span>NUCES BLOCKED</span>
+                    </>
+                </a>
+            </Link>
 
             <button
                 ref={menubuttonRef}
@@ -200,13 +204,15 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
             >
                 <i className="pi pi-bars" />
             </button>
-            <Dropdown
-                value={selectedTheme}
-                options={themes}
-                onChange={onThemeChange}
-                optionLabel="name"
-                placeholder={selectedTheme}
-            />
+
+            <button
+                ref={topbarmenubuttonRef}
+                type="button"
+                className="p-link layout-topbar-menu-button layout-topbar-button"
+                onClick={showProfileSidebar}
+            >
+                <i className="pi pi-ellipsis-v" />
+            </button>
 
             <div
                 ref={topbarmenuRef}
@@ -215,21 +221,36 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                         layoutState.profileSidebarVisible,
                 })}
             >
+                <div class="border-double m-2 surface-overlay font-bold flex align-items-center justify-content-center">
+                    <span class="pr-6 pl-2" style={{ fontWeight: 'bold' }}>
+                        Theme
+                    </span>
+                    <Dropdown
+                        value={selectedTheme}
+                        options={themes}
+                        onChange={onThemeChange}
+                        optionLabel="name"
+                        placeholder={selectedTheme}
+                    />
+                </div>
                 {props.userType === 'ADMIN' ? (
                     <>
                         {toggleShowMetaMaskButton ? (
                             <Button
-                                className="bg-bluegray-600 hover:bg-bluegray-400 border-bluegray-700"
+                                className="p-link layout-topbar-button"
                                 onClick={connectToMetaMask}
                             >
-                                <img
-                                    alt="logo"
-                                    src={`${contextPath}/metamask.png`}
-                                    className="h-2rem"
-                                />
-                                <span style={{ fontWeight: 'bold' }}>
+                                <span
+                                    class="pr-3"
+                                    style={{ fontWeight: 'bold' }}
+                                >
                                     Connect Wallet
                                 </span>
+                                <Avatar
+                                    image={`${contextPath}/metamask.png`}
+                                    size="large"
+                                    shape="circle"
+                                ></Avatar>
                             </Button>
                         ) : (
                             <div />
@@ -245,12 +266,14 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     className="p-link layout-topbar-button"
                     onClick={toggleMenu}
                 >
+                    <span class="pr-8" style={{ fontWeight: 'bold' }}>
+                        Profile
+                    </span>
                     <Avatar
                         image={`${props.userimg}`}
                         size="large"
                         shape="circle"
                     ></Avatar>
-                    <span>Profile</span>
                 </button>
             </div>
         </div>
