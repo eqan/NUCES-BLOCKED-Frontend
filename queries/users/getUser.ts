@@ -8,6 +8,7 @@ export const GET_USER_DATA = gql`
             name
             password
             type
+            imgUrl
             subType
         }
     }

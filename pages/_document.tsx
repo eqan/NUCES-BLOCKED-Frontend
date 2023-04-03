@@ -1,18 +1,67 @@
 import getConfig from 'next/config'
 import * as React from 'react'
 import Document, { Head, Html, Main, NextScript } from 'next/document'
+import apolloClient from '../apollo-client'
+import jwt from 'jsonwebtoken'
+import { GET_USER_DATA } from '../queries/users/getUser'
+import { DocumentContext, DocumentInitialProps } from 'next/document'
 
-class MyDocument extends Document {
-    static async getInitialProps(ctx: any) {
+interface Props {
+    userType: string | null
+    userEmail: string | null
+    userName: string | null
+    userimg: string | null
+}
+
+class MyDocument extends Document<Props> {
+    static async getInitialProps(
+        ctx: DocumentContext
+    ): Promise<DocumentInitialProps & Props> {
+        let userData = '',
+            userType = null,
+            userName = null,
+            userEmail = null,
+            userimg = null
+        const { req } = ctx
         try {
-            const initialProps = await Document.getInitialProps(ctx).catch(
-                (error) => {
-                    console.log(error)
+            if (req.headers.cookie) {
+                const tokens = req.headers.cookie.split(';')
+                const token = tokens.find((token) =>
+                    token.includes('access_token')
+                )
+                if (token) {
+                    const userEmail = jwt.decode(
+                        token.split('=')[1]?.toString()
+                    ).email
+                    await apolloClient
+                        .query({
+                            query: GET_USER_DATA,
+                            variables: { userEmail },
+                        })
+                        .then((result) => {
+                            userData = result.data.GetUserDataByUserEmail
+                            userType: userData?.type
+                            userName: userData?.name
+                            userEmail: userData?.email
+                            userimg: userData?.imgUrl
+                        })
+                        .catch((error) => {
+                            console.log(error)
+                        })
                 }
-            )
-            return { ...initialProps }
+            }
         } catch (error) {
             console.log(error)
+        }
+        let initialProps = {}
+        try {
+            initialProps = await Document.getInitialProps(ctx)
+        } catch (error) {
+            console.log(error)
+        }
+        return {
+            ...initialProps,
+            props: { userType, userName, userEmail, userimg },
         }
     }
 

@@ -22,7 +22,8 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { toast, Toaster } from 'sonner'
 
 interface Props {
-    userType: String
+    userType: string | null
+    userimg: string | null
 }
 
 interface StudentInterface {
@@ -35,7 +36,7 @@ interface StudentInterface {
     cgpa: string
 }
 
-const StudentRecords: React.FC<Props> = (userType) => {
+const StudentRecords: React.FC<Props> = (props) => {
     let StudentRecordInterface = {
         id: '',
         name: '',
@@ -140,13 +141,15 @@ const StudentRecords: React.FC<Props> = (userType) => {
 
     useEffect(() => {
         if (
-            userType == 'TEACHER' ||
-            userType == 'CAREER_COUNSELLOR' ||
-            userType == 'SOCIETY_HEAD'
+            props.userType == 'TEACHER' ||
+            props.userType == 'CAREER_COUNSELLOR' ||
+            props.userType == 'SOCIETY_HEAD'
         ) {
             router.push('/pages/notfound')
+        } else if (props.userType !== 'ADMIN') {
+            router.push('/auth/login')
         }
-    }, [userType])
+    }, [props.userType])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -274,6 +277,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
             console.log(error)
             throw new Error(error.message)
         }
+        setDeleteStudentDialog(false)
         setStudent(StudentRecordInterface)
         return 'Student is removed!'
     }
@@ -322,6 +326,7 @@ const StudentRecords: React.FC<Props> = (userType) => {
             throw new Error(error.message)
         }
         setStudents(_students)
+        setDeleteStudentsDialog(false)
         setSelectedStudents([])
         return 'Selected students are removed!'
     }
@@ -766,7 +771,8 @@ const StudentRecords: React.FC<Props> = (userType) => {
         )
     }
 
-    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -1089,7 +1095,10 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     })
             }
             return {
-                props: { userType: userData?.type },
+                props: {
+                    userType: userData?.type || null,
+                    userimg: userData?.imgUrl || null,
+                },
             }
         }
     }

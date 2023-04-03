@@ -32,7 +32,8 @@ import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS
 import { Toaster, toast } from 'sonner'
 
 interface Props {
-    userType: String
+    userType: string
+    userimg: string
 }
 
 interface UserInterface {
@@ -45,7 +46,7 @@ interface UserInterface {
     subType: string
 }
 
-const UserRecords: React.FC<Props> = (userType) => {
+const UserRecords: React.FC<Props> = (props) => {
     let UserRecordInterface = {
         id: '',
         name: '',
@@ -145,16 +146,6 @@ const UserRecords: React.FC<Props> = (userType) => {
             fetchData()
         }
     }, [usersData, usersLoading])
-
-    useEffect(() => {
-        if (
-            userType == 'TEACHER' ||
-            userType == 'CAREER_COUNSELLOR' ||
-            userType == 'SOCIETY_HEAD'
-        ) {
-            router.push('/pages/notfound')
-        }
-    }, [userType])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -289,6 +280,8 @@ const UserRecords: React.FC<Props> = (userType) => {
                 console.log(error)
                 throw new Error(error.message)
             }
+        } else {
+            throw new Error('Please fill all the fields')
         }
         setUser(UserRecordInterface)
         return message
@@ -297,6 +290,11 @@ const UserRecords: React.FC<Props> = (userType) => {
     const editUser = (user) => {
         setUser({ ...user })
         setRole({ name: user.role })
+        handleReset()
+        if (user.imgUrl) {
+            setImgFile(user.imgUrl)
+            setPreviewImg(user.imgUrl)
+        }
         setSaveUserDialog(true)
     }
 
@@ -408,34 +406,17 @@ const UserRecords: React.FC<Props> = (userType) => {
     }
 
     const validatepass = (password: string) => {
-        if (password.length > 6) {
-            let lowerCasecheck = false,
-                upperCasecheck = false,
-                numericCheck = false,
-                symbolCheck = false
-            let i = 0
-            for (i = 0; i < password.length; i++) {
-                if (password[i] >= '0' && password[i] <= '9')
-                    numericCheck = true
-                else if (password[i] >= 'a' && password[i] <= 'z')
-                    lowerCasecheck = true
-                else if (password[i] >= 'A' && password[i] <= 'Z')
-                    upperCasecheck = true
-                else symbolCheck = true
-            }
-            if (
-                (numericCheck && lowerCasecheck) ||
-                (numericCheck && upperCasecheck) ||
-                (numericCheck && symbolCheck) ||
-                (lowerCasecheck && upperCasecheck) ||
-                (lowerCasecheck && symbolCheck) ||
-                (upperCasecheck && symbolCheck)
-            ) {
-                return true
-            }
-            return false
+        if (password.length > 8) {
+            let lowerCasecheck = new RegExp('^(?=.*[a-z])'),
+                upperCasecheck = new RegExp('^(?=.*[A-Z])'),
+                numericCheck = new RegExp('^(?=.*[0-9])'),
+                symbolCheck = new RegExp('(?=.*[@$!%*?&])')
+            if (lowerCasecheck.test(password) == false) return false
+            else if (upperCasecheck.test(password) == false) return false
+            else if (numericCheck.test(password) == false) return false
+            else if (symbolCheck.test(password) == false) return false
+            else return true
         }
-        return false
     }
 
     const leftToolbarTemplate = () => {
@@ -512,7 +493,6 @@ const UserRecords: React.FC<Props> = (userType) => {
                     icon="pi pi-pencil"
                     className="p-button-rounded p-button-success mr-2"
                     onClick={() => {
-                        handleReset()
                         editUser(rowData)
                     }}
                 />
@@ -693,7 +673,6 @@ const UserRecords: React.FC<Props> = (userType) => {
                 if (height > maxHeight && maxHeight != 0) {
                     height = maxHeight
                 }
-                console.log(`Resizing image to ${width}x${height}`)
 
                 canvas.width = width
                 canvas.height = height
@@ -743,15 +722,17 @@ const UserRecords: React.FC<Props> = (userType) => {
 
     useEffect(() => {
         if (
-            userType == 'TEACHER' ||
-            userType == 'CAREER_COUNSELLOR' ||
-            userType == 'SOCIETY_HEAD'
+            props.userType == 'TEACHER' ||
+            props.userType == 'CAREER_COUNSELLOR' ||
+            props.userType == 'SOCIETY_HEAD'
         ) {
             router.push('/pages/notfound')
+        } else if (props.userType !== 'ADMIN') {
+            router.push('/auth/login')
         }
-    }, [userType])
+    }, [props.userType])
+    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
 
-    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -1122,7 +1103,10 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                         console.log(error)
                     })
                 return {
-                    props: { userType: userData?.type },
+                    props: {
+                        userType: userData?.type || null,
+                        userimg: userData?.imgUrl || null,
+                    },
                 }
             }
         }

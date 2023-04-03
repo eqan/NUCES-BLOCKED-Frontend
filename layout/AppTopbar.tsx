@@ -35,12 +35,9 @@ interface AppTopbarProps {
     ) => void
     applyScale: () => void
     menu: React.RefObject<Menu>
-    userType: String
-    imgUrl: String
 }
 
 const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
-    //console.log(props.userType)
     const { layoutConfig, setLayoutConfig, layoutState, onMenuToggle } =
         useContext(LayoutContext)
     const menubuttonRef = useRef(null)
@@ -249,7 +246,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     onClick={toggleMenu}
                 >
                     <Avatar
-                        image={`${props.imgUrl}`}
+                        image={`${props.userimg}`}
                         size="large"
                         shape="circle"
                     ></Avatar>

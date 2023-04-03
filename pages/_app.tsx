@@ -8,19 +8,13 @@ import '../styles/layout/layout.scss'
 import '../styles/demo/Demos.scss'
 import { useApollo } from '../apollo-client'
 import { ApolloProvider } from '@apollo/client'
-import { GetServerSideProps } from 'next'
-import { requireAuthentication } from '../layout/context/requireAuthetication'
-import apolloClient from '../apollo-client'
-import jwt from 'jsonwebtoken'
-import { GET_USER_DATA } from '../queries/users/getUser'
 
 interface Props {
     Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode }
     pageProps: any
-    usertype: string
 }
 
-const MyApp: FC<Props> = ({ Component, pageProps, usertype }) => {
+const MyApp: FC<Props> = ({ Component, pageProps }) => {
     const apolloClient = useApollo(pageProps.initialApolloState)
     if (Component.getLayout) {
         return (
@@ -34,7 +28,7 @@ const MyApp: FC<Props> = ({ Component, pageProps, usertype }) => {
         return (
             <ApolloProvider client={apolloClient}>
                 <LayoutProvider>
-                    <Layout Component {...pageProps} usertype={usertype}>
+                    <Layout Component {...pageProps}>
                         <Component {...pageProps} />
                     </Layout>
                 </LayoutProvider>
@@ -44,34 +38,3 @@ const MyApp: FC<Props> = ({ Component, pageProps, usertype }) => {
 }
 
 export default MyApp
-
-export const getServerSideProps: GetServerSideProps = requireAuthentication(
-    async (ctx) => {
-        const { req } = ctx
-        console.log(ctx)
-        if (req.headers.cookie) {
-            const tokens = req.headers.cookie.split(';')
-            const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
-            if (token) {
-                const userEmail = jwt
-                    .decode(tokens[1].split('=')[1].toString())
-                    .email.toString()
-                await apolloClient
-                    .query({
-                        query: GET_USER_DATA,
-                        variables: { userEmail },
-                    })
-                    .then((result) => {
-                        userData = result.data.GetUserDataByUserEmail
-                    })
-                    .catch((error) => {
-                        console.log(error)
-                    })
-            }
-            return {
-                props: { userType: userData?.type },
-            }
-        }
-    }
-)

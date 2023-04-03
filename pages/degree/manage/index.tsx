@@ -21,7 +21,8 @@ import { GET_USER_DATA } from '../../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
 
 interface Props {
-    userType: String
+    userType: string | null
+    userimg: string | null
 }
 
 interface CertificateInterface {
@@ -31,7 +32,7 @@ interface CertificateInterface {
     date: string
     hash: string
 }
-const CertificateRecords: React.FC<Props> = ({ userType }) => {
+const CertificateRecords: React.FC<Props> = (props) => {
     let CertificateRecordInterface = {
         id: '',
         name: '',
@@ -134,14 +135,20 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
     }, [certificatesData, certificatesLoading])
 
     useEffect(() => {
-        if (
-            userType == 'TEACHER' ||
-            userType == 'CAREER_COUNSELLOR' ||
-            userType == 'SOCIETY_HEAD'
-        ) {
-            router.push('/pages/notfound')
+        if (!props) {
+            router.push('/auth/login')
+        } else {
+            if (
+                props.userType == 'TEACHER' ||
+                props.userType == 'CAREER_COUNSELLOR' ||
+                props.userType == 'SOCIETY_HEAD'
+            ) {
+                router.push('/pages/notfound')
+            } else if (props.userType !== 'ADMIN') {
+                router.push('/auth/login')
+            }
         }
-    }, [userType])
+    }, [props])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -569,7 +576,8 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
         )
     }
 
-    const theme = localStorage.getItem('theme') == 'Dark' ? 'dark' : 'light'
+    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -782,36 +790,33 @@ const CertificateRecords: React.FC<Props> = ({ userType }) => {
 
 export const getServerSideProps: GetServerSideProps = requireAuthentication(
     async (ctx) => {
-        try {
-            const { req } = ctx
-            if (req.headers.cookie) {
-                const tokens = req.headers.cookie.split(';')
-                const token = tokens.find((token) =>
-                    token.includes('access_token')
-                )
-                let userData = ''
-                if (token) {
-                    const userEmail = jwt.decode(
-                        token.split('=')[1]?.toString()
-                    ).email
-                    await apolloClient
-                        .query({
-                            query: GET_USER_DATA,
-                            variables: { userEmail },
-                        })
-                        .then((result) => {
-                            userData = result.data.GetUserDataByUserEmail
-                        })
-                        .catch((error) => {
-                            console.log(error)
-                        })
-                }
-                return {
-                    props: { userType: userData?.type },
-                }
+        const { req } = ctx
+        if (req.headers.cookie) {
+            const tokens = req.headers.cookie.split(';')
+            const token = tokens.find((token) => token.includes('access_token'))
+            let userData = ''
+            if (token) {
+                const userEmail = jwt.decode(
+                    token.split('=')[1]?.toString()
+                ).email
+                await apolloClient
+                    .query({
+                        query: GET_USER_DATA,
+                        variables: { userEmail },
+                    })
+                    .then((result) => {
+                        userData = result.data.GetUserDataByUserEmail
+                    })
+                    .catch((error) => {
+                        console.log(error)
+                    })
             }
-        } catch (error) {
-            console.log(error)
+            return {
+                props: {
+                    userType: userData?.type || null,
+                    userimg: userData?.imgUrl || null,
+                },
+            }
         }
     }
 )
