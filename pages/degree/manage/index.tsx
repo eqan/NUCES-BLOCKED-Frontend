@@ -575,8 +575,11 @@ const CertificateRecords: React.FC<Props> = (props) => {
             </>
         )
     }
-
-    const theme = localStorage?.getItem('theme') == 'Dark' ? 'dark' : 'light'
+    const theme =
+        typeof localStorage !== 'undefined' &&
+        localStorage.getItem('theme') === 'Dark'
+            ? 'dark'
+            : 'light'
 
     return (
         <div className="grid crud-demo">
