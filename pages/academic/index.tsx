@@ -412,12 +412,61 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         return index
     }
 
+    const validateRollNo = () => {
+        if (addContributionData.studentId) {
+            let i
+            let stringbe = ''
+            for (i = 0; i < addContributionData.studentId.length; i++) {
+                if (i != 2) {
+                    if (i >= 1) {
+                        if (
+                            !(
+                                addContributionData.studentId[i] >= '0' &&
+                                addContributionData.studentId[i] <= '9'
+                            )
+                        ) {
+                            return 0
+                        }
+                        stringbe += addContributionData.studentId[i]
+                    } else {
+                        if (
+                            !(
+                                addContributionData.studentId[i] >= '1' &&
+                                addContributionData.studentId[i] <= '9'
+                            )
+                        ) {
+                            return 0
+                        }
+                        stringbe += addContributionData.studentId[i]
+                    }
+                } else if (i == 2) {
+                    if (
+                        (addContributionData.studentId[i] >= 'a' &&
+                            addContributionData.studentId[i] <= 'z') ||
+                        (addContributionData.studentId[i] >= 'A' &&
+                            addContributionData.studentId[i] <= 'Z')
+                    ) {
+                        stringbe +=
+                            addContributionData.studentId[i].toUpperCase()
+                    } else {
+                        return 0
+                    }
+                }
+            }
+            if (stringbe.length != 7) {
+                return 0
+            }
+            return 1
+        }
+    }
+
     const addContribution = async () => {
         if (
             addContributionData.contribution &&
             addContributionData.studentId &&
             addContributionData.type &&
-            addContributionData.title
+            addContributionData.title &&
+            validateRollNo()
         ) {
             setSubmitted(true)
             setAddContributionDialog(false)
@@ -746,6 +795,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         let stringbe = ''
         if (name == 'studentId') {
             let i
+            stringbe = ''
             for (i = 0; i < val.length; i++) {
                 if (i != 2) {
                     if (i >= 1) {
@@ -768,6 +818,9 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                     } else {
                         return
                     }
+                }
+                if (stringbe.length > 7) {
+                    return
                 }
             }
             setFetchStudentDataId(stringbe)

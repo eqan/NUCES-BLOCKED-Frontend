@@ -201,8 +201,6 @@ const StudentRecords: React.FC<Props> = (props) => {
             try {
                 const index = findIndexById(_student.id)
                 if (index == -1) {
-                    successMessage = 'Student Added!'
-                    errorMessage = 'Student Not Added!'
                     _students[_student.rollno] = _student
                     let newStudent = await createStudentFunction({
                         variables: {
@@ -224,8 +222,6 @@ const StudentRecords: React.FC<Props> = (props) => {
                     _students.push(mappedData)
                     message = 'Student Added!'
                 } else {
-                    successMessage = 'Student Updated!'
-                    errorMessage = 'Student Not Updated!'
                     _students[index] = _student
                     await updateStudentFunction({
                         variables: {
@@ -244,14 +240,6 @@ const StudentRecords: React.FC<Props> = (props) => {
                 setStudent(StudentRecordInterface)
                 return message
             } catch (error) {
-                if (toast.current) {
-                    toast.current?.show({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 3000,
-                    })
-                }
                 console.log(error)
                 throw new Error(error.message)
             }
@@ -286,14 +274,6 @@ const StudentRecords: React.FC<Props> = (props) => {
                 throw new Error(studentDeleteDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Student Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
             throw new Error(error.message)
         }
@@ -342,14 +322,6 @@ const StudentRecords: React.FC<Props> = (props) => {
                 throw new Error(studentCreateDataError.message)
             }
         } catch (error) {
-            if (toast.current) {
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Student Not Deleted',
-                    life: 3000,
-                })
-            }
             console.log(error)
             throw new Error(error.message)
         }
@@ -588,13 +560,6 @@ const StudentRecords: React.FC<Props> = (props) => {
                 _students.push(_importedData[i])
             }
             setStudents(_students)
-            if (toast.current)
-                toast.current.show({
-                    severity: 'info',
-                    summary: 'Success',
-                    detail: 'File Uploaded',
-                    life: 3000,
-                })
         }
 
         reader.readAsText(file, 'UTF-8')

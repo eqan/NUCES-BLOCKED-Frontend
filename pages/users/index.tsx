@@ -280,6 +280,8 @@ const UserRecords: React.FC<Props> = (props) => {
                 console.log(error)
                 throw new Error(error.message)
             }
+        } else {
+            throw new Error('Please fill all the fields')
         }
         setUser(UserRecordInterface)
         return message
