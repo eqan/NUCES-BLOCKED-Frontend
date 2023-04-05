@@ -221,10 +221,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                         layoutState.profileSidebarVisible,
                 })}
             >
-                <div class="border-double m-2 surface-overlay font-bold flex align-items-center justify-content-center">
-                    <span class="pr-6 pl-2" style={{ fontWeight: 'bold' }}>
-                        Theme
-                    </span>
+                <div className="flex align-items-center justify-content-center">
                     <Dropdown
                         value={selectedTheme}
                         options={themes}
@@ -241,7 +238,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                                 onClick={connectToMetaMask}
                             >
                                 <span
-                                    class="pr-3"
+                                    className="pr-3"
                                     style={{ fontWeight: 'bold' }}
                                 >
                                     Connect Wallet
@@ -253,11 +250,11 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                                 ></Avatar>
                             </Button>
                         ) : (
-                            <div />
+                            <></>
                         )}
                     </>
                 ) : (
-                    <div />
+                    <></>
                 )}
 
                 <Menu ref={menu} model={overlayMenuItems} popup />
@@ -266,7 +263,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     className="p-link layout-topbar-button"
                     onClick={toggleMenu}
                 >
-                    <span class="pr-8" style={{ fontWeight: 'bold' }}>
+                    <span className="pr-8" style={{ fontWeight: 'bold' }}>
                         Profile
                     </span>
                     <Avatar
