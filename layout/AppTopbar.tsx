@@ -12,9 +12,9 @@ import React, {
 import { LayoutContext } from './context/layoutcontext'
 import { Menu } from 'primereact/menu'
 import { Avatar } from 'primereact/avatar'
-import { Dropdown } from 'primereact/dropdown'
 import { Button } from 'primereact/button'
 import { ethers } from 'ethers'
+import { DarkModeSwitch } from 'react-toggle-dark-mode'
 
 interface Theme {
     name: string
@@ -49,15 +49,14 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const menubuttonRef = useRef(null)
     const topbarmenuRef = useRef(null)
     const topbarmenubuttonRef = useRef(null)
+    const [isDarkMode, setIsDarkMode] = useState(false)
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const menu = useRef(null)
-    const [selectedTheme, setSelectedTheme] = useState<string>(null)
     const [toggleShowMetaMaskButton, setToggleShowMetaMaskButton] =
         useState(true)
 
     useEffect(() => {
         const theme = localStorage.getItem('theme')
-        setSelectedTheme(theme)
         if (sessionStorage.getItem('walletAddress')) {
             setToggleShowMetaMaskButton(false)
         }
@@ -92,8 +91,6 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
         }
     }
 
-    const themes: Theme[] = [{ name: 'Dark' }, { name: 'Light' }]
-
     const overlayMenuItems = [
         {
             label: 'Home',
@@ -111,21 +108,23 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
         menu.current.toggle(event)
     }
 
-    const onThemeChange = (e) => {
-        setSelectedTheme(e.value)
-        if (e.value.name == 'Dark') {
-            changeTheme('arya-blue', 'dark')
-            localStorage.setItem('theme', 'Dark')
-        } else {
+    const onThemeChange = (checked: boolean) => {
+        if (isDarkMode) {
             changeTheme('saga-blue', 'light')
-            localStorage.setItem('theme', 'Light')
+            localStorage.setItem('theme', 'light')
+        } else {
+            changeTheme('arya-blue', 'dark')
+            localStorage.setItem('theme', 'dark')
         }
+        setIsDarkMode(checked)
     }
 
     const switchThemeOnStartup = (theme) => {
-        if (theme == 'Dark') {
+        if (theme == 'dark') {
+            setIsDarkMode(true)
             changeTheme('arya-blue', 'dark')
         } else {
+            setIsDarkMode(false)
             changeTheme('saga-blue', 'light')
         }
     }
@@ -221,37 +220,30 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                         layoutState.profileSidebarVisible,
                 })}
             >
-                <div className="flex align-items-center justify-content-center">
-                    <Dropdown
-                        value={selectedTheme}
-                        options={themes}
-                        onChange={onThemeChange}
-                        optionLabel="name"
-                        placeholder={selectedTheme}
-                    />
-                </div>
-                {props.userType === 'ADMIN' ? (
+                <DarkModeSwitch
+                    style={{ marginTop: '0.5rem' }}
+                    checked={isDarkMode}
+                    onChange={onThemeChange}
+                    size={30}
+                />
+                {props.userType === 'ADMIN' && toggleShowMetaMaskButton ? (
                     <>
-                        {toggleShowMetaMaskButton ? (
-                            <Button
-                                className="p-link layout-topbar-button"
-                                onClick={connectToMetaMask}
+                        <Button
+                            className="p-link layout-topbar-button"
+                            onClick={connectToMetaMask}
+                        >
+                            <span
+                                className="pr-3"
+                                style={{ fontWeight: 'bold' }}
                             >
-                                <span
-                                    className="pr-3"
-                                    style={{ fontWeight: 'bold' }}
-                                >
-                                    Connect Wallet
-                                </span>
-                                <Avatar
-                                    image={`${contextPath}/metamask.png`}
-                                    size="large"
-                                    shape="circle"
-                                ></Avatar>
-                            </Button>
-                        ) : (
-                            <></>
-                        )}
+                                Connect Wallet
+                            </span>
+                            <Avatar
+                                image={`${contextPath}/metamask.png`}
+                                size="large"
+                                shape="circle"
+                            ></Avatar>
+                        </Button>
                     </>
                 ) : (
                     <></>
