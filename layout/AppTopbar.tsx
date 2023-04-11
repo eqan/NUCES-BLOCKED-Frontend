@@ -16,10 +16,6 @@ import { Button } from 'primereact/button'
 import { ethers } from 'ethers'
 import { DarkModeSwitch } from 'react-toggle-dark-mode'
 
-interface Theme {
-    name: string
-}
-
 interface AppTopbarProps {
     menubuttonRef: React.RefObject<HTMLButtonElement>
     topbarmenuRef: React.RefObject<HTMLDivElement>
@@ -49,21 +45,40 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const menubuttonRef = useRef(null)
     const topbarmenuRef = useRef(null)
     const topbarmenubuttonRef = useRef(null)
-    const [isDarkMode, setIsDarkMode] = useState(false)
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const menu = useRef(null)
-    const [toggleShowMetaMaskButton, setToggleShowMetaMaskButton] =
-        useState(true)
+    const [isMetaMaskConnected, setIsMetaMaskConnected] = useState(false)
+    const [isDarkMode, setIsDarkMode] = useState(false)
 
     useEffect(() => {
-        const theme = localStorage.getItem('theme')
-        if (sessionStorage.getItem('walletAddress')) {
-            setToggleShowMetaMaskButton(false)
+        async function setInitialStates() {
+            // Check if MetaMask is installed
+            if (window.ethereum) {
+                const accounts = await window.ethereum.request({
+                    method: 'eth_accounts',
+                })
+                const chainId = await window.ethereum.request({
+                    method: 'eth_chainId',
+                })
+
+                if (accounts > 0) {
+                    setIsMetaMaskConnected(true)
+                } else {
+                    setIsMetaMaskConnected(false)
+                }
+            } else {
+                // Show alert if Ethereum provider is not detected
+                setIsMetaMaskConnected(false)
+            }
+            const theme = localStorage.getItem('theme')
+            if (theme) {
+                switchThemeOnStartup(theme)
+            }
         }
-        if (theme) {
-            switchThemeOnStartup(theme)
-        }
+        setInitialStates()
     }, [])
+
+    useEffect(() => {}, [isMetaMaskConnected])
 
     useImperativeHandle(ref, () => ({
         menubutton: menubuttonRef.current,
@@ -82,12 +97,12 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                 const signer = provider.getSigner()
                 const address = await signer.getAddress()
                 sessionStorage.setItem('walletAddress', address)
+                setIsMetaMaskConnected(true)
             } catch (err) {
                 console.error(err)
             }
         } else {
             console.error('Metamask not found')
-            // setProvider(new ethers.providers.getDefaultProvider()) // fallback to a default provider
         }
     }
 
@@ -226,7 +241,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     onChange={onThemeChange}
                     size={30}
                 />
-                {props.userType === 'ADMIN' && toggleShowMetaMaskButton ? (
+                {props.userType === 'ADMIN' && !isMetaMaskConnected ? (
                     <>
                         <Button
                             className="p-link layout-topbar-button"
