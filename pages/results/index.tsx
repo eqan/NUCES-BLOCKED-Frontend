@@ -349,7 +349,8 @@ const SemesterResult: React.FC<Props> = (props) => {
     }
 
     const deleteResult = async () => {
-        if (account) {
+        await connectToMetaMask()
+        if (isMetaMaskConnected) {
             let _results = results.filter((val) => val.id !== result.id)
             setDeleteResultDialog(false)
             try {
@@ -379,6 +380,8 @@ const SemesterResult: React.FC<Props> = (props) => {
             }
             setResult(ResultsRecordInterface)
             return 'Result has been deleted!'
+        } else {
+            throw new Error('Metamask not connected!')
         }
     }
 
@@ -403,36 +406,45 @@ const SemesterResult: React.FC<Props> = (props) => {
     }
 
     const deleteSelectedResults = async () => {
-        let _results = results.filter((val) => !selectedResults.includes(val))
-        let _toBeDeletedResults = results
-            .filter((val) => selectedResults.includes(val))
-            .map((val) => val.id)
-        setDeleteResultsDialog(false)
-        try {
-            if (validateTransactionBalance(provider)) {
-                await deleteResultFunction({
-                    variables: {
-                        DeleteResultInput: {
-                            id: _toBeDeletedResults,
+        await connectToMetaMask()
+        if (isMetaMaskConnected) {
+            let _results = results.filter(
+                (val) => !selectedResults.includes(val)
+            )
+            let _toBeDeletedResults = results
+                .filter((val) => selectedResults.includes(val))
+                .map((val) => val.id)
+            setDeleteResultsDialog(false)
+            try {
+                if (validateTransactionBalance(provider)) {
+                    await deleteResultFunction({
+                        variables: {
+                            DeleteResultInput: {
+                                id: _toBeDeletedResults,
+                            },
                         },
-                    },
-                })
-                await contract.functions.removeSemesters(_toBeDeletedResults)
-                if (resultDeleteDataError) {
-                    throw new Error(resultDeleteDataError.message)
+                    })
+                    await contract.functions.removeSemesters(
+                        _toBeDeletedResults
+                    )
+                    if (resultDeleteDataError) {
+                        throw new Error(resultDeleteDataError.message)
+                    }
+                } else {
+                    throw new Error(
+                        'Gas fees may not be sufficient, check your wallet!'
+                    )
                 }
-            } else {
-                throw new Error(
-                    'Gas fees may not be sufficient, check your wallet!'
-                )
+            } catch (error) {
+                console.log(error)
+                throw new Error(error.message)
             }
-        } catch (error) {
-            console.log(error)
-            throw new Error(error.message)
+            setResults(_results)
+            setSelectedResults([])
+            return 'Results have been deleted!'
+        } else {
+            throw new Error('Metamask not connected!')
         }
-        setResults(_results)
-        setSelectedResults([])
-        return 'Results have been deleted!'
     }
 
     const onInputChange = (e, name) => {
