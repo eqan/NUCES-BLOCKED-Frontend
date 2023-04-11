@@ -1,39 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-export function useMetaMask() {
-    const [account, setAccount] = useState('')
+const useMetaMask = () => {
+    const [account, setAccount] = useState(null)
+    const [isMetaMaskConnected, setIsMetaMaskConnected] = useState(false)
 
-    useEffect(() => {
-        async function connectToMetaMask() {
-            // Check if MetaMask is installed
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    // Request access to MetaMask accounts
-                    const accounts = await window.ethereum.request({
-                        method: 'eth_requestAccounts',
-                    })
-                    // Set the first account as the connected account
-                    setAccount(accounts[0])
-                } catch (error) {
-                    console.log(error)
-                }
-            } else {
-                // MetaMask is not installed
-                console.log('Please install MetaMask')
-            }
-        }
-
-        // Check if MetaMask is already connected
-        if (
-            typeof window.ethereum !== 'undefined' &&
-            window.ethereum.selectedAddress
-        ) {
-            setAccount(window.ethereum.selectedAddress)
-        } else {
-            // Prompt user to connect to MetaMask
-            connectToMetaMask()
+    const connectToMetaMask = useCallback(async () => {
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' })
+            setIsMetaMaskConnected(true)
+        } catch (error) {
+            console.error(error)
         }
     }, [])
 
-    return account
+    useEffect(() => {
+        async function getAccount() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_accounts',
+                    })
+                    if (accounts.length > 0) {
+                        setAccount(accounts[0])
+                        setIsMetaMaskConnected(true)
+                    } else {
+                        setIsMetaMaskConnected(false)
+                    }
+                } catch (error) {
+                    console.error(error)
+                    setIsMetaMaskConnected(false)
+                }
+            } else {
+                setIsMetaMaskConnected(false)
+            }
+        }
+
+        getAccount()
+    }, [])
+
+    return [account, isMetaMaskConnected, connectToMetaMask]
 }
+
+export default useMetaMask

@@ -32,6 +32,7 @@ import { DeployedContracts } from '../../contracts/deployedAddresses'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
 import { validateTransactionBalance } from '../../utils/checkEligibleTransaction'
+import useMetaMask from '../../utils/customHooks/useMetaMask'
 
 interface ResultsInterface {
     id: string
@@ -85,6 +86,7 @@ const SemesterResult: React.FC<Props> = (props) => {
     const dt = useRef<DataTable | null>(null)
     const [contract, setContract] = useState(null)
     const [provider, setProvider] = useState(null)
+    const [account, isMetaMaskConnected, connectToMetaMask] = useMetaMask()
 
     const [
         resultsData,
@@ -230,95 +232,109 @@ const SemesterResult: React.FC<Props> = (props) => {
     }
 
     const addResult = async () => {
-        if (result.semester && result.year && file) {
-            setSubmitted(true)
-            setAddResultDialog(false)
-            stopCronJobFunction()
-            let _results = [...results]
-            let _result = { ...result }
-            try {
-                if (validateTransactionBalance(provider)) {
-                    const id = _result.semester + '_' + _result.year
-                    _results[id] = _result
-                    const url = await handleUpload(id)
+        await connectToMetaMask()
+        if (isMetaMaskConnected) {
+            if (result.semester && result.year && file) {
+                setSubmitted(true)
+                setAddResultDialog(false)
+                stopCronJobFunction()
+                let _results = [...results]
+                let _result = { ...result }
+                try {
+                    if (validateTransactionBalance(provider)) {
+                        const id = _result.semester + '_' + _result.year
+                        _results[id] = _result
+                        const url = await handleUpload(id)
 
-                    let newResult = await createResultFunction({
-                        variables: {
-                            CreateResultInput: {
-                                year: _result.year.toString(),
-                                type: _result.semester,
-                                url: url,
+                        let newResult = await createResultFunction({
+                            variables: {
+                                CreateResultInput: {
+                                    year: _result.year.toString(),
+                                    type: _result.semester,
+                                    url: url,
+                                },
                             },
-                        },
-                    })
-                    await contract.functions.addSemester(
-                        _result.semester,
-                        _result.year,
-                        url,
-                        { from: sessionStorage.getItem('walletAddress') }
-                    )
-                    newResult = newResult.data['CreateResult']
-                    const mappedData: ResultsInterface =
-                        mapSemesterToSemesterRecord(newResult)
-                    _results.push(mappedData)
-                    setResults(_results)
-                } else {
-                    throw new Error(
-                        'Gas fees may not be sufficient, check your wallet!'
-                    )
+                        })
+                        await contract.functions.addSemester(
+                            _result.semester,
+                            _result.year,
+                            url,
+                            { from: sessionStorage.getItem('walletAddress') }
+                        )
+                        newResult = newResult.data['CreateResult']
+                        const mappedData: ResultsInterface =
+                            mapSemesterToSemesterRecord(newResult)
+                        _results.push(mappedData)
+                        setResults(_results)
+                    } else {
+                        throw new Error(
+                            'Gas fees may not be sufficient, check your wallet!'
+                        )
+                    }
+                } catch (error) {
+                    console.log(error)
+                    throw new Error(error.message)
                 }
-            } catch (error) {
-                console.log(error)
-                throw new Error(error.message)
+            } else {
+                throw new Error('Please fill all the fields!')
             }
+            startCronJobFunction()
+            setResult(ResultsRecordInterface)
+            return 'Result has been added!'
         } else {
-            throw new Error('Please fill all the fields!')
+            throw new Error('Metamask not connected!')
         }
-        startCronJobFunction()
-        setResult(ResultsRecordInterface)
-        return 'Result has been added!'
     }
 
     const updateResult = async () => {
-        if (result.semester && result.year && file) {
-            setSubmitted(true)
-            setUpdateResultDialog(false)
-            stopCronJobFunction()
-            let _results = [...results]
-            let _result = { ...result }
-            try {
-                if (validateTransactionBalance(provider)) {
-                    const index = findIndexById(_result.id)
-                    const url = await handleUpload(result.id)
-                    _results[index] = _result
-                    await updateResultFunction({
-                        variables: {
-                            UpdateResultInput: {
-                                id: result.id,
-                                url: url,
+        await connectToMetaMask()
+        if (isMetaMaskConnected) {
+            if (result.semester && result.year && file) {
+                setSubmitted(true)
+                setUpdateResultDialog(false)
+                stopCronJobFunction()
+                let _results = [...results]
+                let _result = { ...result }
+                try {
+                    if (validateTransactionBalance(provider)) {
+                        const index = findIndexById(_result.id)
+                        const url = await handleUpload(result.id)
+                        _results[index] = _result
+                        await updateResultFunction({
+                            variables: {
+                                UpdateResultInput: {
+                                    id: result.id,
+                                    url: url,
+                                },
                             },
-                        },
-                    })
-                    await contract.functions.updateSemester(result.id, url, {
-                        from: sessionStorage.getItem('walletAddress'),
-                    })
-                    setResults(_results)
-                } else {
-                    throw new Error(
-                        'Gas fees may not be sufficient, check your wallet!'
-                    )
+                        })
+                        await contract.functions.updateSemester(
+                            result.id,
+                            url,
+                            {
+                                from: sessionStorage.getItem('walletAddress'),
+                            }
+                        )
+                        setResults(_results)
+                    } else {
+                        throw new Error(
+                            'Gas fees may not be sufficient, check your wallet!'
+                        )
+                    }
+                } catch (error) {
+                    console.log(error)
+                    throw new Error(error.message)
                 }
-            } catch (error) {
-                console.log(error)
-                throw new Error(error.message)
+            } else {
+                throw new Error('Please fill all the fields!')
             }
-        } else {
-            throw new Error('Please fill all the fields!')
-        }
 
-        startCronJobFunction()
-        setResult(ResultsRecordInterface)
-        return 'Result has been updated!'
+            startCronJobFunction()
+            setResult(ResultsRecordInterface)
+            return 'Result has been updated!'
+        } else {
+            throw new Error('Metamask not connected!')
+        }
     }
 
     const uploadResult = (result) => {
@@ -333,35 +349,37 @@ const SemesterResult: React.FC<Props> = (props) => {
     }
 
     const deleteResult = async () => {
-        let _results = results.filter((val) => val.id !== result.id)
-        setDeleteResultDialog(false)
-        try {
-            if (validateTransactionBalance(provider)) {
-                await deleteResultFunction({
-                    variables: {
-                        DeleteResultInput: {
-                            id: [result.id],
+        if (account) {
+            let _results = results.filter((val) => val.id !== result.id)
+            setDeleteResultDialog(false)
+            try {
+                if (validateTransactionBalance(provider)) {
+                    await deleteResultFunction({
+                        variables: {
+                            DeleteResultInput: {
+                                id: [result.id],
+                            },
                         },
-                    },
-                })
-                await contract.functions.removeSemester(result.id, {
-                    from: sessionStorage.getItem('walletAddress'),
-                })
-                setResults(_results)
-                if (resultDeleteDataError) {
-                    throw new Error(resultDeleteDataError.message)
+                    })
+                    await contract.functions.removeSemester(result.id, {
+                        from: sessionStorage.getItem('walletAddress'),
+                    })
+                    setResults(_results)
+                    if (resultDeleteDataError) {
+                        throw new Error(resultDeleteDataError.message)
+                    }
+                } else {
+                    throw new Error(
+                        'Gas fees may not be sufficient, check your wallet!'
+                    )
                 }
-            } else {
-                throw new Error(
-                    'Gas fees may not be sufficient, check your wallet!'
-                )
+            } catch (error) {
+                console.log(error)
+                throw new Error(error.message)
             }
-        } catch (error) {
-            console.log(error)
-            throw new Error(error.message)
+            setResult(ResultsRecordInterface)
+            return 'Result has been deleted!'
         }
-        setResult(ResultsRecordInterface)
-        return 'Result has been deleted!'
     }
 
     const findIndexById = (id) => {
