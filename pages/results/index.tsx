@@ -240,9 +240,9 @@ const SemesterResult: React.FC<Props> = (props) => {
                 stopCronJobFunction()
                 let _results = [...results]
                 let _result = { ...result }
+                const id = _result.semester + '_' + _result.year
                 try {
                     if (validateTransactionBalance(provider)) {
-                        const id = _result.semester + '_' + _result.year
                         _results[id] = _result
                         const url = await handleUpload(id)
 
@@ -273,6 +273,13 @@ const SemesterResult: React.FC<Props> = (props) => {
                     }
                 } catch (error) {
                     console.log(error)
+                    await deleteResultFunction({
+                        variables: {
+                            DeleteResultInput: {
+                                id: [id],
+                            },
+                        },
+                    })
                     throw new Error(error.message)
                 }
             } else {
@@ -323,6 +330,13 @@ const SemesterResult: React.FC<Props> = (props) => {
                     }
                 } catch (error) {
                     console.log(error)
+                    await deleteResultFunction({
+                        variables: {
+                            DeleteResultInput: {
+                                id: [result.id],
+                            },
+                        },
+                    })
                     throw new Error(error.message)
                 }
             } else {
