@@ -30,6 +30,7 @@ import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import { NFTStorage } from 'nft.storage'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 import { Toaster, toast } from 'sonner'
+import { useTheme } from '../../utils/customHooks/useTheme'
 
 interface Props {
     userType: string
@@ -72,6 +73,7 @@ const UserRecords: React.FC<Props> = (props) => {
         type: 'mousedown',
         listener: async () => {},
     })
+    const theme = useTheme()
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const img: string = `${contextPath}/image.png`
     const router = useRouter()
@@ -795,12 +797,6 @@ const UserRecords: React.FC<Props> = (props) => {
         setImgFile(img)
         setPreviewImg(img)
     }
-
-    const theme =
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem('theme') === 'Dark'
-            ? 'dark'
-            : 'light'
 
     return (
         <div className="grid crud-demo">

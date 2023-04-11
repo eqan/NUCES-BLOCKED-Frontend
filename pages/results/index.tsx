@@ -369,15 +369,15 @@ const SemesterResult: React.FC<Props> = (props) => {
             setDeleteResultDialog(false)
             try {
                 if (validateTransactionBalance(provider)) {
+                    await contract.functions.removeSemester(result.id, {
+                        from: sessionStorage.getItem('walletAddress'),
+                    })
                     await deleteResultFunction({
                         variables: {
                             DeleteResultInput: {
                                 id: [result.id],
                             },
                         },
-                    })
-                    await contract.functions.removeSemester(result.id, {
-                        from: sessionStorage.getItem('walletAddress'),
                     })
                     setResults(_results)
                     if (resultDeleteDataError) {
@@ -431,6 +431,9 @@ const SemesterResult: React.FC<Props> = (props) => {
             setDeleteResultsDialog(false)
             try {
                 if (validateTransactionBalance(provider)) {
+                    await contract.functions.removeSemesters(
+                        _toBeDeletedResults
+                    )
                     await deleteResultFunction({
                         variables: {
                             DeleteResultInput: {
@@ -438,9 +441,6 @@ const SemesterResult: React.FC<Props> = (props) => {
                             },
                         },
                     })
-                    await contract.functions.removeSemesters(
-                        _toBeDeletedResults
-                    )
                     if (resultDeleteDataError) {
                         throw new Error(resultDeleteDataError.message)
                     }
