@@ -7,7 +7,7 @@ import { InputText } from 'primereact/inputtext'
 import { Skeleton } from 'primereact/skeleton'
 import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { CREATE_CERTIFICATE } from '../../../queries/degree/addCertificate'
 import { returnFetchCertificatesHook } from '../../../queries/degree/getCertificates'
 import { DELETE_CERTIFICATE } from '../../../queries/degree/removeCertificate'
@@ -19,6 +19,7 @@ import apolloClient from '../../../apollo-client'
 import jwt from 'jsonwebtoken'
 import { GET_USER_DATA } from '../../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
+import { ThemeContext } from '../../../utils/customHooks/themeContextProvider'
 
 interface Props {
     userType: string | null
@@ -53,6 +54,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         }
     }
     const router = useRouter()
+    const { theme } = useContext(ThemeContext)
     const [degrees, setDegrees] = useState<CertificateInterface[]>([])
     const [degreeAddDialog, setAddDegreeDialog] = useState(false)
     const [degreeUpdateDialog, setUpdateDegreeDialog] = useState(false)
@@ -575,12 +577,6 @@ const CertificateRecords: React.FC<Props> = (props) => {
             </>
         )
     }
-    const theme =
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem('theme') === 'Dark'
-            ? 'dark'
-            : 'light'
-
     return (
         <div className="grid crud-demo">
             <div className="col-12">

@@ -15,6 +15,7 @@ import { Avatar } from 'primereact/avatar'
 import { Button } from 'primereact/button'
 import { ethers } from 'ethers'
 import { DarkModeSwitch } from 'react-toggle-dark-mode'
+import { ThemeContext } from '../utils/customHooks/themeContextProvider'
 
 interface AppTopbarProps {
     menubuttonRef: React.RefObject<HTMLButtonElement>
@@ -49,6 +50,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const menu = useRef(null)
     const [isMetaMaskConnected, setIsMetaMaskConnected] = useState(false)
     const [isDarkMode, setIsDarkMode] = useState(false)
+    const { setTheme } = useContext(ThemeContext)
 
     useEffect(() => {
         async function setInitialStates() {
@@ -127,9 +129,11 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
         if (isDarkMode) {
             changeTheme('saga-blue', 'light')
             localStorage.setItem('theme', 'light')
+            setTheme('light') // Update the theme value in the context
         } else {
             changeTheme('arya-blue', 'dark')
             localStorage.setItem('theme', 'dark')
+            setTheme('dark') // Update the theme value in the context
         }
         setIsDarkMode(checked)
     }

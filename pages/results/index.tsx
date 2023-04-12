@@ -7,7 +7,7 @@ import { InputText } from 'primereact/inputtext'
 import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { returnFetchResultsHook } from '../../queries/results/getResult'
 import { useMutation } from '@apollo/client'
 import { DELETE_RESULT } from '../../queries/results/removeResult'
@@ -33,6 +33,7 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
 import { validateTransactionBalance } from '../../utils/checkEligibleTransaction'
 import useMetaMask from '../../utils/customHooks/useMetaMask'
+import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 
 interface ResultsInterface {
     id: string
@@ -65,6 +66,8 @@ const SemesterResult: React.FC<Props> = (props) => {
         }
     }
     const router = useRouter()
+    const { theme } = useContext(ThemeContext)
+
     const [file, setFile] = useState(null)
     const fileUploadRef = useRef(null)
     const [results, setResults] = useState<ResultsInterface[]>([])
@@ -788,18 +791,12 @@ const SemesterResult: React.FC<Props> = (props) => {
         }
         return url
     }
-    const theme =
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem('theme') === 'Dark'
-            ? 'dark'
-            : 'light'
-
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
     return (
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
-                    <Toaster richColors theme={theme} />
+                    <Toaster theme={theme} richColors />
                     <Toolbar
                         className="mb-4"
                         left={leftToolbarTemplate}

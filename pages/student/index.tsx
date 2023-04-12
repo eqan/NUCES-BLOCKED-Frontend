@@ -10,7 +10,7 @@ import { Toolbar } from 'primereact/toolbar'
 import { Skeleton } from 'primereact/skeleton'
 import { classNames } from 'primereact/utils'
 import jwt from 'jsonwebtoken'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { CREATE_STUDENT } from '../../queries/students/addStudent'
 import { returnFetchStudentsHook } from '../../queries/students/getStudents'
 import { DELETE_STUDENT } from '../../queries/students/removeStudent'
@@ -20,6 +20,7 @@ import { requireAuthentication } from '../../layout/context/requireAuthetication
 import apolloClient from '../../apollo-client'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { toast, Toaster } from 'sonner'
+import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 
 interface Props {
     userType: string | null
@@ -60,6 +61,7 @@ const StudentRecords: React.FC<Props> = (props) => {
     }
 
     const router = useRouter()
+    const { theme } = useContext(ThemeContext)
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [studentDialog, setStudentDialog] = useState(false)
     const [deleteStudentDialog, setDeleteStudentDialog] = useState(false)
@@ -770,12 +772,6 @@ const StudentRecords: React.FC<Props> = (props) => {
             </>
         )
     }
-
-    const theme =
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem('theme') === 'Dark'
-            ? 'dark'
-            : 'light'
 
     return (
         <div className="grid crud-demo">

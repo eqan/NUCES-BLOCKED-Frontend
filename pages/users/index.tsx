@@ -9,7 +9,7 @@ import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
 import { FileUpload } from 'primereact/fileupload'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useEventListener } from 'primereact/hooks'
 import { useRouter } from 'next/router'
 import { returnFetchUsersHook } from '../../queries/users/getUsers'
@@ -30,7 +30,7 @@ import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import { NFTStorage } from 'nft.storage'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 import { Toaster, toast } from 'sonner'
-import { useTheme } from '../../utils/customHooks/useTheme'
+import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 
 interface Props {
     userType: string
@@ -73,7 +73,7 @@ const UserRecords: React.FC<Props> = (props) => {
         type: 'mousedown',
         listener: async () => {},
     })
-    const theme = useTheme()
+    const { theme } = useContext(ThemeContext)
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const img: string = `${contextPath}/image.png`
     const router = useRouter()
