@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useCallback, useEffect, useState } from 'react'
 import { LayoutProvider } from '../layout/context/layoutcontext'
 import Layout from '../layout/layout'
 import 'primereact/resources/primereact.css'
@@ -19,10 +19,12 @@ interface Props {
 }
 
 const MyApp: FC<Props> = ({ Component, pageProps }) => {
-    const [theme, setTheme] = useState<ThemeType>(() => {
-        const storedTheme = localStorage.getItem('theme')
-        return storedTheme === 'dark' ? 'dark' : 'light'
-    })
+    const [theme, setTheme] = useState<ThemeType>()
+
+    useEffect(() => {
+        let storedTheme = localStorage.getItem('theme')
+        setTheme(storedTheme === 'dark' ? 'dark' : 'light')
+    }, [])
 
     const apolloClient = useApollo(pageProps.initialApolloState)
     if (Component.getLayout) {
