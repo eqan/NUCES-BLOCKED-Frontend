@@ -9,7 +9,7 @@ import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
 import { FileUpload } from 'primereact/fileupload'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useEventListener } from 'primereact/hooks'
 import { useRouter } from 'next/router'
 import { returnFetchUsersHook } from '../../queries/users/getUsers'
@@ -30,6 +30,7 @@ import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import { NFTStorage } from 'nft.storage'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 import { Toaster, toast } from 'sonner'
+import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 
 interface Props {
     userType: string
@@ -68,6 +69,11 @@ const UserRecords: React.FC<Props> = (props) => {
             subType: user.subType,
         }
     }
+    const [imageLoadListener, imageUnloadListener] = useEventListener({
+        type: 'mousedown',
+        listener: async () => {},
+    })
+    const { theme } = useContext(ThemeContext)
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const img: string = `${contextPath}/image.png`
     const router = useRouter()
@@ -80,6 +86,7 @@ const UserRecords: React.FC<Props> = (props) => {
     const [role, setRole] = useState<any>('')
     const [selectedUsers, setSelectedUsers] = useState<UserInterface[]>([])
     const [submitted, setSubmitted] = useState(false)
+    const [hidePasswordButton, setHidePasswordButton] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
@@ -163,6 +170,26 @@ const UserRecords: React.FC<Props> = (props) => {
         }
     }, [usersRefetchHook, router.events])
 
+    useEffect(() => {
+        imageLoadListener()
+
+        return () => {
+            imageUnloadListener()
+        }
+    }, [imageLoadListener, imageUnloadListener])
+
+    useEffect(() => {
+        if (
+            props.userType == 'TEACHER' ||
+            props.userType == 'CAREER_COUNSELLOR' ||
+            props.userType == 'SOCIETY_HEAD'
+        ) {
+            router.push('/pages/notfound')
+        } else if (props.userType !== 'ADMIN') {
+            router.push('/auth/login')
+        }
+    }, [props.userType])
+
     useEffect(() => {}, [globalFilter])
 
     const openAddUpdateUserDialog = () => {
@@ -176,6 +203,7 @@ const UserRecords: React.FC<Props> = (props) => {
     const hideUserDialog = () => {
         setSubmitted(false)
         setSaveUserDialog(false)
+        setHidePasswordButton(false)
     }
 
     const hideDeleteUserDialog = () => {
@@ -237,7 +265,7 @@ const UserRecords: React.FC<Props> = (props) => {
         ) {
             setSubmitted(true)
             setSaveUserDialog(false)
-
+            setHidePasswordButton(false)
             const userSubType = setUserSubType()
             let _users = [...users]
             let _user = { ...user }
@@ -270,7 +298,7 @@ const UserRecords: React.FC<Props> = (props) => {
                             UpdateUserInput: {
                                 email: _user.email,
                                 name: _user.name,
-                                password: _user.password,
+                                // password: _user.password,
                                 type: _user.role,
                                 imgUrl: url,
                             },
@@ -292,6 +320,7 @@ const UserRecords: React.FC<Props> = (props) => {
     }
 
     const editUser = async (user) => {
+        setHidePasswordButton(true)
         setUser({ ...user })
         setRole({ name: user.role })
         handleReset()
@@ -768,36 +797,6 @@ const UserRecords: React.FC<Props> = (props) => {
         setImgFile(img)
         setPreviewImg(img)
     }
-    const [imageLoadListener, imageUnloadListener] = useEventListener({
-        type: 'mousedown',
-        listener: async () => {},
-    })
-
-    useEffect(() => {
-        imageLoadListener()
-
-        return () => {
-            imageUnloadListener()
-        }
-    }, [imageLoadListener, imageUnloadListener])
-
-    useEffect(() => {
-        if (
-            props.userType == 'TEACHER' ||
-            props.userType == 'CAREER_COUNSELLOR' ||
-            props.userType == 'SOCIETY_HEAD'
-        ) {
-            router.push('/pages/notfound')
-        } else if (props.userType !== 'ADMIN') {
-            router.push('/auth/login')
-        }
-    }, [props.userType])
-
-    const theme =
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem('theme') === 'Dark'
-            ? 'dark'
-            : 'light'
 
     return (
         <div className="grid crud-demo">
@@ -949,43 +948,51 @@ const UserRecords: React.FC<Props> = (props) => {
                                         <i className="pi pi-envelope" />
                                     </span>
                                 </div>
-                                <div className="field">
-                                    <label htmlFor="email">Password</label>
-                                    <Password
-                                        id="password"
-                                        name="password"
-                                        value={user.password}
-                                        onChange={(e) =>
-                                            onInputChange(e, 'password')
-                                        }
-                                        toggleMask
-                                        required
-                                        autoFocus
-                                        className={classNames(
-                                            {
-                                                'p-invalid':
-                                                    submitted && !user.password,
-                                            },
-                                            {
-                                                'p-invalid1': validatepass(
-                                                    user.password
-                                                ),
+                                {hidePasswordButton ? (
+                                    <></>
+                                ) : (
+                                    <div className="field">
+                                        <label htmlFor="password">
+                                            Password
+                                        </label>
+                                        <Password
+                                            id="password"
+                                            name="password"
+                                            value={user.password}
+                                            onChange={(e) =>
+                                                onInputChange(e, 'password')
                                             }
-                                        )}
-                                        header={passwordHeader}
-                                        footer={passwordFooter}
-                                    />
-                                    {(submitted && !user.password && (
-                                        <small className="p-invalid">
-                                            Password is required.
-                                        </small>
-                                    )) ||
-                                        (!validatepass(user.password) && (
-                                            <small className="p-invalid1">
-                                                Password isn't Too Strong.
+                                            toggleMask
+                                            required
+                                            autoFocus
+                                            className={classNames(
+                                                {
+                                                    'p-invalid':
+                                                        submitted &&
+                                                        !user.password,
+                                                },
+                                                {
+                                                    'p-invalid1': validatepass(
+                                                        user.password
+                                                    ),
+                                                }
+                                            )}
+                                            header={passwordHeader}
+                                            footer={passwordFooter}
+                                        />
+                                        {(submitted && !user.password && (
+                                            <small className="p-invalid">
+                                                Password is required.
                                             </small>
-                                        ))}
-                                </div>
+                                        )) ||
+                                            (!validatepass(user.password) && (
+                                                <small className="p-invalid1">
+                                                    Password isn't Too Strong.
+                                                </small>
+                                            ))}
+                                    </div>
+                                )}
+
                                 <div className="field">
                                     <label htmlFor="role">Role</label>
                                     <Dropdown

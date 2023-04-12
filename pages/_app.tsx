@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useCallback, useEffect, useState } from 'react'
 import { LayoutProvider } from '../layout/context/layoutcontext'
 import Layout from '../layout/layout'
 import 'primereact/resources/primereact.css'
@@ -8,6 +8,10 @@ import '../styles/layout/layout.scss'
 import '../styles/demo/Demos.scss'
 import { useApollo } from '../apollo-client'
 import { ApolloProvider } from '@apollo/client'
+import {
+    ThemeContext,
+    ThemeType,
+} from '../utils/customHooks/themeContextProvider'
 
 interface Props {
     Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode }
@@ -15,12 +19,21 @@ interface Props {
 }
 
 const MyApp: FC<Props> = ({ Component, pageProps }) => {
+    const [theme, setTheme] = useState<ThemeType>()
+
+    useEffect(() => {
+        let storedTheme = localStorage.getItem('theme')
+        setTheme(storedTheme === 'dark' ? 'dark' : 'light')
+    }, [])
+
     const apolloClient = useApollo(pageProps.initialApolloState)
     if (Component.getLayout) {
         return (
             <ApolloProvider client={apolloClient}>
                 <LayoutProvider>
-                    {Component.getLayout(<Component {...pageProps} />)}
+                    <ThemeContext.Provider value={{ theme, setTheme }}>
+                        {Component.getLayout(<Component {...pageProps} />)}
+                    </ThemeContext.Provider>
                 </LayoutProvider>
             </ApolloProvider>
         )
@@ -28,9 +41,11 @@ const MyApp: FC<Props> = ({ Component, pageProps }) => {
         return (
             <ApolloProvider client={apolloClient}>
                 <LayoutProvider>
-                    <Layout Component {...pageProps}>
-                        <Component {...pageProps} />
-                    </Layout>
+                    <ThemeContext.Provider value={{ theme, setTheme }}>
+                        <Layout Component {...pageProps}>
+                            <Component {...pageProps} />
+                        </Layout>
+                    </ThemeContext.Provider>
                 </LayoutProvider>
             </ApolloProvider>
         )

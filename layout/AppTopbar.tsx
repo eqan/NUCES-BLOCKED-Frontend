@@ -12,13 +12,10 @@ import React, {
 import { LayoutContext } from './context/layoutcontext'
 import { Menu } from 'primereact/menu'
 import { Avatar } from 'primereact/avatar'
-import { Dropdown } from 'primereact/dropdown'
 import { Button } from 'primereact/button'
 import { ethers } from 'ethers'
-
-interface Theme {
-    name: string
-}
+import { DarkModeSwitch } from 'react-toggle-dark-mode'
+import { ThemeContext } from '../utils/customHooks/themeContextProvider'
 
 interface AppTopbarProps {
     menubuttonRef: React.RefObject<HTMLButtonElement>
@@ -51,20 +48,39 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     const topbarmenubuttonRef = useRef(null)
     const contextPath = getConfig().publicRuntimeConfig.contextPath
     const menu = useRef(null)
-    const [selectedTheme, setSelectedTheme] = useState<string>(null)
-    const [toggleShowMetaMaskButton, setToggleShowMetaMaskButton] =
-        useState(true)
+    const [isMetaMaskConnected, setIsMetaMaskConnected] = useState(false)
+    const [isDarkMode, setIsDarkMode] = useState(false)
+    const { setTheme } = useContext(ThemeContext)
 
     useEffect(() => {
-        const theme = localStorage.getItem('theme')
-        setSelectedTheme(theme)
-        if (sessionStorage.getItem('walletAddress')) {
-            setToggleShowMetaMaskButton(false)
+        async function setInitialStates() {
+            // Check if MetaMask is installed
+            if (window.ethereum) {
+                const accounts = await window.ethereum.request({
+                    method: 'eth_accounts',
+                })
+                const chainId = await window.ethereum.request({
+                    method: 'eth_chainId',
+                })
+
+                if (accounts > 0) {
+                    setIsMetaMaskConnected(true)
+                } else {
+                    setIsMetaMaskConnected(false)
+                }
+            } else {
+                // Show alert if Ethereum provider is not detected
+                setIsMetaMaskConnected(false)
+            }
+            const theme = localStorage.getItem('theme')
+            if (theme) {
+                switchThemeOnStartup(theme)
+            }
         }
-        if (theme) {
-            switchThemeOnStartup(theme)
-        }
+        setInitialStates()
     }, [])
+
+    useEffect(() => {}, [isMetaMaskConnected])
 
     useImperativeHandle(ref, () => ({
         menubutton: menubuttonRef.current,
@@ -83,16 +99,14 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                 const signer = provider.getSigner()
                 const address = await signer.getAddress()
                 sessionStorage.setItem('walletAddress', address)
+                setIsMetaMaskConnected(true)
             } catch (err) {
                 console.error(err)
             }
         } else {
             console.error('Metamask not found')
-            // setProvider(new ethers.providers.getDefaultProvider()) // fallback to a default provider
         }
     }
-
-    const themes: Theme[] = [{ name: 'Dark' }, { name: 'Light' }]
 
     const overlayMenuItems = [
         {
@@ -111,21 +125,25 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
         menu.current.toggle(event)
     }
 
-    const onThemeChange = (e) => {
-        setSelectedTheme(e.value)
-        if (e.value.name == 'Dark') {
-            changeTheme('arya-blue', 'dark')
-            localStorage.setItem('theme', 'Dark')
-        } else {
+    const onThemeChange = (checked: boolean) => {
+        if (isDarkMode) {
             changeTheme('saga-blue', 'light')
-            localStorage.setItem('theme', 'Light')
+            localStorage.setItem('theme', 'light')
+            setTheme('light') // Update the theme value in the context
+        } else {
+            changeTheme('arya-blue', 'dark')
+            localStorage.setItem('theme', 'dark')
+            setTheme('dark') // Update the theme value in the context
         }
+        setIsDarkMode(checked)
     }
 
     const switchThemeOnStartup = (theme) => {
-        if (theme == 'Dark') {
+        if (theme == 'dark') {
+            setIsDarkMode(true)
             changeTheme('arya-blue', 'dark')
         } else {
+            setIsDarkMode(false)
             changeTheme('saga-blue', 'light')
         }
     }
@@ -221,37 +239,30 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                         layoutState.profileSidebarVisible,
                 })}
             >
-                <div className="flex align-items-center justify-content-center">
-                    <Dropdown
-                        value={selectedTheme}
-                        options={themes}
-                        onChange={onThemeChange}
-                        optionLabel="name"
-                        placeholder={selectedTheme}
-                    />
-                </div>
-                {props.userType === 'ADMIN' ? (
+                <DarkModeSwitch
+                    style={{ marginTop: '0.5rem' }}
+                    checked={isDarkMode}
+                    onChange={onThemeChange}
+                    size={30}
+                />
+                {props.userType === 'ADMIN' && !isMetaMaskConnected ? (
                     <>
-                        {toggleShowMetaMaskButton ? (
-                            <Button
-                                className="p-link layout-topbar-button"
-                                onClick={connectToMetaMask}
+                        <Button
+                            className="p-link layout-topbar-button"
+                            onClick={connectToMetaMask}
+                        >
+                            <span
+                                className="pr-3"
+                                style={{ fontWeight: 'bold' }}
                             >
-                                <span
-                                    className="pr-3"
-                                    style={{ fontWeight: 'bold' }}
-                                >
-                                    Connect Wallet
-                                </span>
-                                <Avatar
-                                    image={`${contextPath}/metamask.png`}
-                                    size="large"
-                                    shape="circle"
-                                ></Avatar>
-                            </Button>
-                        ) : (
-                            <></>
-                        )}
+                                Connect Wallet
+                            </span>
+                            <Avatar
+                                image={`${contextPath}/metamask.png`}
+                                size="large"
+                                shape="circle"
+                            ></Avatar>
+                        </Button>
                     </>
                 ) : (
                     <></>

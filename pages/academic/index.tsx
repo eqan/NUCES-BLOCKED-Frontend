@@ -4,7 +4,7 @@ import { DataTable, DataTableExpandedRows } from 'primereact/datatable'
 import { Dialog } from 'primereact/dialog'
 import { InputText } from 'primereact/inputtext'
 import { Toolbar } from 'primereact/toolbar'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
@@ -21,6 +21,7 @@ import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStude
 import { classNames } from 'primereact/utils'
 import { returnFetchStudentHook } from '../../queries/students/getStudent'
 import { toast, Toaster } from 'sonner'
+import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 
 // Header Row: studentid, name, email,
 // SubRow: id, Contribution, contributor, title
@@ -61,8 +62,6 @@ interface Props {
 }
 
 const AcademicContributionsRecords: React.FC<Props> = (props) => {
-    const router = useRouter()
-
     let HeaderRowRecordInterface = {
         studentId: '',
         name: '',
@@ -80,6 +79,8 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         date: '',
     }
 
+    const router = useRouter()
+    const { theme } = useContext(ThemeContext)
     const [contributionEnums, setContributionEnums] = useState([])
     const [contributionEnumsForDialog, setContributionEnumsForDialog] =
         useState([])
@@ -1056,12 +1057,6 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
             </div>
         )
     }
-
-    const theme =
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem('theme') === 'Dark'
-            ? 'dark'
-            : 'light'
 
     return (
         <div className="grid crud-demo">
