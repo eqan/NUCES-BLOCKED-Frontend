@@ -7,7 +7,13 @@ import { InputText } from 'primereact/inputtext'
 import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, {
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+    useCallback,
+} from 'react'
 import { returnFetchResultsHook } from '../../queries/results/getResult'
 import { useMutation } from '@apollo/client'
 import { DELETE_RESULT } from '../../queries/results/removeResult'
@@ -67,9 +73,8 @@ const SemesterResult: React.FC<Props> = (props) => {
     }
     const router = useRouter()
     const { theme } = useContext(ThemeContext)
-
-    const [file, setFile] = useState(null)
     const fileUploadRef = useRef(null)
+    const actualFileUploadRef = useRef(null)
     const [results, setResults] = useState<ResultsInterface[]>([])
     const [resultAddDialog, setAddResultDialog] = useState(false)
     const [resultUpdateDialog, setUpdateResultDialog] = useState(false)
@@ -197,6 +202,7 @@ const SemesterResult: React.FC<Props> = (props) => {
             router.push('/auth/login')
         }
     }, [props.userType])
+
     useEffect(() => {}, [globalFilter])
 
     const openNewAddResultDialog = () => {
@@ -237,7 +243,7 @@ const SemesterResult: React.FC<Props> = (props) => {
     const addResult = async () => {
         await connectToMetaMask()
         if (isMetaMaskConnected) {
-            if (result.semester && result.year && file) {
+            if (result.semester && result.year && fileUploadRef.current) {
                 setSubmitted(true)
                 setAddResultDialog(false)
                 stopCronJobFunction()
@@ -299,7 +305,7 @@ const SemesterResult: React.FC<Props> = (props) => {
     const updateResult = async () => {
         await connectToMetaMask()
         if (isMetaMaskConnected) {
-            if (result.semester && result.year && file) {
+            if (result.semester && result.year) {
                 setSubmitted(true)
                 setUpdateResultDialog(false)
                 stopCronJobFunction()
@@ -753,14 +759,20 @@ const SemesterResult: React.FC<Props> = (props) => {
         return 'Result Downloaded!'
     }
 
-    const uploadHandler = ({ files }) => {
+    const uploadHandler = async ({ files }) => {
         handleReset()
-        const fileToUpload = files[0]
-        setFile(fileToUpload)
+        actualFileUploadRef.current = files[0]
+        console.log(actualFileUploadRef.current)
     }
+
     const handleReset = () => {
-        if (fileUploadRef.current != null) fileUploadRef.current.clear() // call the clear method on file upload ref
-        setFile(null)
+        if (
+            fileUploadRef.current != null &&
+            actualFileUploadRef.current != null
+        ) {
+            fileUploadRef.current.clear()
+            actualFileUploadRef.current = null
+        }
     }
 
     const handleUpload = async (id) => {
@@ -769,9 +781,14 @@ const SemesterResult: React.FC<Props> = (props) => {
             const nftstorage = new NFTStorage({
                 token: NFT_STORAGE_TOKEN,
             })
-            const binaryFileWithMetaData = new File([file], id + '.csv', {
-                type: 'text/csv',
-            })
+            console.log(actualFileUploadRef.current)
+            const binaryFileWithMetaData = new File(
+                [actualFileUploadRef.current],
+                id + '.csv',
+                {
+                    type: 'text/csv',
+                }
+            )
 
             const metadata = {
                 name: id,
@@ -928,7 +945,6 @@ const SemesterResult: React.FC<Props> = (props) => {
 
                         <div className="field">
                             <label htmlFor="file">File</label>
-
                             <FileUpload
                                 ref={fileUploadRef}
                                 chooseOptions={{
@@ -936,9 +952,10 @@ const SemesterResult: React.FC<Props> = (props) => {
                                     icon: 'pi pi-download',
                                 }}
                                 name="file"
+                                maxFileSize={1000000}
                                 accept=".csv,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                 customUpload={true}
-                                uploadHandler={uploadHandler}
+                                onSelect={uploadHandler}
                                 mode="basic"
                                 className="mr-2"
                             />

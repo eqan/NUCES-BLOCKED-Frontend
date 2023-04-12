@@ -792,6 +792,7 @@ const UserRecords: React.FC<Props> = (props) => {
         setImgFile(URL.createObjectURL(resizedimgA))
         onInputChange(file, 'img')
     }
+
     const handleReset = () => {
         if (imgref.current != null) imgref.current.clear() // call the clear method on file upload ref
         setImgFile(img)
