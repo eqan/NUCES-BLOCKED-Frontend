@@ -1125,7 +1125,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                     <Dialog
                         visible={addContributionDialog}
                         style={{ width: '450px' }}
-                        header="User Details"
+                        header="Contribution Details"
                         modal
                         className="p-fluid"
                         footer={addContributionDialogFooter}
