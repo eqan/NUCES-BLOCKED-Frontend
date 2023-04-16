@@ -104,7 +104,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         HeadRowInterface[]
     >([])
     const [submitted, setSubmitted] = useState(false)
-    const [fetchStudentDataId, setFetchStudentDataId] = useState<string>(null)
+    const [fetchStudentDataId, setFetchStudentDataId] = useState<string>('')
     const [fetchStudentData, setFetchStudentData] = useState<string>(null)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
@@ -129,7 +129,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         props ? props.userType : null,
         page + 1,
         pageLimit,
-        globalFilter
+        ''
     )
 
     const [
@@ -180,9 +180,8 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                 updatedAt,
             })
         )[0]
-        console.log(desiredObject)
         return {
-            _id: headers[parentIndex].subRows.length,
+            _id: headers[parentIndex]?.subRows?.length || 0,
             id: desiredObject.id,
             title: desiredObject.title,
             type: contributionType,
@@ -349,7 +348,6 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
             }
         }
     }, [props])
-    console.log(props)
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -1085,13 +1083,14 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                             onRowToggle={(e) => setExpandedRows(e?.data)}
                             totalRecords={totalRecords}
                             loading={isLoading}
+                            globalFilter={globalFilter}
                             responsiveLayout="scroll"
                             emptyMessage="No Contributions found."
                             paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                             currentPageReportTemplate="Showing {first} to {last} of {totalRecords} contributions"
                             className="datatable-responsive"
                             defaultValue={1}
-                            paginator
+                            // paginator
                             rows={pageLimit}
                             first={page * pageLimit}
                             onPage={onPageChange}
