@@ -96,6 +96,7 @@ const UserRecords: React.FC<Props> = (props) => {
     const [previewimg, setPreviewImg] = useState(img)
     const dt = useRef<DataTable>(null)
     const imgref = useRef(null)
+    const [checkChangedFile, setCheckChangedFile] = useState(false)
     const lowerCasecheck = new RegExp('^(?=.*[a-z])')
     const upperCasecheck = new RegExp('^(?=.*[A-Z])')
     const numericCheck = new RegExp('^(?=.*[0-9])')
@@ -271,7 +272,13 @@ const UserRecords: React.FC<Props> = (props) => {
             let _user = { ...user }
             try {
                 const index = findIndexById(_user.id)
-                const url = await handleUpload(_user.email)
+                let url = null
+                if (checkChangedFile) {
+                    url = await handleUpload(_user.email)
+                    setCheckChangedFile(false)
+                } else {
+                    url = _user.imgUrl
+                }
                 if (index == -1) {
                     _users[user.id] = _user
                     let newUser = await createuserFunction({
@@ -296,6 +303,7 @@ const UserRecords: React.FC<Props> = (props) => {
                     await updateuserFunction({
                         variables: {
                             UpdateUserInput: {
+                                id: _user.id,
                                 email: _user.email,
                                 name: _user.name,
                                 // password: _user.password,
@@ -791,6 +799,7 @@ const UserRecords: React.FC<Props> = (props) => {
         const resizedimgA = await resizeImageByFile(file, 150, 150)
         setImgFile(URL.createObjectURL(resizedimgA))
         onInputChange(file, 'img')
+        setCheckChangedFile(true)
     }
 
     const handleReset = () => {

@@ -101,7 +101,7 @@ const LandingPage = () => {
                             </li>
                             <li>
                                 <a
-                                    href="#pricing"
+                                    href="help"
                                     className="flex m-0 md:ml-5 px-0 py-3 text-900 font-medium line-height-3"
                                 >
                                     <span>Help</span>
@@ -165,7 +165,7 @@ const LandingPage = () => {
                             NUCES BLOCKED, A platform to empower students after
                             graduating by highlighting their Student degree with
                             extracurricular activities in an immutable
-                            trustworthy system that com- panies and students can
+                            trustworthy system that companies and students can
                             utilize with minimum effort.
                         </span>
                     </div>
