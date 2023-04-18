@@ -54,6 +54,16 @@
           "internalType": "string",
           "name": "url",
           "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "cgpa",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "batch",
+          "type": "uint256"
         }
       ],
       "name": "addCertificate",
@@ -90,6 +100,16 @@
               "internalType": "string",
               "name": "url",
               "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "cgpa",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "batch",
+              "type": "uint256"
             }
           ],
           "internalType": "struct CertificateStore.Certificate[]",
@@ -137,6 +157,16 @@
           "internalType": "string",
           "name": "",
           "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -191,6 +221,16 @@
               "internalType": "string",
               "name": "url",
               "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "cgpa",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "batch",
+              "type": "uint256"
             }
           ],
           "internalType": "struct CertificateStore.Certificate[]",
@@ -293,6 +333,16 @@
           "internalType": "string",
           "name": "url",
           "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "cgpa",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "batch",
+          "type": "uint256"
         }
       ],
       "name": "updateCertificate",
