@@ -16,6 +16,8 @@ import { UPDATE_STUDENT } from '../../../../queries/students/updateStudent'
 import { Column } from 'primereact/column'
 import { InputText } from 'primereact/inputtext'
 import { Skeleton } from 'primereact/skeleton'
+import { Dropdown } from 'primereact/dropdown'
+import { Tag } from 'primereact/tag'
 
 interface Props {
     userType: string | null
@@ -73,7 +75,12 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
     const dt = useRef<DataTable | null>(null)
-
+    const eligibilityStatusEnums = [
+        'NOT_ELIGIBLE',
+        'ELIGIBLE',
+        'ALREADY_PUBLISHED',
+        'NOT_ALLOWED',
+    ]
     const [
         studentsData,
         studentsLoading,
@@ -90,6 +97,26 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             reset: studentUpdateDataReset,
         },
     ] = useMutation(UPDATE_STUDENT)
+
+    const fetchData = async () => {
+        setIsLoading(true)
+        if (!studentsLoading) {
+            try {
+                let _students = studentsData?.GetAllStudents.items.filter(
+                    (val) => val.id != ''
+                )
+                const studentsRecords =
+                    _students.map(mapStudentToStudentRecord) || []
+                const total = _students?.GetAllStudents?.total
+                setStudents(studentsRecords)
+                setTotalRecords(total)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
 
     useEffect(() => {
         if (
@@ -123,6 +150,45 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     useEffect(() => {}, [globalFilter])
 
+    const findIndexById = (id) => {
+        let index = -1
+        for (let i = 0; i < students.length; i++) {
+            if (students[i].id === id) {
+                index = i
+                break
+            }
+        }
+
+        return index
+    }
+    const handleEligibilityStatusChange = async (e) => {
+        try {
+            let _students = [...students]
+            const _student = e.newRowData
+            console.log(_student)
+            const index = findIndexById(_student.id)
+            _students[index] = _student
+            const data = await updateStudentFunction({
+                variables: {
+                    UpdateStudentInput: {
+                        id: _student.id,
+                        email: _student.email,
+                        name: _student.name,
+                        batch: _student.batch,
+                        cgpa: _student.cgpa,
+                        eligibilityStatus: _student.eligibilityStatus,
+                    },
+                },
+            })
+            console.log(data)
+            setStudents(_students)
+            toast.success('Eligibilty status of student updated!')
+        } catch (error) {
+            toast.error(error.message)
+            console.log(error)
+        }
+    }
+
     const generateDegrees = () => {
         try {
             setTextContent('Collecting Data')
@@ -150,26 +216,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    const fetchData = async () => {
-        setIsLoading(true)
-        if (!studentsLoading) {
-            try {
-                let _students = studentsData?.GetAllStudents.items.filter(
-                    (val) => val.id != ''
-                )
-                const studentsRecords =
-                    _students.map(mapStudentToStudentRecord) || []
-                const total = _students?.GetAllStudents?.total
-                setStudents(studentsRecords)
-                setTotalRecords(total)
-            } catch (error) {
-                console.log(error)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-    }
-
     const onPageChange = (event) => {
         setPage(event.first / event.rows)
         setPageLimit(event.rows)
@@ -193,12 +239,27 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         )
     }
 
+    const getSeverity = (status) => {
+        switch (status) {
+            case 'NOT_ELIGIBLE':
+                return 'warning'
+            case 'ELIGIBLE':
+                return 'success'
+            case 'ALREADY_PUBLISHED':
+                return 'info'
+            case 'NOT_ALLOWED':
+                return 'danger'
+            default:
+                return null
+        }
+    }
+
     const eligibilityStatusBodyTemplate = (rowData) => {
         return (
-            <>
-                <span className="p-column-title">Eligibility Status</span>
-                {rowData.eligibilityStatus}
-            </>
+            <Tag
+                value={rowData.eligibilityStatus}
+                severity={getSeverity(rowData.eligibilityStatus)}
+            ></Tag>
         )
     }
 
@@ -216,6 +277,22 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 <span className="p-column-title">Email</span>
                 {rowData.email}
             </>
+        )
+    }
+
+    const eligibilityEnumEditor = (options) => {
+        return (
+            <Dropdown
+                value={options.value}
+                options={eligibilityStatusEnums}
+                onChange={(e) => {
+                    options.editorCallback(e.value)
+                }}
+                placeholder="Select a Type"
+                itemTemplate={(option) => {
+                    return option
+                }}
+            />
         )
     }
 
@@ -383,7 +460,11 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                 field="eligibilityStatus"
                                 header="Eligibility Status"
                                 body={eligibilityStatusBodyTemplate}
+                                editor={eligibilityEnumEditor}
                                 sortable
+                                onCellEditComplete={(e) =>
+                                    handleEligibilityStatusChange(e)
+                                }
                             ></Column>
                         </DataTable>
                     )}
