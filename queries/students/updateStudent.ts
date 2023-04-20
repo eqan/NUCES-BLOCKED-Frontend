@@ -8,6 +8,7 @@ export const UPDATE_STUDENT = gql`
             name
             cgpa
             batch
+            eligibilityStatus
         }
     }
 `

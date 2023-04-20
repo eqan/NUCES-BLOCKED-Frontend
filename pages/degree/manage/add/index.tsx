@@ -76,9 +76,9 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [totalRecords, setTotalRecords] = useState(1)
     const dt = useRef<DataTable | null>(null)
     const eligibilityStatusEnums = [
-        'NOT_ELIGIBLE',
         'ELIGIBLE',
         'ALREADY_PUBLISHED',
+        'NOT_ELIGIBLE',
         'NOT_ALLOWED',
     ]
     const [
@@ -150,39 +150,28 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     useEffect(() => {}, [globalFilter])
 
-    const findIndexById = (id) => {
-        let index = -1
-        for (let i = 0; i < students.length; i++) {
-            if (students[i].id === id) {
-                index = i
-                break
-            }
-        }
-
-        return index
-    }
-    const handleEligibilityStatusChange = async (e) => {
+    const updateSelectedStudent = async (data, newValue) => {
         try {
             let _students = [...students]
-            const _student = e.newRowData
-            console.log(_student)
-            const index = findIndexById(_student.id)
+            let _student: StudentInterface = data?.rowData
+            _student.eligibilityStatus = newValue
+            const index = data?.rowIndex
             _students[index] = _student
-            const data = await updateStudentFunction({
-                variables: {
-                    UpdateStudentInput: {
-                        id: _student.id,
-                        email: _student.email,
-                        name: _student.name,
-                        batch: _student.batch,
-                        cgpa: _student.cgpa,
-                        eligibilityStatus: _student.eligibilityStatus,
+            if (_student != null) {
+                const data = await updateStudentFunction({
+                    variables: {
+                        UpdateStudentInput: {
+                            id: _student.id,
+                            email: _student.email,
+                            name: _student.name,
+                            batch: _student.batch,
+                            eligibilityStatus: _student.eligibilityStatus,
+                        },
                     },
-                },
-            })
-            console.log(data)
-            setStudents(_students)
-            toast.success('Eligibilty status of student updated!')
+                })
+                setStudents(_students)
+                toast.success('Eligibilty status of student updated!')
+            }
         } catch (error) {
             toast.error(error.message)
             console.log(error)
@@ -286,7 +275,8 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 value={options.value}
                 options={eligibilityStatusEnums}
                 onChange={(e) => {
-                    options.editorCallback(e.value)
+                    updateSelectedStudent(options, e.value),
+                        options.editorCallback(e.value)
                 }}
                 placeholder="Select a Type"
                 itemTemplate={(option) => {
@@ -462,9 +452,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                 body={eligibilityStatusBodyTemplate}
                                 editor={eligibilityEnumEditor}
                                 sortable
-                                onCellEditComplete={(e) =>
-                                    handleEligibilityStatusChange(e)
-                                }
                             ></Column>
                         </DataTable>
                     )}
