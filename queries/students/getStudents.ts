@@ -10,6 +10,7 @@ export const GET_STUDENTS = gql`
                 cgpa
                 batch
                 updatedAt
+                eligibilityStatus
             }
             total
         }
