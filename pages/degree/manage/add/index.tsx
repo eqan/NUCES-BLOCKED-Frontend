@@ -191,12 +191,25 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const locallyUpdateThePaginatedResults = () => {
+        // Locally Updated the eligibility for the paginated results
+        const currentYear = new Date().getFullYear()
+        for (const student of students) {
+            const batchYear = parseInt(student.batch)
+            if (batchYear + 4 <= currentYear) {
+                student.eligibilityStatus = 'ELIGIBLE'
+            }
+        }
+        setStudents(students)
+    }
+
     const updateEligibilityStatuses = async () => {
         try {
             setTextContent('Updating Students Eligibility Criteria')
             setIsIntermidate(true)
             await updateEligibilityStatusesForAllStudents()
-            toast.success('Eligibility Criteras Updated Successfully')
+            locallyUpdateThePaginatedResults()
+            toast.success('Eligibility Criteras Updated Successfully!')
             setIsIntermidate(false)
             setTextContent('')
         } catch (error) {
