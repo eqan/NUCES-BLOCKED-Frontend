@@ -40,6 +40,7 @@ import { Toaster, toast } from 'sonner'
 import { validateTransactionBalance } from '../../utils/checkEligibleTransaction'
 import useMetaMask from '../../utils/customHooks/useMetaMask'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
+import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
 
 interface ResultsInterface {
     id: string
@@ -775,39 +776,15 @@ const SemesterResult: React.FC<Props> = (props) => {
         }
     }
 
-    const handleUpload = async (id) => {
-        let url = null
-        try {
-            const nftstorage = new NFTStorage({
-                token: NFT_STORAGE_TOKEN,
-            })
-            console.log(actualFileUploadRef.current)
-            const binaryFileWithMetaData = new File(
-                [actualFileUploadRef.current],
-                id + '.csv',
-                {
-                    type: 'text/csv',
-                }
-            )
-
-            const metadata = {
-                name: id,
-                description: `Semester result of the ${id}`,
-            }
-            const value = await nftstorage.store({
-                image: binaryFileWithMetaData,
-                name: metadata.name,
-                description: metadata.description,
-            })
-            console.log(value.url)
-            url = await extractActualDataFromIPFS(value.url, '.csv')
-            handleReset()
-        } catch (error) {
-            console.log(error)
-            throw new Error(error.message)
-        }
-        return url
+    const handleUpload = async (id: string) => {
+        return await fileUploaderToNFTStorage(
+            actualFileUploadRef.current,
+            id,
+            '.csv',
+            'text/csv'
+        )
     }
+
     const semesters = [{ name: 'FALL' }, { name: 'SPRING' }, { name: 'SUMMER' }]
     return (
         <div className="grid crud-demo">
