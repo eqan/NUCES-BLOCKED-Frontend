@@ -31,6 +31,7 @@ import { NFTStorage } from 'nft.storage'
 import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 import { Toaster, toast } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
+import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
 
 interface Props {
     userType: string
@@ -215,32 +216,14 @@ const UserRecords: React.FC<Props> = (props) => {
         setDeleteUsersDialog(false)
     }
 
-    const handleUpload = async (id) => {
-        let url = null
-        try {
-            const nftstorage = new NFTStorage({
-                token: NFT_STORAGE_TOKEN,
-            })
-            const binaryFileWithMetaData = new File([actualfile], id + '.png', {
-                type: 'image/png',
-            })
-            console.log(binaryFileWithMetaData)
-            const metadata = {
-                name: id,
-                description: `User profile image of ${id}`,
-            }
-            const value = await nftstorage.store({
-                image: binaryFileWithMetaData,
-                name: metadata.name,
-                description: metadata.description,
-            })
-            console.log(value)
-            url = await extractActualDataFromIPFS(value.url, '.png')
-            handleReset()
-        } catch (error) {
-            console.error(error)
-            throw new Error(error.message)
-        }
+    const handleUpload = async (id: string) => {
+        const url = await fileUploaderToNFTStorage(
+            actualfile,
+            id,
+            '.png',
+            'image/png'
+        )
+        handleReset()
         return url
     }
 
