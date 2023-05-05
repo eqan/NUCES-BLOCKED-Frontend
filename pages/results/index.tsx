@@ -781,7 +781,8 @@ const SemesterResult: React.FC<Props> = (props) => {
             actualFileUploadRef.current,
             id,
             '.csv',
-            'text/csv'
+            'text/csv',
+            `Semester result of the ${id}`
         )
     }
 
