@@ -221,7 +221,8 @@ const UserRecords: React.FC<Props> = (props) => {
             actualfile,
             id,
             '.png',
-            'image/png'
+            'image/png',
+            `User image of id ${id}`
         )
         handleReset()
         return url

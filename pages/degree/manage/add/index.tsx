@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useContext } from 'react'
 import { ProgressBar, ProgressBarModeType } from 'primereact/progressbar'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
@@ -18,6 +18,7 @@ import { InputText } from 'primereact/inputtext'
 import { Skeleton } from 'primereact/skeleton'
 import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
+import { ThemeContext } from '../../../../utils/customHooks/themeContextProvider'
 
 interface Props {
     userType: string | null
@@ -58,6 +59,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     }
 
     const router = useRouter()
+    const { theme } = useContext(ThemeContext)
     const [value, setValue] = useState<number>(0)
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [textContent, setTextContent] = useState<string>('')
@@ -223,6 +225,15 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         setPageLimit(event.rows)
     }
 
+    const rowIndexTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title"></span>
+                {rowData.id}
+            </>
+        )
+    }
+
     const rollnoBodyTemplate = (rowData) => {
         return (
             <>
@@ -367,107 +378,109 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         <>
             <div className="grid crud-demo">
                 <div className="col-12">
-                    <Toaster richColors={true} />
                     <div className="card">
-                        <h5>{textContent}</h5>
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                            }}
-                        >
-                            <ProgressBar
-                                style={{
-                                    height: 30,
-                                    width: '70%',
-                                    marginRight: '10px',
-                                }}
-                                mode={mode}
-                                value={value}
-                            />
+                        <Toaster richColors theme={theme} />
+                        <div className="card">
+                            <h5>{textContent}</h5>
                             <div
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: 'space-between',
                                 }}
                             >
-                                <Button
-                                    label="Auto Update Eligibility"
-                                    style={{ marginRight: '10px' }}
-                                    className="p-button-warning"
-                                    onClick={updateEligibilityStatuses}
+                                <ProgressBar
+                                    style={{
+                                        height: 30,
+                                        width: '70%',
+                                        marginRight: '10px',
+                                    }}
+                                    mode={mode}
+                                    value={value}
                                 />
-                                <Button
-                                    label="Generate & Deploy Certificates"
-                                    className="p-button-success"
-                                    onClick={generateDegrees}
-                                />
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <Button
+                                        label="Auto Update Eligibility"
+                                        style={{ marginRight: '10px' }}
+                                        className="p-button-warning"
+                                        onClick={updateEligibilityStatuses}
+                                    />
+                                    <Button
+                                        label="Generate & Deploy Certificates"
+                                        className="p-button-success"
+                                        onClick={generateDegrees}
+                                    />
+                                </div>
                             </div>
                         </div>
+                        {isLoading ? (
+                            <>
+                                {[1, 2, 3, 4, 5].map((v) => (
+                                    <SkeletonTable />
+                                ))}
+                            </>
+                        ) : (
+                            <DataTable
+                                ref={dt}
+                                value={students}
+                                dataKey="id"
+                                defaultValue={1}
+                                paginator
+                                rows={pageLimit}
+                                first={page * pageLimit}
+                                onPage={onPageChange}
+                                rowsPerPageOptions={[5, 10, 25]}
+                                className="datatable-responsive"
+                                paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                                currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
+                                emptyMessage="No students found."
+                                header={header}
+                                responsiveLayout="scroll"
+                                totalRecords={totalRecords}
+                                loading={isLoading}
+                            >
+                                <Column
+                                    field="rollno"
+                                    header="Roll No."
+                                    sortable
+                                    body={rollnoBodyTemplate}
+                                    headerStyle={{ minWidth: '10rem' }}
+                                ></Column>
+                                <Column
+                                    field="name"
+                                    header="Full Name"
+                                    sortable
+                                    body={nameBodyTemplate}
+                                    headerStyle={{ minWidth: '15rem' }}
+                                ></Column>
+                                <Column
+                                    field="email"
+                                    header="Email"
+                                    body={emailBodyTemplate}
+                                    sortable
+                                    headerStyle={{ minWidth: '15rem' }}
+                                ></Column>
+                                <Column
+                                    field="batch"
+                                    header="Batch"
+                                    body={batchBodyTemplate}
+                                    sortable
+                                ></Column>
+                                <Column
+                                    field="eligibilityStatus"
+                                    header="Eligibility Status"
+                                    body={eligibilityStatusBodyTemplate}
+                                    editor={eligibilityEnumEditor}
+                                    sortable
+                                ></Column>
+                            </DataTable>
+                        )}
                     </div>
-                    {isLoading ? (
-                        <>
-                            {[1, 2, 3, 4, 5].map((v) => (
-                                <SkeletonTable />
-                            ))}
-                        </>
-                    ) : (
-                        <DataTable
-                            ref={dt}
-                            value={students}
-                            dataKey="id"
-                            defaultValue={1}
-                            paginator
-                            rows={pageLimit}
-                            first={page * pageLimit}
-                            onPage={onPageChange}
-                            rowsPerPageOptions={[5, 10, 25]}
-                            className="datatable-responsive"
-                            paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
-                            emptyMessage="No students found."
-                            header={header}
-                            responsiveLayout="scroll"
-                            totalRecords={totalRecords}
-                            loading={isLoading}
-                        >
-                            <Column
-                                field="rollno"
-                                header="Roll No."
-                                sortable
-                                body={rollnoBodyTemplate}
-                                headerStyle={{ minWidth: '10rem' }}
-                            ></Column>
-                            <Column
-                                field="name"
-                                header="Full Name"
-                                sortable
-                                body={nameBodyTemplate}
-                                headerStyle={{ minWidth: '15rem' }}
-                            ></Column>
-                            <Column
-                                field="email"
-                                header="Email"
-                                body={emailBodyTemplate}
-                                sortable
-                                headerStyle={{ minWidth: '15rem' }}
-                            ></Column>
-                            <Column
-                                field="batch"
-                                header="Batch"
-                                body={batchBodyTemplate}
-                                sortable
-                            ></Column>
-                            <Column
-                                field="eligibilityStatus"
-                                header="Eligibility Status"
-                                body={eligibilityStatusBodyTemplate}
-                                editor={eligibilityEnumEditor}
-                                sortable
-                            ></Column>
-                        </DataTable>
-                    )}
                 </div>
             </div>
         </>

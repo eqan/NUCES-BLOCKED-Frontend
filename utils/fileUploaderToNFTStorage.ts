@@ -6,7 +6,8 @@ export default async function fileUploaderToNFTStorage(
     file: any,
     id: string,
     format: string,
-    type: string
+    type: string,
+    message: string
 ) {
     let url = null
     try {
@@ -20,7 +21,7 @@ export default async function fileUploaderToNFTStorage(
 
         const metadata = {
             name: id,
-            description: `Semester result of the ${id}`,
+            description: message,
         }
         const value = await nftstorage.store({
             image: binaryFileWithMetaData,
@@ -29,6 +30,7 @@ export default async function fileUploaderToNFTStorage(
         })
         console.log(value.url)
         url = await extractActualDataFromIPFS(value.url, format)
+        console.log(url)
     } catch (error) {
         console.log(error)
         throw new Error(error?.message)
