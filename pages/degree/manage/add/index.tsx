@@ -225,15 +225,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         setPageLimit(event.rows)
     }
 
-    const rowIndexTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title"></span>
-                {rowData.id}
-            </>
-        )
-    }
-
     const rollnoBodyTemplate = (rowData) => {
         return (
             <>
