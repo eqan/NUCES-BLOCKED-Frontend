@@ -4,13 +4,7 @@ import { Header } from './components/Header'
 import { StudentHighPriorityInformation } from './components/StudentTopPriorityInformation'
 import { Contributions } from './components/StudentContributionsSections'
 import { Footer } from './components/Footer'
-import {
-    Contribution,
-    Student,
-    StudentHeading,
-    StudentMetaDataDetails,
-    StudentTopSectionInformation,
-} from '../interfaces/interfaces'
+import { Student } from '../interfaces/interfaces'
 
 type HeaderProps = {
     student: Student
@@ -37,10 +31,12 @@ export const CV = ({ student }: HeaderProps) => (
                 heading={student.heading}
                 metaDataDetails={student.metaDataDetails}
             />
-            <StudentHighPriorityInformation
-                topSectionInformation={student.topPriorityInformation}
-            />
-            {student.contributions.map((contribution, index) => (
+            <View style={{ position: 'absolute', top: 0, left: 0 }}>
+                <StudentHighPriorityInformation
+                    topSectionInformation={student.topPriorityInformation}
+                />
+            </View>
+            {student?.contributions?.map((contribution, index) => (
                 <Contributions contribution={contribution} index={index} />
             ))}
             <Footer {...student.footerProps} />

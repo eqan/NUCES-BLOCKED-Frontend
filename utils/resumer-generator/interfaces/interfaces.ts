@@ -24,7 +24,7 @@ export interface Contribution {
 }
 
 export interface StudentTopSectionInformation {
-    cgpa: number
+    cgpa: string
     honors?: string | null
 }
 

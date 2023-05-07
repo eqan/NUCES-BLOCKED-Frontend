@@ -11,6 +11,9 @@ import {
     ThemeContext,
     ThemeType,
 } from '../utils/customHooks/themeContextProvider'
+import { registerFonts } from '../utils/resumer-generator/utils/registerFonts'
+
+registerFonts()
 
 interface Props {
     Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode }

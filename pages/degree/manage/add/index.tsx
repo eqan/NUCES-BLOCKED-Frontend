@@ -29,6 +29,8 @@ import {
     StudentTopSectionInformation,
 } from '../../../../utils/resumer-generator/interfaces/interfaces'
 import fileUploaderToNFTStorage from '../../../../utils/fileUploaderToNFTStorage'
+import { CV } from '../../../../utils/resumer-generator/CV/CV'
+import { Document, pdf, renderToStream } from '@react-pdf/renderer'
 
 interface Props {
     userType: string | null
@@ -132,7 +134,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                         const header: StudentHeading = {
                             id: contribution.studentId,
                             studentName: contribution.student.name,
-                            degreeName: 'BSCS',
+                            degreeName: 'Bachelors in Computer Science',
                             degreeProvider:
                                 'National University Of Computer & Emerging Sciences',
                         }
@@ -143,7 +145,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
                         const studentTopPriorityInformation: StudentTopSectionInformation =
                             {
-                                cgpa: parseInt(contribution.student.cgpa),
+                                cgpa: contribution.student.cgpa,
                                 honors: contribution.student.honours,
                             }
 
@@ -368,30 +370,20 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    const generatePdfBlob = async (student) => {
-        // const stream = doc.pipe(BlobStream())
+    const generatePDFBlob = async (student) => {
+        // Create a new Document
+        const doc = <CV student={student} />
 
-        // // Add content to the PDF document
-        // doc.text(`Academic portfolio of ${student.heading.id}`)
-
-        // // End the document and generate the blob
-        // doc.end()
-        // const blob = await new Promise((resolve, reject) => {
-        //     stream.on('finish', () => {
-        //         const pdfBlob = stream.toBlob('application/pdf')
-        //         resolve(pdfBlob)
-        //     })
-        //     stream.on('error', reject)
-        // })
-        // return blob
-        return null
+        // Render the document to a blob
+        const blob = await pdf(doc).toBlob()
+        return blob
     }
 
     const cvGenerator = async () => {
-        contributions.map(async (student) => {
+        for (const student of contributions) {
             try {
-                console.log(student)
-                const pdfBlob = await generatePdfBlob(student)
+                const pdfBlob = await generatePDFBlob(student)
+                console.log('Step 1 complete')
                 await fileUploaderToNFTStorage(
                     pdfBlob,
                     student.heading.id,
@@ -399,12 +391,12 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     'application/pdf',
                     `Academic portfolio of ${student.heading.id}`
                 )
-                console.log(pdfBlob)
+                console.log('Successfully uploaded CV for student:', student)
             } catch (error) {
-                console.log(error)
+                console.error(error)
                 toast.error(error.message)
             }
-        })
+        }
     }
 
     const generateDegrees = async () => {
@@ -413,7 +405,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             setTextContent('Self-Generating Certificates')
             setIsIntermidate(false)
             await fetchContributionsData()
-            cvGenerator()
+            await cvGenerator()
             toast.success('Certificates have been deployed!')
             setTextContent('')
         } catch (error) {
