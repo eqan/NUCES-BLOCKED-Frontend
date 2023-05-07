@@ -3,11 +3,13 @@ export interface StudentHeading {
     studentName: string
     degreeName: string
     degreeProvider: string
+    batch: string
 }
 
 export interface StudentMetaDataDetails {
     degreeId: string
     rollNumber: string
+    email: string
 }
 
 export interface SubContributions {

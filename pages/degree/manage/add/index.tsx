@@ -21,7 +21,6 @@ import { Tag } from 'primereact/tag'
 import { ThemeContext } from '../../../../utils/customHooks/themeContextProvider'
 import { returnFetchIndexedContributionsHook } from '../../../../queries/academic/indexAllContributions'
 import {
-    Contribution,
     Footer,
     Student,
     StudentHeading,
@@ -30,11 +29,27 @@ import {
 } from '../../../../utils/resumer-generator/interfaces/interfaces'
 import fileUploaderToNFTStorage from '../../../../utils/fileUploaderToNFTStorage'
 import { CV } from '../../../../utils/resumer-generator/CV/CV'
-import { Document, pdf, renderToStream } from '@react-pdf/renderer'
+import { pdf } from '@react-pdf/renderer'
+import { student } from '../../../../utils/resumer-generator/utils/studentDummyData'
+import useMetaMask from '../../../../utils/customHooks/useMetaMask'
+import { START_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/startCronJob'
+import { STOP_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/stopCronJob'
+import { DeployedContracts } from '../../../../contracts/deployedAddresses'
+import { ethers } from 'ethers'
+import ABI from '../../../../contracts/CertificateStore.json'
 
 interface Props {
     userType: string | null
     userimg: string | null
+}
+
+interface Certificate {
+    id: string
+    name: string
+    email: string
+    url: string
+    cgpa: string
+    batch: string
 }
 
 interface StudentInterface {
@@ -47,17 +62,6 @@ interface StudentInterface {
     eligibilityStatus: string
     honours: string
 }
-export interface StudentRecord {
-    id: string
-    name: string
-    cgpa: string
-    degreeName: string
-    degreeProvider: string
-    honours: string
-    contributions: Contribution[]
-    footer: Footer
-}
-
 interface IndexAllContributionsForResume {
     careerCounsellorContributions: {
         student: {
@@ -137,10 +141,12 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                             degreeName: 'Bachelors in Computer Science',
                             degreeProvider:
                                 'National University Of Computer & Emerging Sciences',
+                            batch: contribution.student.batch,
                         }
                         const metaDataDetails: StudentMetaDataDetails = {
                             degreeId: '3232434',
                             rollNumber: contribution.studentId,
+                            email: contribution.student.email,
                         }
 
                         const studentTopPriorityInformation: StudentTopSectionInformation =
@@ -217,6 +223,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     const router = useRouter()
     const { theme } = useContext(ThemeContext)
+    const [account, isMetaMaskConnected, connectToMetaMask] = useMetaMask()
     const [value, setValue] = useState<number>(0)
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [textContent, setTextContent] = useState<string>('')
@@ -224,6 +231,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [contributions, setContributions] = useState<Student[]>([])
     const interval = useRef<any | null | undefined>(null)
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
+    const [startCronJobFunction] = useMutation(START_CERTIFICATE_CRON_JOB)
+    const [stopCronJobFunction] = useMutation(STOP_CERTIFICATE_CRON_JOB)
+    const [contract, setContract] = useState(null)
+    const [provider, setProvider] = useState(null)
     const mode: ProgressBarModeType = isIntermediate
         ? 'indeterminate'
         : 'determinate'
@@ -304,6 +315,23 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     }
 
     useEffect(() => {
+        if (window.ethereum !== 'undefined') {
+            const abiArray = ABI.abi as any[]
+            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const signer = provider.getSigner()
+            const contractInstance = new ethers.Contract(
+                DeployedContracts.CertificateStore,
+                abiArray,
+                signer
+            )
+            setContract(contractInstance)
+            setProvider(provider)
+        } else {
+            console.error('Metamask not found')
+        }
+    }, [])
+
+    useEffect(() => {
         if (
             props.userType == 'TEACHER' ||
             props.userType == 'CAREER_COUNSELLOR' ||
@@ -379,39 +407,55 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         return blob
     }
 
-    const cvGenerator = async () => {
+    const cvGeneratorAndUploader = async () => {
+        const data: Certificate[] = []
         for (const student of contributions) {
             try {
                 const pdfBlob = await generatePDFBlob(student)
-                console.log('Step 1 complete')
-                await fileUploaderToNFTStorage(
+                const url = await fileUploaderToNFTStorage(
                     pdfBlob,
                     student.heading.id,
                     '.pdf',
                     'application/pdf',
                     `Academic portfolio of ${student.heading.id}`
                 )
-                console.log('Successfully uploaded CV for student:', student)
+                data.push({
+                    id: student.metaDataDetails.rollNumber,
+                    name: student.heading.studentName,
+                    email: student.metaDataDetails.email,
+                    url,
+                    cgpa: student.topPriorityInformation.cgpa,
+                    batch: student.heading.batch,
+                })
             } catch (error) {
                 console.error(error)
                 toast.error(error.message)
             }
+            return data
         }
     }
 
     const generateDegrees = async () => {
+        await connectToMetaMask()
+        stopCronJobFunction()
         try {
-            setTextContent('Collecting Data')
-            setTextContent('Self-Generating Certificates')
-            setIsIntermidate(false)
-            await fetchContributionsData()
-            await cvGenerator()
-            toast.success('Certificates have been deployed!')
-            setTextContent('')
+            if (isMetaMaskConnected) {
+                setTextContent('Collecting Data')
+                setTextContent('Self-Generating Certificates')
+                setIsIntermidate(false)
+                await fetchContributionsData()
+                const data = await cvGeneratorAndUploader()
+                await contract.functions.addCertificates(data, {
+                    from: sessionStorage.getItem('walletAddress'),
+                })
+                toast.success('Certificates have been deployed!')
+                setTextContent('')
+            }
         } catch (error) {
             toast.error(error.message)
             console.log(error)
         }
+        startCronJobFunction()
     }
 
     const locallyUpdateThePaginatedResults = () => {

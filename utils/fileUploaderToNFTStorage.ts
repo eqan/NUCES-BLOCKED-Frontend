@@ -8,8 +8,8 @@ export default async function fileUploaderToNFTStorage(
     format: string,
     type: string,
     message: string
-) {
-    let url = null
+): Promise<string> {
+    let url: string = null
     try {
         const nftstorage = new NFTStorage({
             token: NFT_STORAGE_TOKEN,
