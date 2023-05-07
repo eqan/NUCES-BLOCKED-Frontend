@@ -13,8 +13,6 @@ import {
 } from '../utils/customHooks/themeContextProvider'
 import { registerFonts } from '../utils/resumer-generator/utils/registerFonts'
 
-registerFonts()
-
 interface Props {
     Component: FC & { getLayout: (content: React.ReactNode) => React.ReactNode }
     pageProps: any
@@ -26,6 +24,7 @@ const MyApp: FC<Props> = ({ Component, pageProps }) => {
     useEffect(() => {
         let storedTheme = localStorage.getItem('theme')
         setTheme(storedTheme === 'dark' ? 'dark' : 'light')
+        registerFonts()
     }, [])
 
     const apolloClient = useApollo(pageProps.initialApolloState)

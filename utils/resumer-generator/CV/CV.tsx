@@ -31,11 +31,9 @@ export const CV = ({ student }: HeaderProps) => (
                 heading={student.heading}
                 metaDataDetails={student.metaDataDetails}
             />
-            <View style={{ position: 'absolute', top: 0, left: 0 }}>
-                <StudentHighPriorityInformation
-                    topSectionInformation={student.topPriorityInformation}
-                />
-            </View>
+            <StudentHighPriorityInformation
+                topSectionInformation={student.topPriorityInformation}
+            />
             {student?.contributions?.map((contribution, index) => (
                 <Contributions contribution={contribution} index={index} />
             ))}
