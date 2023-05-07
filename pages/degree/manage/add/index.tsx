@@ -28,6 +28,7 @@ import {
     StudentMetaDataDetails,
     StudentTopSectionInformation,
 } from '../../../../utils/resumer-generator/interfaces/interfaces'
+import fileUploaderToNFTStorage from '../../../../utils/fileUploaderToNFTStorage'
 
 interface Props {
     userType: string | null
@@ -112,97 +113,104 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const mapContributionToStudentRecord = (
         data: IndexAllContributionsForResume
     ): Student[] => {
-        const contributionsByStudentId: { [id: string]: Student } = {}
-        const dataToIterateOver = [
-            {
-                contributions: data?.careerCounsellorContributions,
-                type: 'Career Counsellor',
-            },
-            { contributions: data?.teacherContributions, type: 'Teacher' },
-            { contributions: data?.societyHeadsContributions, type: 'Society' },
-        ]
-        for (const { contributions, type } of dataToIterateOver) {
-            if (contributions != null) {
-                contributions.forEach((contribution) => {
-                    const header: StudentHeading = {
-                        id: contribution.studentId,
-                        studentName: contribution.student.name,
-                        degreeName: 'BSCS',
-                        degreeProvider:
-                            'National University Of Computer & Emerging Sciences',
-                    }
-                    const metaDataDetails: StudentMetaDataDetails = {
-                        degreeId: '3232434',
-                        rollNumber: contribution.studentId,
-                    }
-
-                    const studentTopPriorityInformation: StudentTopSectionInformation =
-                        {
-                            cgpa: parseInt(contribution.student.cgpa),
-                            honors: contribution.student.honours,
+        try {
+            const contributionsByStudentId: { [id: string]: Student } = {}
+            const dataToIterateOver = [
+                {
+                    contributions: data?.careerCounsellorContributions,
+                    type: 'Career Counsellor',
+                },
+                { contributions: data?.teacherContributions, type: 'Teacher' },
+                {
+                    contributions: data?.societyHeadsContributions,
+                    type: 'Society',
+                },
+            ]
+            for (const { contributions, type } of dataToIterateOver) {
+                if (contributions != null) {
+                    contributions.forEach((contribution) => {
+                        const header: StudentHeading = {
+                            id: contribution.studentId,
+                            studentName: contribution.student.name,
+                            degreeName: 'BSCS',
+                            degreeProvider:
+                                'National University Of Computer & Emerging Sciences',
+                        }
+                        const metaDataDetails: StudentMetaDataDetails = {
+                            degreeId: '3232434',
+                            rollNumber: contribution.studentId,
                         }
 
-                    const footerProps: Footer = {
-                        hecTransactionId: 'kask32232jkdas',
-                        chancellorTransactionId: 'ewlsdlkalk3232kldsa',
-                        directorTransactionId: 'adsladsl3232k',
-                    }
+                        const studentTopPriorityInformation: StudentTopSectionInformation =
+                            {
+                                cgpa: parseInt(contribution.student.cgpa),
+                                honors: contribution.student.honours,
+                            }
 
-                    const contributionType =
-                        contribution.societyHeadContributionType ||
-                        contribution.teacherContributionType ||
-                        contribution.careerCounsellorContributionType
-
-                    if (!contributionsByStudentId[contribution.studentId]) {
-                        contributionsByStudentId[contribution.studentId] = {
-                            heading: header,
-                            metaDataDetails: metaDataDetails,
-                            topPriorityInformation:
-                                studentTopPriorityInformation,
-                            contributions: [],
-                            footerProps: footerProps,
+                        const footerProps: Footer = {
+                            hecTransactionId: 'kask32232jkdas',
+                            chancellorTransactionId: 'ewlsdlkalk3232kldsa',
+                            directorTransactionId: 'adsladsl3232k',
                         }
-                    }
 
-                    let foundMatchingContributorType = false
-                    contributionsByStudentId[
-                        contribution.studentId
-                    ].contributions.forEach((c, index) => {
-                        if (c.contributorType == type) {
-                            foundMatchingContributorType = true
-                            contributionsByStudentId[
-                                contribution.studentId
-                            ].contributions[index].subContributions.push({
-                                contributionType: contributionType,
-                                contributor: contribution.contributor,
-                                title: contribution.title,
-                                contribution: contribution.contribution,
-                                date: contribution.updatedAt.toString(),
-                            })
+                        const contributionType =
+                            contribution.societyHeadContributionType ||
+                            contribution.teacherContributionType ||
+                            contribution.careerCounsellorContributionType
+
+                        if (!contributionsByStudentId[contribution.studentId]) {
+                            contributionsByStudentId[contribution.studentId] = {
+                                heading: header,
+                                metaDataDetails: metaDataDetails,
+                                topPriorityInformation:
+                                    studentTopPriorityInformation,
+                                contributions: [],
+                                footerProps: footerProps,
+                            }
                         }
-                    })
 
-                    if (!foundMatchingContributorType) {
+                        let foundMatchingContributorType = false
                         contributionsByStudentId[
                             contribution.studentId
-                        ].contributions.push({
-                            contributorType: type,
-                            subContributions: [
-                                {
+                        ].contributions.forEach((c, index) => {
+                            if (c.contributorType == type) {
+                                foundMatchingContributorType = true
+                                contributionsByStudentId[
+                                    contribution.studentId
+                                ].contributions[index].subContributions.push({
                                     contributionType: contributionType,
                                     contributor: contribution.contributor,
                                     title: contribution.title,
                                     contribution: contribution.contribution,
                                     date: contribution.updatedAt.toString(),
-                                },
-                            ],
+                                })
+                            }
                         })
-                    }
-                })
+
+                        if (!foundMatchingContributorType) {
+                            contributionsByStudentId[
+                                contribution.studentId
+                            ].contributions.push({
+                                contributorType: type,
+                                subContributions: [
+                                    {
+                                        contributionType: contributionType,
+                                        contributor: contribution.contributor,
+                                        title: contribution.title,
+                                        contribution: contribution.contribution,
+                                        date: contribution.updatedAt.toString(),
+                                    },
+                                ],
+                            })
+                        }
+                    })
+                }
             }
+            return Object.values(contributionsByStudentId)
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
         }
-        console.log(contributionsByStudentId)
-        return Object.values(contributionsByStudentId)
     }
 
     const router = useRouter()
@@ -211,7 +219,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [textContent, setTextContent] = useState<string>('')
     const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
-    const [contributions, setContributions] = useState<StudentRecord[]>([])
+    const [contributions, setContributions] = useState<Student[]>([])
     const interval = useRef<any | null | undefined>(null)
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
     const mode: ProgressBarModeType = isIntermediate
@@ -282,7 +290,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             try {
                 let contributions =
                     contributionsData?.IndexAllContributionsForResume
-                console.log(contributions)
                 const contributionRecords =
                     mapContributionToStudentRecord(contributions) || []
                 setContributions(contributionRecords)
@@ -361,11 +368,42 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const generatePdfBlob = async (student) => {
+        // const stream = doc.pipe(BlobStream())
+
+        // // Add content to the PDF document
+        // doc.text(`Academic portfolio of ${student.heading.id}`)
+
+        // // End the document and generate the blob
+        // doc.end()
+        // const blob = await new Promise((resolve, reject) => {
+        //     stream.on('finish', () => {
+        //         const pdfBlob = stream.toBlob('application/pdf')
+        //         resolve(pdfBlob)
+        //     })
+        //     stream.on('error', reject)
+        // })
+        // return blob
+        return null
+    }
+
     const cvGenerator = async () => {
-        contributions.map(async (contribution) => {
-            // const blob = await <CV student={contribution}/>.toBlob();
-            // const formData = new FormData();
-            // formData.append("file", blob, "example.pdf");
+        contributions.map(async (student) => {
+            try {
+                console.log(student)
+                const pdfBlob = await generatePdfBlob(student)
+                await fileUploaderToNFTStorage(
+                    pdfBlob,
+                    student.heading.id,
+                    '.pdf',
+                    'application/pdf',
+                    `Academic portfolio of ${student.heading.id}`
+                )
+                console.log(pdfBlob)
+            } catch (error) {
+                console.log(error)
+                toast.error(error.message)
+            }
         })
     }
 
