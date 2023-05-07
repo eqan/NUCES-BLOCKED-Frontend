@@ -19,6 +19,7 @@ import { Skeleton } from 'primereact/skeleton'
 import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
 import { ThemeContext } from '../../../../utils/customHooks/themeContextProvider'
+import { returnFetchIndexedContributionsHook } from '../../../../queries/academic/indexAllContributions'
 
 interface Props {
     userType: string | null
@@ -33,19 +34,63 @@ interface StudentInterface {
     date: string
     batch: string
     eligibilityStatus: string
+    honours: string
+}
+
+interface StudentRecord {
+    id: string
+    name: string
+    cgpa: string
+    honours: string
+    contributions: Contribution[]
+}
+
+interface Contribution {
+    type: string
+    title: string
+    updatedAt: string
+}
+
+interface IndexAllContributionsForResume {
+    careerCounsellorContributions: {
+        student: {
+            name: string
+            cgpa: string
+            honours: string
+        }
+        careerCounsellorContributionType: string
+        contribution: string
+        contributor: string
+        title: string
+        updatedAt: string
+    }[]
+    societyHeadsContributions: {
+        student: {
+            name: string
+            cgpa: string
+            honours: string
+        }
+        societyHeadContributionType: string
+        contribution: string
+        contributor: string
+        title: string
+        updatedAt: string
+    }[]
+    teacherContributions: {
+        student: {
+            name: string
+            cgpa: string
+            honours: string
+        }
+        teacherContributionType: string
+        contribution: string
+        contributor: string
+        title: string
+        updatedAt: string
+    }[]
 }
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
-    let StudentRecordInterface = {
-        id: '',
-        name: '',
-        rollno: '',
-        email: '',
-        batch: '',
-        eligibilityStatus: '',
-        date: '',
-    }
-
     const mapStudentToStudentRecord = (student: StudentInterface) => {
         return {
             id: student.id,
@@ -55,7 +100,63 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             eligibilityStatus: student.eligibilityStatus,
             batch: student.batch,
             date: student.updatedAt,
+            honours: student.honours,
         }
+    }
+
+    const mapContributionToStudentRecord = (
+        data: IndexAllContributionsForResume
+    ): StudentRecord[] => {
+        // Combine all the contributions into a single array with their respective student information.
+        const allContributions = [
+            ...(data.careerCounsellorContributions || []).map(
+                (contribution) => ({
+                    ...contribution.student,
+                    studentId: contribution.studentId,
+                    type: contribution.careerCounsellorContributionType,
+                    title: contribution.title,
+                    updatedAt: contribution.updatedAt,
+                })
+            ),
+            ...(data.societyHeadsContributions || []).map((contribution) => ({
+                ...contribution.student,
+                studentId: contribution.studentId,
+                type: contribution.societyHeadContributionType,
+                title: contribution.title,
+                updatedAt: contribution.updatedAt,
+            })),
+            ...(data.teacherContributions || []).map((contribution) => ({
+                ...contribution.student,
+                studentId: contribution.studentId,
+                type: contribution.teacherContributionType,
+                title: contribution.title,
+                updatedAt: contribution.updatedAt,
+            })),
+        ]
+
+        // Group contributions by student ID.
+        const contributionsByStudentId: { [id: string]: StudentRecord } = {}
+        allContributions.forEach((contribution) => {
+            if (!contributionsByStudentId[contribution.studentId]) {
+                contributionsByStudentId[contribution.studentId] = {
+                    id: contribution.studentId,
+                    name: contribution.name,
+                    cgpa: contribution.cgpa,
+                    honours: contribution.honours,
+                    contributions: [],
+                }
+            }
+            contributionsByStudentId[contribution.studentId].contributions.push(
+                {
+                    type: contribution.type,
+                    title: contribution.title,
+                    updatedAt: contribution.updatedAt,
+                }
+            )
+        })
+
+        // Convert the grouped contributions to a StudentRecord array.
+        return Object.values(contributionsByStudentId)
     }
 
     const router = useRouter()
@@ -63,6 +164,8 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [value, setValue] = useState<number>(0)
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [textContent, setTextContent] = useState<string>('')
+    const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
+    const [contributions, setContributions] = useState()
     const interval = useRef<any | null | undefined>(null)
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
     const mode: ProgressBarModeType = isIntermediate
@@ -91,6 +194,13 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     ] = returnFetchStudentsHook(globalFilter, page + 1, pageLimit)
 
     const [
+        contributionsData,
+        contributionsLoading,
+        contributionsFetchingError,
+        contributionsRefetchHook,
+    ] = returnFetchIndexedContributionsHook(studentDataToFetch)
+
+    const [
         updateStudentFunction,
         {
             data: studentUpdateData,
@@ -100,7 +210,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         },
     ] = useMutation(UPDATE_STUDENT)
 
-    const fetchData = async () => {
+    const fetchStudentData = async () => {
         setIsLoading(true)
         if (!studentsLoading) {
             try {
@@ -120,6 +230,24 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const fetchContributionsData = async () => {
+        setIsLoading(true)
+        if (!contributionsLoading) {
+            try {
+                let contributions =
+                    contributionsData?.IndexAllContributionsForResume
+                console.log(contributions)
+                const contributionRecords =
+                    mapContributionToStudentRecord(contributions) || []
+                setContributions(contributionRecords)
+                console.log(contributionRecords)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
     useEffect(() => {
         if (
             props.userType == 'TEACHER' ||
@@ -134,9 +262,15 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     useEffect(() => {
         if (!studentsLoading && studentsData) {
-            fetchData()
+            fetchStudentData()
         }
     }, [studentsData, studentsLoading])
+
+    useEffect(() => {
+        if (!contributionsData && contributionsData) {
+            fetchContributionsData()
+        }
+    }, [contributionsData, contributionsLoading])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -168,6 +302,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                             name: _student.name,
                             batch: _student.batch,
                             eligibilityStatus: _student.eligibilityStatus,
+                            honours: _student.honours,
                         },
                     },
                 })
@@ -185,6 +320,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             setTextContent('Collecting Data')
             setTextContent('Self-Generating Certificates')
             setIsIntermidate(false)
+            fetchContributionsData()
             toast.success('Certificates have been deployed!')
             setTextContent('')
         } catch (error) {

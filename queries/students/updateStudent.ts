@@ -9,6 +9,7 @@ export const UPDATE_STUDENT = gql`
             cgpa
             batch
             eligibilityStatus
+            honours
         }
     }
 `

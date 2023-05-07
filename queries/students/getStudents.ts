@@ -11,6 +11,7 @@ export const GET_STUDENTS = gql`
                 batch
                 updatedAt
                 eligibilityStatus
+                honours
             }
             total
         }

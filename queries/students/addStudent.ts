@@ -8,6 +8,7 @@ export const CREATE_STUDENT = gql`
             name
             cgpa
             batch
+            honours
         }
     }
 `
