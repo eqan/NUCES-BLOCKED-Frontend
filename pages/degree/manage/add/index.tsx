@@ -5,10 +5,8 @@ import { useRouter } from 'next/router'
 import { requireAuthentication } from '../../../../layout/context/requireAuthetication'
 import apolloClient from '../../../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_DATA } from '../../../../queries/users/getUser'
 import { Button } from 'primereact/button'
 import { useMutation } from '@apollo/client'
-import { UPDATE_ELIGIBILITY_STATUS_FOR_ALL_STUDENTS } from '../../../../queries/students/autoUpdateEligibility'
 import { Toaster, toast } from 'sonner'
 import { DataTable } from 'primereact/datatable'
 import { returnFetchStudentsHook } from '../../../../queries/students/getStudents'
@@ -30,17 +28,24 @@ import {
 import fileUploaderToNFTStorage from '../../../../utils/fileUploaderToNFTStorage'
 import { CV } from '../../../../utils/resumer-generator/CV/CV'
 import { pdf } from '@react-pdf/renderer'
-import { student } from '../../../../utils/resumer-generator/utils/studentDummyData'
 import useMetaMask from '../../../../utils/customHooks/useMetaMask'
 import { START_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/startCronJob'
 import { STOP_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/stopCronJob'
+import { UPDATE_ELIGIBILITY_STATUS_FOR_ALL_STUDENTS } from '../../../../queries/students/autoUpdateEligibility'
+import { GET_USER_DATA } from '../../../../queries/users/getUser'
 import { DeployedContracts } from '../../../../contracts/deployedAddresses'
 import { ethers } from 'ethers'
 import ABI from '../../../../contracts/CertificateStore.json'
+import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
 
 interface Props {
     userType: string | null
     userimg: string | null
+}
+
+interface CertificateForDatabase {
+    id: string
+    url: string
 }
 
 interface Certificate {
@@ -51,7 +56,6 @@ interface Certificate {
     cgpa: string
     batch: string
 }
-
 interface StudentInterface {
     id: string
     name: string
@@ -277,6 +281,16 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         },
     ] = useMutation(UPDATE_STUDENT)
 
+    const [
+        createCertificateFunction,
+        {
+            data: createCertificateData,
+            loading: createCertificateLoading,
+            error: createCertificateError,
+            reset: createCertificateReset,
+        },
+    ] = useMutation(CREATE_CERTIFICATE_IN_BATCHES)
+
     const fetchStudentData = async () => {
         setIsLoading(true)
         if (!studentsLoading) {
@@ -408,7 +422,9 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     }
 
     const cvGeneratorAndUploader = async () => {
-        const data: Certificate[] = []
+        const dataForBlockchain: Certificate[] = []
+        const dataForDatabase: CertificateForDatabase[] = []
+
         for (const student of contributions) {
             try {
                 const pdfBlob = await generatePDFBlob(student)
@@ -419,7 +435,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     'application/pdf',
                     `Academic portfolio of ${student.heading.id}`
                 )
-                data.push({
+                dataForBlockchain.push({
                     id: student.metaDataDetails.rollNumber,
                     name: student.heading.studentName,
                     email: student.metaDataDetails.email,
@@ -427,12 +443,17 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     cgpa: student.topPriorityInformation.cgpa,
                     batch: student.heading.batch,
                 })
+                dataForDatabase.push({
+                    id: student.metaDataDetails.rollNumber,
+                    url,
+                })
             } catch (error) {
                 console.error(error)
                 toast.error(error.message)
             }
-            return data
         }
+
+        return { dataForBlockchain, dataForDatabase }
     }
 
     const generateDegrees = async () => {
@@ -444,10 +465,22 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 setTextContent('Self-Generating Certificates')
                 setIsIntermidate(false)
                 await fetchContributionsData()
-                const data = await cvGeneratorAndUploader()
-                await contract.functions.addCertificates(data, {
-                    from: sessionStorage.getItem('walletAddress'),
-                })
+                const { dataForBlockchain, dataForDatabase } =
+                    await cvGeneratorAndUploader()
+                let isDataUploadedSuccessfully =
+                    await createCertificateFunction({
+                        variables: {
+                            certificates: dataForDatabase,
+                        },
+                    })
+                if (isDataUploadedSuccessfully) {
+                    await contract.functions.addCertificates(
+                        dataForBlockchain,
+                        {
+                            from: sessionStorage.getItem('walletAddress'),
+                        }
+                    )
+                }
                 toast.success('Certificates have been deployed!')
                 setTextContent('')
             }
