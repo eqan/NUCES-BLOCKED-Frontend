@@ -64,6 +64,11 @@
           "internalType": "uint256",
           "name": "batch",
           "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "honours",
+          "type": "string"
         }
       ],
       "name": "addCertificate",
@@ -110,6 +115,11 @@
               "internalType": "uint256",
               "name": "batch",
               "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "honours",
+              "type": "string"
             }
           ],
           "internalType": "struct CertificateStore.Certificate[]",
@@ -167,6 +177,11 @@
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
         }
       ],
       "stateMutability": "view",
@@ -231,6 +246,11 @@
               "internalType": "uint256",
               "name": "batch",
               "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "honours",
+              "type": "string"
             }
           ],
           "internalType": "struct CertificateStore.Certificate[]",
@@ -343,6 +363,11 @@
           "internalType": "uint256",
           "name": "batch",
           "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "honours",
+          "type": "string"
         }
       ],
       "name": "updateCertificate",

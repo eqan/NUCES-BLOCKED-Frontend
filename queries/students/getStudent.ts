@@ -6,6 +6,7 @@ export const GET_STUDENT = gql`
             id
             email
             name
+            honours
         }
     }
 `

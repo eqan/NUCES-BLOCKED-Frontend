@@ -16,6 +16,7 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 student {
                     name
                     email
+                    batch
                 }
             }
             teachersContribution {
@@ -28,6 +29,7 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 student {
                     name
                     email
+                    batch
                 }
             }
             societyHeadsContributions {
@@ -40,6 +42,7 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
                 student {
                     name
                     email
+                    batch
                 }
             }
 

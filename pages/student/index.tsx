@@ -35,10 +35,12 @@ interface StudentInterface {
     date: string
     batch: string
     cgpa: string
+    honours: string
+    eligibilityStatus: string
 }
 
 const StudentRecords: React.FC<Props> = (props) => {
-    let StudentRecordInterface = {
+    let StudentRecordInterface: StudentInterface = {
         id: '',
         name: '',
         rollno: '',
@@ -46,6 +48,8 @@ const StudentRecords: React.FC<Props> = (props) => {
         cgpa: '',
         batch: '',
         date: '',
+        honours: '',
+        eligibilityStatus: '',
     }
 
     const mapStudentToStudentRecord = (student: StudentInterface) => {
@@ -57,6 +61,8 @@ const StudentRecords: React.FC<Props> = (props) => {
             cgpa: student.cgpa,
             batch: student.batch,
             date: student.updatedAt,
+            honours: student.honours,
+            eligibilityStatus: student.eligibilityStatus,
         }
     }
 
@@ -212,6 +218,7 @@ const StudentRecords: React.FC<Props> = (props) => {
                                 email: _student.email,
                                 cgpa: _student.cgpa,
                                 batch: _student.batch,
+                                honours: _student.honours,
                             },
                         },
                     })
@@ -233,6 +240,8 @@ const StudentRecords: React.FC<Props> = (props) => {
                                 name: _student.name,
                                 cgpa: _student.cgpa,
                                 batch: _student.batch,
+                                honours: _student.honours,
+                                eligibilityStatus: _student.eligibilityStatus,
                             },
                         },
                     })
@@ -616,6 +625,16 @@ const StudentRecords: React.FC<Props> = (props) => {
             </>
         )
     }
+
+    const honoursBodyTemplate = (rowData) => {
+        return (
+            <>
+                <span className="p-column-title">CGPA</span>
+                {rowData.honours}
+            </>
+        )
+    }
+
     const batchBodyTemplate = (rowData) => {
         return (
             <>
@@ -624,6 +643,7 @@ const StudentRecords: React.FC<Props> = (props) => {
             </>
         )
     }
+
     const emailBodyTemplate = (rowData) => {
         return (
             <>
@@ -851,6 +871,12 @@ const StudentRecords: React.FC<Props> = (props) => {
                                 body={cgpaBodyTemplate}
                                 sortable
                             ></Column>
+                            <Column
+                                field="honours"
+                                header="Honours"
+                                body={honoursBodyTemplate}
+                                sortable
+                            ></Column>
 
                             <Column
                                 body={actionBodyTemplate}
@@ -1016,6 +1042,30 @@ const StudentRecords: React.FC<Props> = (props) => {
                                 {submitted && !student.cgpa && (
                                     <small className="p-invalid">
                                         CGPA is required.
+                                    </small>
+                                )}
+                            </span>
+                        </div>
+
+                        <div className="field">
+                            <label htmlFor="honours">Honours</label>
+                            <span className="p-input-icon-right">
+                                <InputText
+                                    id="honours"
+                                    value={student.honours}
+                                    onChange={(e) =>
+                                        onInputChange(e, 'honours')
+                                    }
+                                    required
+                                    autoFocus
+                                    className={classNames({
+                                        'p-invalid':
+                                            submitted && !student.honours,
+                                    })}
+                                />
+                                {submitted && !student.honours && (
+                                    <small className="p-invalid">
+                                        Honours is required.
                                     </small>
                                 )}
                             </span>

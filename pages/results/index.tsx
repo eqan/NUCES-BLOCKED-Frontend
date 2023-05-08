@@ -7,13 +7,7 @@ import { InputText } from 'primereact/inputtext'
 import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
-import React, {
-    useContext,
-    useEffect,
-    useRef,
-    useState,
-    useCallback,
-} from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { returnFetchResultsHook } from '../../queries/results/getResult'
 import { useMutation } from '@apollo/client'
 import { DELETE_RESULT } from '../../queries/results/removeResult'
@@ -27,11 +21,8 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { NFTStorage } from 'nft.storage'
-import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
 import FileSaver from 'file-saver'
 import axios from 'axios'
-import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 import { ethers } from 'ethers'
 import ABI from '../../contracts/SemesterStore.json'
 import { DeployedContracts } from '../../contracts/deployedAddresses'

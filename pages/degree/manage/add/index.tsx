@@ -5,10 +5,8 @@ import { useRouter } from 'next/router'
 import { requireAuthentication } from '../../../../layout/context/requireAuthetication'
 import apolloClient from '../../../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { GET_USER_DATA } from '../../../../queries/users/getUser'
 import { Button } from 'primereact/button'
 import { useMutation } from '@apollo/client'
-import { UPDATE_ELIGIBILITY_STATUS_FOR_ALL_STUDENTS } from '../../../../queries/students/autoUpdateEligibility'
 import { Toaster, toast } from 'sonner'
 import { DataTable } from 'primereact/datatable'
 import { returnFetchStudentsHook } from '../../../../queries/students/getStudents'
@@ -19,12 +17,45 @@ import { Skeleton } from 'primereact/skeleton'
 import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
 import { ThemeContext } from '../../../../utils/customHooks/themeContextProvider'
+import { returnFetchIndexedContributionsHook } from '../../../../queries/academic/indexAllContributions'
+import {
+    Footer,
+    Student,
+    StudentHeading,
+    StudentMetaDataDetails,
+    StudentTopSectionInformation,
+} from '../../../../utils/resumer-generator/interfaces/interfaces'
+import fileUploaderToNFTStorage from '../../../../utils/fileUploaderToNFTStorage'
+import { CV } from '../../../../utils/resumer-generator/CV/CV'
+import { pdf } from '@react-pdf/renderer'
+import useMetaMask from '../../../../utils/customHooks/useMetaMask'
+import { START_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/startCronJob'
+import { STOP_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/stopCronJob'
+import { UPDATE_ELIGIBILITY_STATUS_FOR_ALL_STUDENTS } from '../../../../queries/students/autoUpdateEligibility'
+import { GET_USER_DATA } from '../../../../queries/users/getUser'
+import { DeployedContracts } from '../../../../contracts/deployedAddresses'
+import { ethers } from 'ethers'
+import ABI from '../../../../contracts/CertificateStore.json'
+import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
 
 interface Props {
     userType: string | null
     userimg: string | null
 }
 
+interface CertificateForDatabase {
+    id: string
+    url: string
+}
+
+interface Certificate {
+    id: string
+    name: string
+    email: string
+    url: string
+    cgpa: string
+    batch: string
+}
 interface StudentInterface {
     id: string
     name: string
@@ -33,19 +64,49 @@ interface StudentInterface {
     date: string
     batch: string
     eligibilityStatus: string
+    honours: string
+}
+interface IndexAllContributionsForResume {
+    careerCounsellorContributions: {
+        student: {
+            name: string
+            cgpa: string
+            honours: string
+        }
+        studentId: string
+        careerCounsellorContributionType: string
+        contribution: string
+        contributor: string
+        title: string
+        updatedAt: string
+    }[]
+    societyHeadsContributions: {
+        student: {
+            name: string
+            cgpa: string
+            honours: string
+        }
+        societyHeadContributionType: string
+        contribution: string
+        contributor: string
+        title: string
+        updatedAt: string
+    }[]
+    teacherContributions: {
+        student: {
+            name: string
+            cgpa: string
+            honours: string
+        }
+        teacherContributionType: string
+        contribution: string
+        contributor: string
+        title: string
+        updatedAt: string
+    }[]
 }
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
-    let StudentRecordInterface = {
-        id: '',
-        name: '',
-        rollno: '',
-        email: '',
-        batch: '',
-        eligibilityStatus: '',
-        date: '',
-    }
-
     const mapStudentToStudentRecord = (student: StudentInterface) => {
         return {
             id: student.id,
@@ -55,16 +116,129 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             eligibilityStatus: student.eligibilityStatus,
             batch: student.batch,
             date: student.updatedAt,
+            honours: student.honours,
+        }
+    }
+
+    const mapContributionToStudentRecord = (
+        data: IndexAllContributionsForResume
+    ): Student[] => {
+        try {
+            const contributionsByStudentId: { [id: string]: Student } = {}
+            const dataToIterateOver = [
+                {
+                    contributions: data?.careerCounsellorContributions,
+                    type: 'Career Counsellor',
+                },
+                { contributions: data?.teacherContributions, type: 'Teacher' },
+                {
+                    contributions: data?.societyHeadsContributions,
+                    type: 'Society',
+                },
+            ]
+            for (const { contributions, type } of dataToIterateOver) {
+                if (contributions != null) {
+                    contributions.forEach((contribution) => {
+                        const header: StudentHeading = {
+                            id: contribution.studentId,
+                            studentName: contribution.student.name,
+                            degreeName: 'Bachelors in Computer Science',
+                            degreeProvider:
+                                'National University Of Computer & Emerging Sciences',
+                            batch: contribution.student.batch,
+                        }
+                        const metaDataDetails: StudentMetaDataDetails = {
+                            degreeId: '3232434',
+                            rollNumber: contribution.studentId,
+                            email: contribution.student.email,
+                        }
+
+                        const studentTopPriorityInformation: StudentTopSectionInformation =
+                            {
+                                cgpa: contribution.student.cgpa,
+                                honors: contribution.student.honours,
+                            }
+
+                        const footerProps: Footer = {
+                            hecTransactionId: 'kask32232jkdas',
+                            chancellorTransactionId: 'ewlsdlkalk3232kldsa',
+                            directorTransactionId: 'adsladsl3232k',
+                        }
+
+                        const contributionType =
+                            contribution.societyHeadContributionType ||
+                            contribution.teacherContributionType ||
+                            contribution.careerCounsellorContributionType
+
+                        if (!contributionsByStudentId[contribution.studentId]) {
+                            contributionsByStudentId[contribution.studentId] = {
+                                heading: header,
+                                metaDataDetails: metaDataDetails,
+                                topPriorityInformation:
+                                    studentTopPriorityInformation,
+                                contributions: [],
+                                footerProps: footerProps,
+                            }
+                        }
+
+                        let foundMatchingContributorType = false
+                        contributionsByStudentId[
+                            contribution.studentId
+                        ].contributions.forEach((c, index) => {
+                            if (c.contributorType == type) {
+                                foundMatchingContributorType = true
+                                contributionsByStudentId[
+                                    contribution.studentId
+                                ].contributions[index].subContributions.push({
+                                    contributionType: contributionType,
+                                    contributor: contribution.contributor,
+                                    title: contribution.title,
+                                    contribution: contribution.contribution,
+                                    date: contribution.updatedAt.toString(),
+                                })
+                            }
+                        })
+
+                        if (!foundMatchingContributorType) {
+                            contributionsByStudentId[
+                                contribution.studentId
+                            ].contributions.push({
+                                contributorType: type,
+                                subContributions: [
+                                    {
+                                        contributionType: contributionType,
+                                        contributor: contribution.contributor,
+                                        title: contribution.title,
+                                        contribution: contribution.contribution,
+                                        date: contribution.updatedAt.toString(),
+                                    },
+                                ],
+                            })
+                        }
+                    })
+                }
+            }
+            return Object.values(contributionsByStudentId)
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
         }
     }
 
     const router = useRouter()
     const { theme } = useContext(ThemeContext)
+    const [account, isMetaMaskConnected, connectToMetaMask] = useMetaMask()
     const [value, setValue] = useState<number>(0)
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [textContent, setTextContent] = useState<string>('')
+    const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
+    const [contributions, setContributions] = useState<Student[]>([])
     const interval = useRef<any | null | undefined>(null)
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
+    const [startCronJobFunction] = useMutation(START_CERTIFICATE_CRON_JOB)
+    const [stopCronJobFunction] = useMutation(STOP_CERTIFICATE_CRON_JOB)
+    const [contract, setContract] = useState(null)
+    const [provider, setProvider] = useState(null)
     const mode: ProgressBarModeType = isIntermediate
         ? 'indeterminate'
         : 'determinate'
@@ -91,6 +265,13 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     ] = returnFetchStudentsHook(globalFilter, page + 1, pageLimit)
 
     const [
+        contributionsData,
+        contributionsLoading,
+        contributionsFetchingError,
+        contributionsRefetchHook,
+    ] = returnFetchIndexedContributionsHook(studentDataToFetch)
+
+    const [
         updateStudentFunction,
         {
             data: studentUpdateData,
@@ -100,7 +281,17 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         },
     ] = useMutation(UPDATE_STUDENT)
 
-    const fetchData = async () => {
+    const [
+        createCertificateFunction,
+        {
+            data: createCertificateData,
+            loading: createCertificateLoading,
+            error: createCertificateError,
+            reset: createCertificateReset,
+        },
+    ] = useMutation(CREATE_CERTIFICATE_IN_BATCHES)
+
+    const fetchStudentData = async () => {
         setIsLoading(true)
         if (!studentsLoading) {
             try {
@@ -120,6 +311,40 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const fetchContributionsData = async () => {
+        setIsLoading(true)
+        if (!contributionsLoading) {
+            try {
+                let contributions =
+                    contributionsData?.IndexAllContributionsForResume
+                const contributionRecords =
+                    mapContributionToStudentRecord(contributions) || []
+                setContributions(contributionRecords)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+
+    useEffect(() => {
+        if (window.ethereum !== 'undefined') {
+            const abiArray = ABI.abi as any[]
+            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const signer = provider.getSigner()
+            const contractInstance = new ethers.Contract(
+                DeployedContracts.CertificateStore,
+                abiArray,
+                signer
+            )
+            setContract(contractInstance)
+            setProvider(provider)
+        } else {
+            console.error('Metamask not found')
+        }
+    }, [])
+
     useEffect(() => {
         if (
             props.userType == 'TEACHER' ||
@@ -134,9 +359,15 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     useEffect(() => {
         if (!studentsLoading && studentsData) {
-            fetchData()
+            fetchStudentData()
         }
     }, [studentsData, studentsLoading])
+
+    useEffect(() => {
+        if (!contributionsData && contributionsData) {
+            fetchContributionsData()
+        }
+    }, [contributionsData, contributionsLoading])
 
     useEffect(() => {
         const handleRouteChange = () => {
@@ -168,6 +399,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                             name: _student.name,
                             batch: _student.batch,
                             eligibilityStatus: _student.eligibilityStatus,
+                            honours: _student.honours,
                         },
                     },
                 })
@@ -180,17 +412,102 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    const generateDegrees = () => {
+    const generatePDFBlob = async (student) => {
+        // Create a new Document
+        const doc = <CV student={student} />
+
+        // Render the document to a blob
+        const blob = await pdf(doc).toBlob()
+        return blob
+    }
+
+    const cvGeneratorAndUploader = async () => {
+        const dataForBlockchain: Certificate[] = []
+        const dataForDatabase: CertificateForDatabase[] = []
+
+        // Calculate progress percentage for cvGeneratorAndUploader
+        const contributionCount = contributions.length
+        const cvGeneratorPercentage = Math.round((50 / contributionCount) * 100)
+
+        for (const student of contributions) {
+            try {
+                const pdfBlob = await generatePDFBlob(student)
+                const url = await fileUploaderToNFTStorage(
+                    pdfBlob,
+                    student.heading.id,
+                    '.pdf',
+                    'application/pdf',
+                    `Academic portfolio of ${student.heading.id}`
+                )
+                dataForBlockchain.push({
+                    id: student.metaDataDetails.rollNumber,
+                    name: student.heading.studentName,
+                    email: student.metaDataDetails.email,
+                    url,
+                    cgpa: student.topPriorityInformation.cgpa,
+                    batch: student.heading.batch,
+                })
+                dataForDatabase.push({
+                    id: student.metaDataDetails.rollNumber,
+                    url,
+                })
+                setValue((prevProgress) => prevProgress + cvGeneratorPercentage)
+            } catch (error) {
+                console.error(error)
+                toast.error(error.message)
+            }
+        }
+
+        return { dataForBlockchain, dataForDatabase }
+    }
+
+    const generateDegrees = async () => {
+        await connectToMetaMask()
+        stopCronJobFunction()
         try {
-            setTextContent('Collecting Data')
-            setTextContent('Self-Generating Certificates')
-            setIsIntermidate(false)
-            toast.success('Certificates have been deployed!')
-            setTextContent('')
+            if (isMetaMaskConnected) {
+                setTextContent('Collecting Data')
+                setTextContent('Self-Generating Certificates')
+                setIsIntermidate(false)
+                await fetchContributionsData()
+
+                const { dataForBlockchain, dataForDatabase } =
+                    await cvGeneratorAndUploader()
+
+                // Calculate progress percentage for uploading to database
+                const databaseUploadPercentage = 25
+                setValue(
+                    (prevProgress) => prevProgress + databaseUploadPercentage
+                )
+
+                let isDataUploadedSuccessfully =
+                    await createCertificateFunction({
+                        variables: {
+                            certificates: dataForDatabase,
+                        },
+                    })
+                // Calculate progress percentage for uploading to blockchain
+                const blockchainUploadPercentage = 25
+                setValue(
+                    (prevProgress) => prevProgress + blockchainUploadPercentage
+                )
+                if (isDataUploadedSuccessfully) {
+                    await contract.functions.addCertificates(
+                        dataForBlockchain,
+                        {
+                            from: sessionStorage.getItem('walletAddress'),
+                        }
+                    )
+                }
+                setValue(100)
+                toast.success('Certificates have been deployed!')
+                setTextContent('')
+            }
         } catch (error) {
             toast.error(error.message)
             console.log(error)
         }
+        startCronJobFunction()
     }
 
     const locallyUpdateThePaginatedResults = () => {
@@ -223,15 +540,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const onPageChange = (event) => {
         setPage(event.first / event.rows)
         setPageLimit(event.rows)
-    }
-
-    const rowIndexTemplate = (rowData) => {
-        return (
-            <>
-                <span className="p-column-title"></span>
-                {rowData.id}
-            </>
-        )
     }
 
     const rollnoBodyTemplate = (rowData) => {
@@ -353,26 +661,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             </>
         )
     }
-
-    // useEffect(() => {
-    //     let val = value
-    //     interval.current = setInterval(() => {
-    //         val += Math.floor(Math.random() * 50) + 1
-
-    //         if (val >= 100) {
-    //             val = 100
-    //             if (interval.current) clearInterval(interval.current)
-    //         }
-    //         setValue(val)
-    //     }, 2000)
-
-    //     return () => {
-    //         if (interval.current) {
-    //             clearInterval(interval.current)
-    //             interval.current = null
-    //         }
-    //     }
-    // }, [value])
 
     return (
         <>
