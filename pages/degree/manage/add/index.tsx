@@ -425,6 +425,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         const dataForBlockchain: Certificate[] = []
         const dataForDatabase: CertificateForDatabase[] = []
 
+        // Calculate progress percentage for cvGeneratorAndUploader
+        const contributionCount = contributions.length
+        const cvGeneratorPercentage = Math.round((50 / contributionCount) * 100)
+
         for (const student of contributions) {
             try {
                 const pdfBlob = await generatePDFBlob(student)
@@ -447,6 +451,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     id: student.metaDataDetails.rollNumber,
                     url,
                 })
+                setValue((prevProgress) => prevProgress + cvGeneratorPercentage)
             } catch (error) {
                 console.error(error)
                 toast.error(error.message)
@@ -465,14 +470,27 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 setTextContent('Self-Generating Certificates')
                 setIsIntermidate(false)
                 await fetchContributionsData()
+
                 const { dataForBlockchain, dataForDatabase } =
                     await cvGeneratorAndUploader()
+
+                // Calculate progress percentage for uploading to database
+                const databaseUploadPercentage = 25
+                setValue(
+                    (prevProgress) => prevProgress + databaseUploadPercentage
+                )
+
                 let isDataUploadedSuccessfully =
                     await createCertificateFunction({
                         variables: {
                             certificates: dataForDatabase,
                         },
                     })
+                // Calculate progress percentage for uploading to blockchain
+                const blockchainUploadPercentage = 25
+                setValue(
+                    (prevProgress) => prevProgress + blockchainUploadPercentage
+                )
                 if (isDataUploadedSuccessfully) {
                     await contract.functions.addCertificates(
                         dataForBlockchain,
@@ -481,6 +499,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                         }
                     )
                 }
+                setValue(100)
                 toast.success('Certificates have been deployed!')
                 setTextContent('')
             }
@@ -642,26 +661,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             </>
         )
     }
-
-    // useEffect(() => {
-    //     let val = value
-    //     interval.current = setInterval(() => {
-    //         val += Math.floor(Math.random() * 50) + 1
-
-    //         if (val >= 100) {
-    //             val = 100
-    //             if (interval.current) clearInterval(interval.current)
-    //         }
-    //         setValue(val)
-    //     }, 2000)
-
-    //     return () => {
-    //         if (interval.current) {
-    //             clearInterval(interval.current)
-    //             interval.current = null
-    //         }
-    //     }
-    // }, [value])
 
     return (
         <>
