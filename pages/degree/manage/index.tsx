@@ -500,7 +500,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                     },
                 },
             })
-            await contract.functions.deleteCertificate(degree.id, {
+            await contract.functions.removeCertificate(degree.id, {
                 from: sessionStorage.getItem('walletAddress'),
             })
             setDegrees(_degrees)
@@ -537,12 +537,18 @@ const CertificateRecords: React.FC<Props> = (props) => {
     }
 
     const deleteSelectedDegrees = async () => {
+        await connectToMetaMask()
+        stopCronJobFunction()
         let _degrees = degrees.filter((val) => !selectedDegrees.includes(val))
         let _toBeDeletedDegrees = degrees
             .filter((val) => selectedDegrees.includes(val))
             .map((val) => val.id)
         setDeleteDegreesDialog(false)
         try {
+            await contract.functions.removeCertificates(_toBeDeletedDegrees, {
+                from: sessionStorage.getItem('walletAddress'),
+            })
+
             await deleteCertificateFunction({
                 variables: {
                     DeleteCertificateInput: {
@@ -550,7 +556,6 @@ const CertificateRecords: React.FC<Props> = (props) => {
                     },
                 },
             })
-
             if (certificateDeleteDataError) {
                 throw new Error(certificateDeleteDataError.message)
             }
@@ -560,6 +565,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         }
         setSelectedDegrees([])
         setDegrees(_degrees)
+        startCronJobFunction()
         return 'Selected degrees removed!'
     }
 
@@ -912,27 +918,6 @@ const CertificateRecords: React.FC<Props> = (props) => {
                                     )}
                                 />
                                 <i className="pi pi-fw pi-id-card" />
-                            </span>
-                        </div>
-                        <div className="field">
-                            <label htmlFor="Url">Url</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="url"
-                                    value={degree.url}
-                                    onChange={(e) => onInputChange(e, 'url')}
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid': submitted && !degree.url,
-                                    })}
-                                />
-                                {submitted && !degree.url && (
-                                    <small className="p-invalid">
-                                        url is required.
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-prime" />
                             </span>
                         </div>
                     </Dialog>
