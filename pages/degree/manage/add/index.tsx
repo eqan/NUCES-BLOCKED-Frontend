@@ -316,6 +316,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     contributionsData?.IndexAllContributionsForResume
                 const contributionRecords =
                     mapContributionToStudentRecord(contributions) || []
+                console.log(contributions)
                 setContributions(contributionRecords)
             } catch (error) {
                 console.log(error)
@@ -323,6 +324,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 setIsLoading(false)
             }
         }
+        setIsLoading(false)
     }
 
     useEffect(() => {
@@ -466,7 +468,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 setValue(
                     (prevProgress) => prevProgress + databaseUploadPercentage
                 )
-
                 let isDataUploadedSuccessfully =
                     await createCertificateFunction({
                         variables: {
@@ -689,6 +690,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                         label="Generate & Deploy Certificates"
                                         className="p-button-success"
                                         onClick={generateDegrees}
+                                        disabled={isLoading}
                                     />
                                 </div>
                             </div>

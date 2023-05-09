@@ -41,6 +41,8 @@ import ABI from '../../../contracts/CertificateStore.json'
 import { ethers } from 'ethers'
 import fileUploaderToNFTStorage from '../../../utils/fileUploaderToNFTStorage'
 import { generatePDFBlob } from '../../../utils/convertCVtoBlob'
+import axios from 'axios'
+import FileSaver from 'file-saver'
 
 interface Props {
     userType: string | null
@@ -406,6 +408,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
             let _degrees = [...degrees]
             let _degree = { ...degree }
             try {
+                setStudentDataToFetch(degree.rollno)
                 await fetchContributionsData()
 
                 const { dataForBlockchain, dataForDatabase } =
@@ -643,12 +646,39 @@ const CertificateRecords: React.FC<Props> = (props) => {
         )
     }
 
+    const downloadCertificateResult = async (certificate) => {
+        try {
+            console.log(certificate)
+            const response = await axios.get(certificate.url, {
+                responseType: 'blob',
+            })
+            const blob = new Blob([response.data], { type: 'application/pdf' })
+            console.log(response)
+            FileSaver.saveAs(blob, `${certificate.id}.pdf`)
+        } catch (error) {
+            console.error(error)
+            throw new Error(error.message)
+        }
+        return 'Certificate Downloaded!'
+    }
+
     const actionBodyTemplate = (rowData) => {
         return (
             <>
                 <Button
                     icon="pi pi-arrow-down"
                     className="p-button-rounded p-button-success mr-2"
+                    onClick={() => {
+                        toast.promise(downloadCertificateResult(rowData), {
+                            loading: 'Certificate is being downloaded...',
+                            success: (data) => {
+                                return data
+                            },
+                            error: (error) => {
+                                return error.message
+                            },
+                        })
+                    }}
                 />
                 <Button
                     icon="pi pi-refresh"
@@ -983,7 +1013,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                             {degree && (
                                 <span>
                                     Are you sure you want to delete the selected
-                                    academic certificate
+                                    academic certificate?
                                 </span>
                             )}
                         </div>
