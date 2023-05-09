@@ -26,8 +26,6 @@ import {
     StudentTopSectionInformation,
 } from '../../../../utils/resumer-generator/interfaces/interfaces'
 import fileUploaderToNFTStorage from '../../../../utils/fileUploaderToNFTStorage'
-import { CV } from '../../../../utils/resumer-generator/CV/CV'
-import { pdf } from '@react-pdf/renderer'
 import useMetaMask from '../../../../utils/customHooks/useMetaMask'
 import { START_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/startCronJob'
 import { STOP_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/stopCronJob'
@@ -37,18 +35,19 @@ import { DeployedContracts } from '../../../../contracts/deployedAddresses'
 import { ethers } from 'ethers'
 import ABI from '../../../../contracts/CertificateStore.json'
 import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
+import { generatePDFBlob } from '../../../../utils/convertCVtoBlob'
 
 interface Props {
     userType: string | null
     userimg: string | null
 }
 
-interface CertificateForDatabase {
+export interface CertificateForDatabase {
     id: string
     url: string
 }
 
-interface Certificate {
+export interface Certificate {
     id: string
     name: string
     email: string
@@ -66,7 +65,7 @@ interface StudentInterface {
     eligibilityStatus: string
     honours: string
 }
-interface IndexAllContributionsForResume {
+export interface IndexAllContributionsForResume {
     careerCounsellorContributions: {
         student: {
             name: string
@@ -233,12 +232,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [textContent, setTextContent] = useState<string>('')
     const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
     const [contributions, setContributions] = useState<Student[]>([])
-    const interval = useRef<any | null | undefined>(null)
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
     const [startCronJobFunction] = useMutation(START_CERTIFICATE_CRON_JOB)
     const [stopCronJobFunction] = useMutation(STOP_CERTIFICATE_CRON_JOB)
     const [contract, setContract] = useState(null)
-    const [provider, setProvider] = useState(null)
     const mode: ProgressBarModeType = isIntermediate
         ? 'indeterminate'
         : 'determinate'
@@ -339,7 +336,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 signer
             )
             setContract(contractInstance)
-            setProvider(provider)
         } else {
             console.error('Metamask not found')
         }
@@ -410,15 +406,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             toast.error(error.message)
             console.log(error)
         }
-    }
-
-    const generatePDFBlob = async (student) => {
-        // Create a new Document
-        const doc = <CV student={student} />
-
-        // Render the document to a blob
-        const blob = await pdf(doc).toBlob()
-        return blob
     }
 
     const cvGeneratorAndUploader = async () => {
