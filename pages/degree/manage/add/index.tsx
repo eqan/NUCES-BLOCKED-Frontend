@@ -34,10 +34,7 @@ import { DeployedContracts } from '../../../../contracts/deployedAddresses'
 import { ethers } from 'ethers'
 import ABI from '../../../../contracts/CertificateStore.json'
 import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
-import {
-    cvGeneratorAndUploader,
-    generatePDFBlob,
-} from '../../../../utils/CVGeneratorUtils'
+import { cvGeneratorAndUploader } from '../../../../utils/CVGeneratorUtils'
 
 interface Props {
     userType: string | null
@@ -56,6 +53,7 @@ export interface Certificate {
     url: string
     cgpa: string
     batch: string
+    honors: string | null
 }
 interface StudentInterface {
     id: string
@@ -383,7 +381,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     useEffect(() => {}, [globalFilter])
 
-    const updateSelectedStudent = async (data, newValue) => {
+    const updateSelectedStudent = async (data: any, newValue: any) => {
         try {
             let _students = [...students]
             let _student: StudentInterface = data?.rowData
@@ -430,13 +428,9 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     (50 / contributionCount) * 100
                 )
 
-                try {
-                    var { dataForBlockchain, dataForDatabase } =
-                        await cvGeneratorAndUploader(contributions)
-                } catch (error) {
-                    toast.error(error.message)
-                }
-                if (dataForBlockchain.length > 0) {
+                const { dataForBlockchain, dataForDatabase } =
+                    await cvGeneratorAndUploader(contributions)
+                if (dataForBlockchain || dataForBlockchain?.length > 0) {
                     console.log(dataForBlockchain, dataForDatabase)
                     setValue(
                         (prevProgress) => prevProgress + cvGeneratorPercentage
