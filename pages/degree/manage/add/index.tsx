@@ -25,9 +25,6 @@ import {
     StudentMetaDataDetails,
     StudentTopSectionInformation,
 } from '../../../../utils/resumer-generator/interfaces/interfaces'
-import fileUploaderToNFTStorage from '../../../../utils/fileUploaderToNFTStorage'
-import { CV } from '../../../../utils/resumer-generator/CV/CV'
-import { pdf } from '@react-pdf/renderer'
 import useMetaMask from '../../../../utils/customHooks/useMetaMask'
 import { START_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/startCronJob'
 import { STOP_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/stopCronJob'
@@ -37,18 +34,22 @@ import { DeployedContracts } from '../../../../contracts/deployedAddresses'
 import { ethers } from 'ethers'
 import ABI from '../../../../contracts/CertificateStore.json'
 import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
+import {
+    cvGeneratorAndUploader,
+    generatePDFBlob,
+} from '../../../../utils/CVGeneratorUtils'
 
 interface Props {
     userType: string | null
     userimg: string | null
 }
 
-interface CertificateForDatabase {
+export interface CertificateForDatabase {
     id: string
     url: string
 }
 
-interface Certificate {
+export interface Certificate {
     id: string
     name: string
     email: string
@@ -66,7 +67,7 @@ interface StudentInterface {
     eligibilityStatus: string
     honours: string
 }
-interface IndexAllContributionsForResume {
+export interface IndexAllContributionsForResume {
     careerCounsellorContributions: {
         student: {
             name: string
@@ -233,12 +234,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [textContent, setTextContent] = useState<string>('')
     const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
     const [contributions, setContributions] = useState<Student[]>([])
-    const interval = useRef<any | null | undefined>(null)
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
     const [startCronJobFunction] = useMutation(START_CERTIFICATE_CRON_JOB)
     const [stopCronJobFunction] = useMutation(STOP_CERTIFICATE_CRON_JOB)
     const [contract, setContract] = useState(null)
-    const [provider, setProvider] = useState(null)
     const mode: ProgressBarModeType = isIntermediate
         ? 'indeterminate'
         : 'determinate'
@@ -319,6 +318,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     contributionsData?.IndexAllContributionsForResume
                 const contributionRecords =
                     mapContributionToStudentRecord(contributions) || []
+                console.log(contributions)
                 setContributions(contributionRecords)
             } catch (error) {
                 console.log(error)
@@ -326,6 +326,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 setIsLoading(false)
             }
         }
+        setIsLoading(false)
     }
 
     useEffect(() => {
@@ -339,7 +340,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 signer
             )
             setContract(contractInstance)
-            setProvider(provider)
         } else {
             console.error('Metamask not found')
         }
@@ -412,55 +412,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    const generatePDFBlob = async (student) => {
-        // Create a new Document
-        const doc = <CV student={student} />
-
-        // Render the document to a blob
-        const blob = await pdf(doc).toBlob()
-        return blob
-    }
-
-    const cvGeneratorAndUploader = async () => {
-        const dataForBlockchain: Certificate[] = []
-        const dataForDatabase: CertificateForDatabase[] = []
-
-        // Calculate progress percentage for cvGeneratorAndUploader
-        const contributionCount = contributions.length
-        const cvGeneratorPercentage = Math.round((50 / contributionCount) * 100)
-
-        for (const student of contributions) {
-            try {
-                const pdfBlob = await generatePDFBlob(student)
-                const url = await fileUploaderToNFTStorage(
-                    pdfBlob,
-                    student.heading.id,
-                    '.pdf',
-                    'application/pdf',
-                    `Academic portfolio of ${student.heading.id}`
-                )
-                dataForBlockchain.push({
-                    id: student.metaDataDetails.rollNumber,
-                    name: student.heading.studentName,
-                    email: student.metaDataDetails.email,
-                    url,
-                    cgpa: student.topPriorityInformation.cgpa,
-                    batch: student.heading.batch,
-                })
-                dataForDatabase.push({
-                    id: student.metaDataDetails.rollNumber,
-                    url,
-                })
-                setValue((prevProgress) => prevProgress + cvGeneratorPercentage)
-            } catch (error) {
-                console.error(error)
-                toast.error(error.message)
-            }
-        }
-
-        return { dataForBlockchain, dataForDatabase }
-    }
-
+    // TODO: Issue in button double click when generating degrees
     const generateDegrees = async () => {
         await connectToMetaMask()
         stopCronJobFunction()
@@ -471,42 +423,64 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 setIsIntermidate(false)
                 await fetchContributionsData()
 
-                const { dataForBlockchain, dataForDatabase } =
-                    await cvGeneratorAndUploader()
+                // Calculate progress percentage for cvGeneratorAndUploader
+                const contributionCount = contributions?.length || 0
 
-                // Calculate progress percentage for uploading to database
-                const databaseUploadPercentage = 25
-                setValue(
-                    (prevProgress) => prevProgress + databaseUploadPercentage
+                const cvGeneratorPercentage = Math.round(
+                    (50 / contributionCount) * 100
                 )
 
-                let isDataUploadedSuccessfully =
-                    await createCertificateFunction({
-                        variables: {
-                            certificates: dataForDatabase,
-                        },
-                    })
-                // Calculate progress percentage for uploading to blockchain
-                const blockchainUploadPercentage = 25
-                setValue(
-                    (prevProgress) => prevProgress + blockchainUploadPercentage
-                )
-                if (isDataUploadedSuccessfully) {
+                try {
+                    var { dataForBlockchain, dataForDatabase } =
+                        await cvGeneratorAndUploader(contributions)
+                } catch (error) {
+                    toast.error(error.message)
+                }
+                if (dataForBlockchain.length > 0) {
+                    console.log(dataForBlockchain, dataForDatabase)
+                    setValue(
+                        (prevProgress) => prevProgress + cvGeneratorPercentage
+                    )
+
+                    // Calculate progress percentage for uploading to database
+                    const databaseUploadPercentage = 25
+                    setValue(
+                        (prevProgress) =>
+                            prevProgress + databaseUploadPercentage
+                    )
+                    // let isDataUploadedSuccessfully =
+                    //     await createCertificateFunction({
+                    //         variables: {
+                    //             certificates: dataForDatabase,
+                    //         },
+                    //     })
+
+                    // Calculate progress percentage for uploading to blockchain
+                    const blockchainUploadPercentage = 25
+                    setValue(
+                        (prevProgress) =>
+                            prevProgress + blockchainUploadPercentage
+                    )
+                    // if (isDataUploadedSuccessfully) {
                     await contract.functions.addCertificates(
                         dataForBlockchain,
                         {
                             from: sessionStorage.getItem('walletAddress'),
                         }
                     )
+                    // }
+                    setValue(100)
+                    toast.success('Certificates have been deployed!')
+                } else {
+                    toast.error('No contributions found!')
                 }
-                setValue(100)
-                toast.success('Certificates have been deployed!')
-                setTextContent('')
             }
         } catch (error) {
             toast.error(error.message)
             console.log(error)
         }
+        setValue(0)
+        setTextContent('')
         startCronJobFunction()
     }
 
@@ -702,6 +676,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                         label="Generate & Deploy Certificates"
                                         className="p-button-success"
                                         onClick={generateDegrees}
+                                        disabled={isLoading}
                                     />
                                 </div>
                             </div>

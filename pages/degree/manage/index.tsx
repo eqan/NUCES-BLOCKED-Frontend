@@ -20,6 +20,24 @@ import jwt from 'jsonwebtoken'
 import { GET_USER_DATA } from '../../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
 import { ThemeContext } from '../../../utils/customHooks/themeContextProvider'
+import useMetaMask from '../../../utils/customHooks/useMetaMask'
+import { START_CERTIFICATE_CRON_JOB } from '../../../queries/degree/startCronJob'
+import { STOP_CERTIFICATE_CRON_JOB } from '../../../queries/degree/stopCronJob'
+import { returnFetchIndexedContributionsHook } from '../../../queries/academic/indexAllContributions'
+import {
+    Footer,
+    Student,
+    StudentHeading,
+    StudentMetaDataDetails,
+    StudentTopSectionInformation,
+} from '../../../utils/resumer-generator/interfaces/interfaces'
+import { IndexAllContributionsForResume } from './add'
+import { DeployedContracts } from '../../../contracts/deployedAddresses'
+import ABI from '../../../contracts/CertificateStore.json'
+import { ethers } from 'ethers'
+import { cvGeneratorAndUploader } from '../../../utils/CVGeneratorUtils'
+import axios from 'axios'
+import FileSaver from 'file-saver'
 
 interface Props {
     userType: string | null
@@ -31,7 +49,7 @@ interface CertificateInterface {
     name: string
     rollno: string
     date: string
-    hash: string
+    url: string
 }
 const CertificateRecords: React.FC<Props> = (props) => {
     let CertificateRecordInterface = {
@@ -39,7 +57,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         name: '',
         rollno: '',
         date: '',
-        hash: '',
+        url: '',
     }
 
     const mapCertificateToCertificateRecord = (
@@ -50,11 +68,121 @@ const CertificateRecords: React.FC<Props> = (props) => {
             name: certificate.student.name,
             rollno: certificate.id,
             date: certificate.updatedAt,
-            hash: certificate.url,
+            url: certificate.url,
         }
     }
+    const mapContributionToStudentRecord = (
+        data: IndexAllContributionsForResume
+    ): Student => {
+        try {
+            const contributionsByStudentId: { [id: string]: Student } = {}
+            const dataToIterateOver = [
+                {
+                    contributions: data?.careerCounsellorContributions,
+                    type: 'Career Counsellor',
+                },
+                { contributions: data?.teacherContributions, type: 'Teacher' },
+                {
+                    contributions: data?.societyHeadsContributions,
+                    type: 'Society',
+                },
+            ]
+            for (const { contributions, type } of dataToIterateOver) {
+                if (contributions != null) {
+                    contributions.forEach((contribution) => {
+                        const header: StudentHeading = {
+                            id: contribution.studentId,
+                            studentName: contribution.student.name,
+                            degreeName: 'Bachelors in Computer Science',
+                            degreeProvider:
+                                'National University Of Computer & Emerging Sciences',
+                            batch: contribution.student.batch,
+                        }
+                        const metaDataDetails: StudentMetaDataDetails = {
+                            degreeId: '3232434',
+                            rollNumber: contribution.studentId,
+                            email: contribution.student.email,
+                        }
+
+                        const studentTopPriorityInformation: StudentTopSectionInformation =
+                            {
+                                cgpa: contribution.student.cgpa,
+                                honors: contribution.student.honours,
+                            }
+
+                        const footerProps: Footer = {
+                            hecTransactionId: 'kask32232jkdas',
+                            chancellorTransactionId: 'ewlsdlkalk3232kldsa',
+                            directorTransactionId: 'adsladsl3232k',
+                        }
+
+                        const contributionType =
+                            contribution.societyHeadContributionType ||
+                            contribution.teacherContributionType ||
+                            contribution.careerCounsellorContributionType
+
+                        if (!contributionsByStudentId[contribution.studentId]) {
+                            contributionsByStudentId[contribution.studentId] = {
+                                heading: header,
+                                metaDataDetails: metaDataDetails,
+                                topPriorityInformation:
+                                    studentTopPriorityInformation,
+                                contributions: [],
+                                footerProps: footerProps,
+                            }
+                        }
+
+                        let foundMatchingContributorType = false
+                        contributionsByStudentId[
+                            contribution.studentId
+                        ].contributions.forEach((c, index) => {
+                            if (c.contributorType == type) {
+                                foundMatchingContributorType = true
+                                contributionsByStudentId[
+                                    contribution.studentId
+                                ].contributions[index].subContributions.push({
+                                    contributionType: contributionType,
+                                    contributor: contribution.contributor,
+                                    title: contribution.title,
+                                    contribution: contribution.contribution,
+                                    date: contribution.updatedAt.toString(),
+                                })
+                            }
+                        })
+
+                        if (!foundMatchingContributorType) {
+                            contributionsByStudentId[
+                                contribution.studentId
+                            ].contributions.push({
+                                contributorType: type,
+                                subContributions: [
+                                    {
+                                        contributionType: contributionType,
+                                        contributor: contribution.contributor,
+                                        title: contribution.title,
+                                        contribution: contribution.contribution,
+                                        date: contribution.updatedAt.toString(),
+                                    },
+                                ],
+                            })
+                        }
+                    })
+                }
+            }
+            return contributionsByStudentId[studentDataToFetch] || null
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+    }
+
     const router = useRouter()
     const { theme } = useContext(ThemeContext)
+    const [account, isMetaMaskConnected, connectToMetaMask] = useMetaMask()
+    const [startCronJobFunction] = useMutation(START_CERTIFICATE_CRON_JOB)
+    const [stopCronJobFunction] = useMutation(STOP_CERTIFICATE_CRON_JOB)
+    const [contract, setContract] = useState(null)
+    const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
     const [degrees, setDegrees] = useState<CertificateInterface[]>([])
     const [degreeAddDialog, setAddDegreeDialog] = useState(false)
     const [degreeUpdateDialog, setUpdateDegreeDialog] = useState(false)
@@ -65,6 +193,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
     const [selectedDegrees, setSelectedDegrees] = useState<
         CertificateInterface[]
     >([])
+    const [student, setStudent] = useState<Student>()
     const [submitted, setSubmitted] = useState(false)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
@@ -108,6 +237,13 @@ const CertificateRecords: React.FC<Props> = (props) => {
             reset: certificateUpdateDataReset,
         },
     ] = useMutation(UPDATE_CERTIFICATE)
+
+    const [
+        contributionsData,
+        contributionsLoading,
+        contributionsFetchingError,
+        contributionsRefetchHook,
+    ] = returnFetchIndexedContributionsHook(studentDataToFetch)
 
     const fetchData = async () => {
         setIsLoading(true)
@@ -164,6 +300,22 @@ const CertificateRecords: React.FC<Props> = (props) => {
         }
     }, [certificatesRefetchHook, router.events])
 
+    useEffect(() => {
+        if (window.ethereum !== 'undefined') {
+            const abiArray = ABI.abi as any[]
+            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const signer = provider.getSigner()
+            const contractInstance = new ethers.Contract(
+                DeployedContracts.CertificateStore,
+                abiArray,
+                signer
+            )
+            setContract(contractInstance)
+        } else {
+            console.error('Metamask not found')
+        }
+    }, [])
+
     useEffect(() => {}, [globalFilter])
 
     const openNewAddDegreeDialog = () => {
@@ -190,66 +342,127 @@ const CertificateRecords: React.FC<Props> = (props) => {
         setDeleteDegreesDialog(false)
     }
 
-    const addDegree = async () => {
-        if (degree.hash && degree.rollno) {
+    const fetchContributionsData = async () => {
+        setIsLoading(true)
+        if (!contributionsLoading) {
+            try {
+                let contributions =
+                    contributionsData?.IndexAllContributionsForResume
+                const contributionRecords =
+                    mapContributionToStudentRecord(contributions)
+                setStudent(contributionRecords)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+
+    const addDegree = async (): Promise<string> => {
+        await connectToMetaMask()
+        stopCronJobFunction()
+        if (degree.rollno) {
             setSubmitted(true)
             setAddDegreeDialog(false)
             let _degrees = [...degrees]
             let _degree = { ...degree }
             try {
-                _degrees[_degree.rollno] = _degree
-                let newDegree = await createCertificateFunction({
-                    variables: {
-                        CreateCertificateInput: {
-                            id: _degree.rollno,
-                            url: _degree.hash,
+                setStudentDataToFetch(degree.rollno)
+
+                await fetchContributionsData()
+                var { dataForBlockchain, dataForDatabase } =
+                    await cvGeneratorAndUploader([student])
+                const _tempDataForDatabase = dataForDatabase?.pop()
+                const _tempDataForBlockchain = dataForBlockchain?.pop()
+                if (dataForDatabase) {
+                    _degrees[_degree.rollno] = _degree
+                    let _newDegree = await createCertificateFunction({
+                        variables: {
+                            CreateCertificateInput: _tempDataForDatabase,
                         },
-                    },
-                })
-                newDegree = newDegree.data['CreateCertificate']
-                const mappedData: CertificateInterface =
-                    mapCertificateToCertificateRecord(newDegree)
-                _degrees = _degrees.filter(
-                    (item) => (item.rollno = mappedData.id)
-                )
-                _degrees.push(mappedData)
-                setDegrees(_degrees)
+                    })
+                    if (_newDegree) {
+                        _tempDataForBlockchain.batch =
+                            _newDegree?.data?.CreateCertificate?.student?.batch
+                        _tempDataForBlockchain.email =
+                            _newDegree?.data?.CreateCertificate?.student?.email
+                        await contract.functions.addCertificate(
+                            ...Object.values(_tempDataForBlockchain),
+                            {
+                                from: sessionStorage.getItem('walletAddress'),
+                            }
+                        )
+                        _newDegree = _newDegree.data['CreateCertificate']
+                        const mappedData: CertificateInterface =
+                            mapCertificateToCertificateRecord(_newDegree)
+                        _degrees = _degrees.filter(
+                            (item) => (item.rollno = mappedData.id)
+                        )
+                        _degrees.push(mappedData)
+                        setDegrees(_degrees)
+                    }
+                } else {
+                    throw new Error('No Certificate to deploy!')
+                }
             } catch (error) {
                 console.log(error)
                 throw new Error(error.message)
             }
-
             setDegree(CertificateRecordInterface)
         }
-        return 'Degree Added!'
+        startCronJobFunction()
+        return 'Certificate has been deployed!'
     }
 
-    const updateDegree = async () => {
-        if (degree.hash) {
+    const updateDegree = async (): Promise<String> => {
+        await connectToMetaMask()
+        stopCronJobFunction()
+        if (degree.url) {
             setSubmitted(true)
+            setUpdateDegreeDialog(false)
             let _degrees = [...degrees]
             let _degree = { ...degree }
             try {
+                setStudentDataToFetch(degree.rollno)
+                await fetchContributionsData()
+                const { dataForBlockchain, dataForDatabase } =
+                    await cvGeneratorAndUploader([student])
+                const _tempDataForDatabase = dataForDatabase?.pop()
+                const _tempDataForBlockchain = dataForBlockchain?.pop()
                 const index = findIndexById(_degree.rollno)
                 _degrees[index] = _degree
-                await updateCertificateFunction({
+                let _updatedDegree = await updateCertificateFunction({
                     variables: {
-                        UpdateCertificateInput: {
-                            id: _degree.id,
-                            url: _degree.hash,
-                        },
+                        UpdateCertificateInput: _tempDataForDatabase,
                     },
                 })
+
+                if (_updatedDegree) {
+                    _tempDataForBlockchain.batch =
+                        _updatedDegree?.data?.UpdateCertificate?.student?.batch
+                    _tempDataForBlockchain.email =
+                        _updatedDegree?.data?.UpdateCertificate?.student?.email
+                    console.log(_tempDataForBlockchain, _updatedDegree)
+                    await contract.functions.updateCertificate(
+                        ...Object.values(_tempDataForBlockchain),
+                        {
+                            from: sessionStorage.getItem('walletAddress'),
+                        }
+                    )
+                } else {
+                    throw new Error('No Certificate to update!')
+                }
                 setDegrees(_degrees)
             } catch (error) {
                 console.log(error)
                 throw new Error(error.message)
             }
 
-            setUpdateDegreeDialog(false)
             setDegree(CertificateRecordInterface)
         }
-        return 'Degree Updated!'
+        startCronJobFunction()
+        return 'Certificate has been updated!'
     }
 
     const editDegree = (degree) => {
@@ -263,6 +476,8 @@ const CertificateRecords: React.FC<Props> = (props) => {
     }
 
     const deleteDegree = async () => {
+        await connectToMetaMask()
+        stopCronJobFunction()
         let _degrees = degrees.filter((val) => val.id !== degree.id)
         setDeleteDegreeDialog(false)
         try {
@@ -273,6 +488,9 @@ const CertificateRecords: React.FC<Props> = (props) => {
                     },
                 },
             })
+            await contract.functions.removeCertificate(degree.id, {
+                from: sessionStorage.getItem('walletAddress'),
+            })
             setDegrees(_degrees)
             if (certificateDeleteDataError) {
                 throw new Error(certificateDeleteDataError.message)
@@ -282,6 +500,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
             throw new Error(error.message)
         }
         setDegree(CertificateRecordInterface)
+        startCronJobFunction()
         return 'Degree removed!'
     }
 
@@ -306,12 +525,18 @@ const CertificateRecords: React.FC<Props> = (props) => {
     }
 
     const deleteSelectedDegrees = async () => {
+        await connectToMetaMask()
+        stopCronJobFunction()
         let _degrees = degrees.filter((val) => !selectedDegrees.includes(val))
         let _toBeDeletedDegrees = degrees
             .filter((val) => selectedDegrees.includes(val))
             .map((val) => val.id)
         setDeleteDegreesDialog(false)
         try {
+            await contract.functions.removeCertificates(_toBeDeletedDegrees, {
+                from: sessionStorage.getItem('walletAddress'),
+            })
+
             await deleteCertificateFunction({
                 variables: {
                     DeleteCertificateInput: {
@@ -319,7 +544,6 @@ const CertificateRecords: React.FC<Props> = (props) => {
                     },
                 },
             })
-
             if (certificateDeleteDataError) {
                 throw new Error(certificateDeleteDataError.message)
             }
@@ -329,6 +553,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         }
         setSelectedDegrees([])
         setDegrees(_degrees)
+        startCronJobFunction()
         return 'Selected degrees removed!'
     }
 
@@ -397,13 +622,29 @@ const CertificateRecords: React.FC<Props> = (props) => {
         )
     }
 
-    const hashBodyTemplate = (rowData) => {
+    const urlBodyTemplate = (rowData) => {
         return (
             <>
-                <span className="p-column-title">Hash</span>
-                {rowData.hash}
+                <span className="p-column-title">url</span>
+                {rowData.url}
             </>
         )
+    }
+
+    const downloadCertificateResult = async (certificate) => {
+        try {
+            console.log(certificate)
+            const response = await axios.get(certificate.url, {
+                responseType: 'blob',
+            })
+            const blob = new Blob([response.data], { type: 'application/pdf' })
+            console.log(response)
+            FileSaver.saveAs(blob, `${certificate.id}.pdf`)
+        } catch (error) {
+            console.error(error)
+            throw new Error(error.message)
+        }
+        return 'Certificate Downloaded!'
     }
 
     const actionBodyTemplate = (rowData) => {
@@ -412,6 +653,17 @@ const CertificateRecords: React.FC<Props> = (props) => {
                 <Button
                     icon="pi pi-arrow-down"
                     className="p-button-rounded p-button-success mr-2"
+                    onClick={() => {
+                        toast.promise(downloadCertificateResult(rowData), {
+                            loading: 'Certificate is being downloaded...',
+                            success: (data) => {
+                                return data
+                            },
+                            error: (error) => {
+                                return error.message
+                            },
+                        })
+                    }}
                 />
                 <Button
                     icon="pi pi-refresh"
@@ -623,9 +875,9 @@ const CertificateRecords: React.FC<Props> = (props) => {
                                 headerStyle={{ width: '4rem' }}
                             ></Column>
                             <Column
-                                field="hash"
-                                header="Hash"
-                                body={hashBodyTemplate}
+                                field="url"
+                                header="Url"
+                                body={urlBodyTemplate}
                                 sortable
                                 headerStyle={{ minWidth: '15rem' }}
                             ></Column>
@@ -683,58 +935,28 @@ const CertificateRecords: React.FC<Props> = (props) => {
                                 <i className="pi pi-fw pi-id-card" />
                             </span>
                         </div>
-                        <div className="field">
-                            <label htmlFor="hash">Hash</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="hash"
-                                    value={degree.hash}
-                                    onChange={(e) => onInputChange(e, 'hash')}
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid': submitted && !degree.hash,
-                                    })}
-                                />
-                                {submitted && !degree.hash && (
-                                    <small className="p-invalid">
-                                        Hash is required.
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-prime" />
-                            </span>
-                        </div>
                     </Dialog>
 
                     <Dialog
                         visible={degreeUpdateDialog}
                         style={{ width: '450px' }}
-                        header="Degree Details"
+                        header="Confirm"
                         modal
                         className="p-fluid"
                         footer={updateDegreeDialogFooter}
                         onHide={hideUpdateDegreeDialog}
                     >
-                        <div className="field">
-                            <label htmlFor="hash">Hash</label>
-                            <span className="p-input-icon-right">
-                                <InputText
-                                    id="hash"
-                                    value={degree.hash}
-                                    onChange={(e) => onInputChange(e, 'hash')}
-                                    required
-                                    autoFocus
-                                    className={classNames({
-                                        'p-invalid': submitted && !degree.hash,
-                                    })}
-                                />
-                                {submitted && !degree.hash && (
-                                    <small className="p-invalid">
-                                        Hash is required.
-                                    </small>
-                                )}
-                                <i className="pi pi-fw pi-prime" />
-                            </span>
+                        <div className="flex align-items-center justify-content-center">
+                            <i
+                                className="pi pi-exclamation-triangle mr-3"
+                                style={{ fontSize: '2rem' }}
+                            />
+                            {degree && (
+                                <span>
+                                    Are you sure you want to update{' '}
+                                    <b>{degree.name}</b>?
+                                </span>
+                            )}
                         </div>
                     </Dialog>
 
@@ -776,7 +998,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                             {degree && (
                                 <span>
                                     Are you sure you want to delete the selected
-                                    academic certificate
+                                    academic certificate?
                                 </span>
                             )}
                         </div>

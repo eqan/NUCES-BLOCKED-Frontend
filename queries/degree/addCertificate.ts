@@ -7,8 +7,9 @@ export const CREATE_CERTIFICATE = gql`
             url
             student {
                 name
+                email
+                batch
             }
-            updatedAt
         }
     }
 `
