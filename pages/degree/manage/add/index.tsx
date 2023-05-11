@@ -412,70 +412,77 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     // TODO: Issue in button double click when generating degrees
     const generateDegrees = async () => {
-        await connectToMetaMask()
-        stopCronJobFunction()
-        try {
-            if (isMetaMaskConnected) {
-                setTextContent('Collecting Data')
-                setTextContent('Self-Generating Certificates')
-                setIsIntermidate(false)
-                await fetchContributionsData()
+        if (contributions && contributions?.length > 0) {
+            await connectToMetaMask()
+            stopCronJobFunction()
+            try {
+                if (isMetaMaskConnected) {
+                    setTextContent('Collecting Data')
+                    setTextContent('Self-Generating Certificates')
+                    setIsIntermidate(false)
 
-                // Calculate progress percentage for cvGeneratorAndUploader
-                const contributionCount = contributions?.length || 0
+                    // Calculate progress percentage for cvGeneratorAndUploader
+                    const contributionCount = contributions?.length || 0
 
-                const cvGeneratorPercentage = Math.round(
-                    (50 / contributionCount) * 100
-                )
-
-                const { dataForBlockchain, dataForDatabase } =
-                    await cvGeneratorAndUploader(contributions)
-                if (dataForBlockchain || dataForBlockchain?.length > 0) {
-                    console.log(dataForBlockchain, dataForDatabase)
-                    setValue(
-                        (prevProgress) => prevProgress + cvGeneratorPercentage
+                    const cvGeneratorPercentage = Math.round(
+                        (50 / contributionCount) * 100
                     )
 
-                    // Calculate progress percentage for uploading to database
-                    const databaseUploadPercentage = 25
-                    setValue(
-                        (prevProgress) =>
-                            prevProgress + databaseUploadPercentage
-                    )
-                    // let isDataUploadedSuccessfully =
-                    //     await createCertificateFunction({
-                    //         variables: {
-                    //             certificates: dataForDatabase,
-                    //         },
-                    //     })
+                    const { dataForBlockchain, dataForDatabase } =
+                        await cvGeneratorAndUploader(contributions)
+                    if (dataForBlockchain || dataForBlockchain?.length > 0) {
+                        console.log(dataForBlockchain, dataForDatabase)
+                        setValue(
+                            (prevProgress) =>
+                                prevProgress + cvGeneratorPercentage
+                        )
 
-                    // Calculate progress percentage for uploading to blockchain
-                    const blockchainUploadPercentage = 25
-                    setValue(
-                        (prevProgress) =>
-                            prevProgress + blockchainUploadPercentage
-                    )
-                    // if (isDataUploadedSuccessfully) {
-                    await contract.functions.addCertificates(
-                        dataForBlockchain,
-                        {
-                            from: sessionStorage.getItem('walletAddress'),
+                        // Calculate progress percentage for uploading to database
+                        const databaseUploadPercentage = 25
+                        setValue(
+                            (prevProgress) =>
+                                prevProgress + databaseUploadPercentage
+                        )
+                        let isDataUploadedSuccessfully =
+                            await createCertificateFunction({
+                                variables: {
+                                    certificates: dataForDatabase,
+                                },
+                            })
+
+                        // Calculate progress percentage for uploading to blockchain
+                        const blockchainUploadPercentage = 25
+                        setValue(
+                            (prevProgress) =>
+                                prevProgress + blockchainUploadPercentage
+                        )
+                        if (isDataUploadedSuccessfully) {
+                            await contract.functions.addCertificates(
+                                dataForBlockchain,
+                                {
+                                    from: sessionStorage.getItem(
+                                        'walletAddress'
+                                    ),
+                                }
+                            )
                         }
-                    )
-                    // }
-                    setValue(100)
-                    toast.success('Certificates have been deployed!')
-                } else {
-                    toast.error('No contributions found!')
+                        setValue(100)
+                        toast.success('Certificates have been deployed!')
+                    } else {
+                        toast.error('No contributions found!')
+                    }
                 }
+            } catch (error) {
+                toast.error(error.message)
+                console.log(error)
             }
-        } catch (error) {
-            toast.error(error.message)
-            console.log(error)
+            setValue(0)
+            setTextContent('')
+            startCronJobFunction()
+        } else {
+            await fetchContributionsData()
+            toast.message('Currently data is being fetched in the background!')
         }
-        setValue(0)
-        setTextContent('')
-        startCronJobFunction()
     }
 
     const locallyUpdateThePaginatedResults = () => {

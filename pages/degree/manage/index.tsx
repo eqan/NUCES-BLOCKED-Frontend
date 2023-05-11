@@ -360,109 +360,119 @@ const CertificateRecords: React.FC<Props> = (props) => {
     }
 
     const addDegree = async (): Promise<string> => {
-        await connectToMetaMask()
-        stopCronJobFunction()
-        if (degree.rollno) {
-            setSubmitted(true)
-            setAddDegreeDialog(false)
-            let _degrees = [...degrees]
-            let _degree = { ...degree }
-            try {
-                setStudentDataToFetch(degree.rollno)
+        if (student) {
+            await connectToMetaMask()
+            stopCronJobFunction()
+            if (degree.rollno) {
+                setSubmitted(true)
+                setAddDegreeDialog(false)
+                let _degrees = [...degrees]
+                let _degree = { ...degree }
+                try {
+                    const { dataForBlockchain, dataForDatabase } =
+                        await cvGeneratorAndUploader([student])
+                    const _tempDataForDatabase = dataForDatabase?.pop()
+                    const _tempDataForBlockchain = dataForBlockchain?.pop()
+                    if (dataForDatabase) {
+                        _degrees[_degree.rollno] = _degree
+                        let _newDegree = await createCertificateFunction({
+                            variables: {
+                                CreateCertificateInput: _tempDataForDatabase,
+                            },
+                        })
+                        if (_newDegree) {
+                            _tempDataForBlockchain.batch =
+                                _newDegree?.data?.CreateCertificate?.student?.batch
+                            _tempDataForBlockchain.email =
+                                _newDegree?.data?.CreateCertificate?.student?.email
+                            await contract.functions.addCertificate(
+                                ..._tempDataForBlockchain,
+                                {
+                                    from: sessionStorage.getItem(
+                                        'walletAddress'
+                                    ),
+                                }
+                            )
+                            _newDegree = _newDegree.data['CreateCertificate']
+                            const mappedData: CertificateInterface =
+                                mapCertificateToCertificateRecord(_newDegree)
+                            _degrees = _degrees.filter(
+                                (item) => (item.rollno = mappedData.id)
+                            )
+                            _degrees.push(mappedData)
+                            setDegrees(_degrees)
+                        }
+                    } else {
+                        throw new Error('No Certificate to deploy!')
+                    }
+                } catch (error) {
+                    console.log(error)
+                    throw new Error(error.message)
+                }
+                setDegree(CertificateRecordInterface)
+            }
+            startCronJobFunction()
+            return 'Certificate has been deployed!'
+        } else {
+            setStudentDataToFetch(degree.rollno)
+            await fetchContributionsData()
+            return 'Currently data is being fetched in the background!'
+        }
+    }
 
-                await fetchContributionsData()
-                const { dataForBlockchain, dataForDatabase } =
-                    await cvGeneratorAndUploader([student])
-                const _tempDataForDatabase = dataForDatabase?.pop()
-                const _tempDataForBlockchain = dataForBlockchain?.pop()
-                if (dataForDatabase) {
-                    _degrees[_degree.rollno] = _degree
-                    let _newDegree = await createCertificateFunction({
+    const updateDegree = async (): Promise<String> => {
+        if (student) {
+            await connectToMetaMask()
+            stopCronJobFunction()
+            if (degree.url) {
+                setSubmitted(true)
+                setUpdateDegreeDialog(false)
+                let _degrees = [...degrees]
+                let _degree = { ...degree }
+                try {
+                    setStudentDataToFetch(degree.rollno)
+                    await fetchContributionsData()
+                    const { dataForBlockchain, dataForDatabase } =
+                        await cvGeneratorAndUploader([student])
+                    const _tempDataForDatabase = dataForDatabase?.pop()
+                    const _tempDataForBlockchain = dataForBlockchain?.pop()
+                    const index = findIndexById(_degree.rollno)
+                    _degrees[index] = _degree
+                    let _updatedDegree = await updateCertificateFunction({
                         variables: {
-                            CreateCertificateInput: _tempDataForDatabase,
+                            UpdateCertificateInput: _tempDataForDatabase,
                         },
                     })
-                    if (_newDegree) {
+
+                    if (_updatedDegree) {
                         _tempDataForBlockchain.batch =
-                            _newDegree?.data?.CreateCertificate?.student?.batch
+                            _updatedDegree?.data?.UpdateCertificate?.student?.batch
                         _tempDataForBlockchain.email =
-                            _newDegree?.data?.CreateCertificate?.student?.email
-                        await contract.functions.addCertificate(
+                            _updatedDegree?.data?.UpdateCertificate?.student?.email
+                        await contract.functions.updateCertificate(
                             ..._tempDataForBlockchain,
                             {
                                 from: sessionStorage.getItem('walletAddress'),
                             }
                         )
-                        _newDegree = _newDegree.data['CreateCertificate']
-                        const mappedData: CertificateInterface =
-                            mapCertificateToCertificateRecord(_newDegree)
-                        _degrees = _degrees.filter(
-                            (item) => (item.rollno = mappedData.id)
-                        )
-                        _degrees.push(mappedData)
-                        setDegrees(_degrees)
+                    } else {
+                        throw new Error('No Certificate to update!')
                     }
-                } else {
-                    throw new Error('No Certificate to deploy!')
+                    setDegrees(_degrees)
+                } catch (error) {
+                    console.log(error)
+                    throw new Error(error.message)
                 }
-            } catch (error) {
-                console.log(error)
-                throw new Error(error.message)
+
+                setDegree(CertificateRecordInterface)
             }
-            setDegree(CertificateRecordInterface)
+            startCronJobFunction()
+            return 'Certificate has been updated!'
+        } else {
+            setStudentDataToFetch(degree.rollno)
+            await fetchContributionsData()
+            return 'Currently data is being fetched in the background!'
         }
-        startCronJobFunction()
-        return 'Certificate has been deployed!'
-    }
-
-    const updateDegree = async (): Promise<String> => {
-        await connectToMetaMask()
-        stopCronJobFunction()
-        if (degree.url) {
-            setSubmitted(true)
-            setUpdateDegreeDialog(false)
-            let _degrees = [...degrees]
-            let _degree = { ...degree }
-            try {
-                setStudentDataToFetch(degree.rollno)
-                await fetchContributionsData()
-                const { dataForBlockchain, dataForDatabase } =
-                    await cvGeneratorAndUploader([student])
-                const _tempDataForDatabase = dataForDatabase?.pop()
-                const _tempDataForBlockchain = dataForBlockchain?.pop()
-                const index = findIndexById(_degree.rollno)
-                _degrees[index] = _degree
-                let _updatedDegree = await updateCertificateFunction({
-                    variables: {
-                        UpdateCertificateInput: _tempDataForDatabase,
-                    },
-                })
-
-                if (_updatedDegree) {
-                    _tempDataForBlockchain.batch =
-                        _updatedDegree?.data?.UpdateCertificate?.student?.batch
-                    _tempDataForBlockchain.email =
-                        _updatedDegree?.data?.UpdateCertificate?.student?.email
-                    console.log(_tempDataForBlockchain, _updatedDegree)
-                    await contract.functions.updateCertificate(
-                        ..._tempDataForBlockchain,
-                        {
-                            from: sessionStorage.getItem('walletAddress'),
-                        }
-                    )
-                } else {
-                    throw new Error('No Certificate to update!')
-                }
-                setDegrees(_degrees)
-            } catch (error) {
-                console.log(error)
-                throw new Error(error.message)
-            }
-
-            setDegree(CertificateRecordInterface)
-        }
-        startCronJobFunction()
-        return 'Certificate has been updated!'
     }
 
     const editDegree = (degree) => {
