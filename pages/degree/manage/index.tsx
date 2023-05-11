@@ -450,6 +450,8 @@ const CertificateRecords: React.FC<Props> = (props) => {
                             from: sessionStorage.getItem('walletAddress'),
                         }
                     )
+                } else {
+                    throw new Error('No Certificate to update!')
                 }
                 setDegrees(_degrees)
             } catch (error) {
