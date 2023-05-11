@@ -31,16 +31,11 @@ import {
     StudentMetaDataDetails,
     StudentTopSectionInformation,
 } from '../../../utils/resumer-generator/interfaces/interfaces'
-import {
-    Certificate,
-    CertificateForDatabase,
-    IndexAllContributionsForResume,
-} from './add'
+import { IndexAllContributionsForResume } from './add'
 import { DeployedContracts } from '../../../contracts/deployedAddresses'
 import ABI from '../../../contracts/CertificateStore.json'
 import { ethers } from 'ethers'
-import fileUploaderToNFTStorage from '../../../utils/fileUploaderToNFTStorage'
-import { generatePDFBlob } from '../../../utils/convertCVtoBlob'
+import { cvGeneratorAndUploader } from '../../../utils/CVGeneratorUtils'
 import axios from 'axios'
 import FileSaver from 'file-saver'
 
@@ -80,7 +75,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         data: IndexAllContributionsForResume
     ): Student => {
         try {
-            const contributionsByStudentId: Student = null
+            const contributionsByStudentId: { [id: string]: Student } = {}
             const dataToIterateOver = [
                 {
                     contributions: data?.careerCounsellorContributions,
@@ -138,24 +133,22 @@ const CertificateRecords: React.FC<Props> = (props) => {
                         }
 
                         let foundMatchingContributorType = false
-                        contributionsByStudentId.contributions.forEach(
-                            (c, index) => {
-                                if (c.contributorType == type) {
-                                    foundMatchingContributorType = true
-                                    contributionsByStudentId[
-                                        contribution.studentId
-                                    ].contributions[
-                                        index
-                                    ].subContributions.push({
-                                        contributionType: contributionType,
-                                        contributor: contribution.contributor,
-                                        title: contribution.title,
-                                        contribution: contribution.contribution,
-                                        date: contribution.updatedAt.toString(),
-                                    })
-                                }
+                        contributionsByStudentId[
+                            contribution.studentId
+                        ].contributions.forEach((c, index) => {
+                            if (c.contributorType == type) {
+                                foundMatchingContributorType = true
+                                contributionsByStudentId[
+                                    contribution.studentId
+                                ].contributions[index].subContributions.push({
+                                    contributionType: contributionType,
+                                    contributor: contribution.contributor,
+                                    title: contribution.title,
+                                    contribution: contribution.contribution,
+                                    date: contribution.updatedAt.toString(),
+                                })
                             }
-                        )
+                        })
 
                         if (!foundMatchingContributorType) {
                             contributionsByStudentId[
@@ -176,7 +169,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                     })
                 }
             }
-            return contributionsByStudentId
+            return contributionsByStudentId[studentDataToFetch] || null
         } catch (error) {
             console.log(error)
             toast.error(error.message)
@@ -366,39 +359,6 @@ const CertificateRecords: React.FC<Props> = (props) => {
         }
     }
 
-    const cvGeneratorAndUploader = async () => {
-        const dataForBlockchain: Certificate[] = []
-        const dataForDatabase: CertificateForDatabase[] = []
-
-        try {
-            const pdfBlob = await generatePDFBlob(student)
-            const url = await fileUploaderToNFTStorage(
-                pdfBlob,
-                student.heading.id,
-                '.pdf',
-                'application/pdf',
-                `Academic portfolio of ${student.heading.id}`
-            )
-            dataForBlockchain.push({
-                id: student.metaDataDetails.rollNumber,
-                name: student.heading.studentName,
-                email: student.metaDataDetails.email,
-                url,
-                cgpa: student.topPriorityInformation.cgpa,
-                batch: student.heading.batch,
-            })
-            dataForDatabase.push({
-                id: student.metaDataDetails.rollNumber,
-                url,
-            })
-        } catch (error) {
-            console.error(error)
-            toast.error(error.message)
-        }
-
-        return { dataForBlockchain, dataForDatabase }
-    }
-
     const addDegree = async (): Promise<string> => {
         await connectToMetaMask()
         stopCronJobFunction()
@@ -409,30 +369,46 @@ const CertificateRecords: React.FC<Props> = (props) => {
             let _degree = { ...degree }
             try {
                 setStudentDataToFetch(degree.rollno)
+
                 await fetchContributionsData()
-
-                const { dataForBlockchain, dataForDatabase } =
-                    await cvGeneratorAndUploader()
-
-                _degrees[_degree.rollno] = _degree
-                let newDegree = await createCertificateFunction({
-                    variables: {
-                        CreateCertificateInput: dataForDatabase,
-                    },
-                })
-                if (newDegree) {
-                    await contract.functions.addCertificate(dataForBlockchain, {
-                        from: sessionStorage.getItem('walletAddress'),
-                    })
+                try {
+                    var { dataForBlockchain, dataForDatabase } =
+                        await cvGeneratorAndUploader([student])
+                } catch (error) {
+                    toast.error(error.message)
                 }
-                newDegree = newDegree.data['CreateCertificate']
-                const mappedData: CertificateInterface =
-                    mapCertificateToCertificateRecord(newDegree)
-                _degrees = _degrees.filter(
-                    (item) => (item.rollno = mappedData.id)
-                )
-                _degrees.push(mappedData)
-                setDegrees(_degrees)
+                const _tempDataForDatabase = dataForDatabase?.pop()
+                const _tempDataForBlockchain = dataForBlockchain?.pop()
+                if (dataForDatabase) {
+                    _degrees[_degree.rollno] = _degree
+                    let _newDegree = await createCertificateFunction({
+                        variables: {
+                            CreateCertificateInput: _tempDataForDatabase,
+                        },
+                    })
+                    if (_newDegree) {
+                        _tempDataForBlockchain.batch =
+                            _newDegree?.data?.CreateCertificate?.student?.batch
+                        _tempDataForBlockchain.email =
+                            _newDegree?.data?.CreateCertificate?.student?.email
+                        await contract.functions.addCertificate(
+                            ...Object.values(_tempDataForBlockchain),
+                            {
+                                from: sessionStorage.getItem('walletAddress'),
+                            }
+                        )
+                        _newDegree = _newDegree.data['CreateCertificate']
+                        const mappedData: CertificateInterface =
+                            mapCertificateToCertificateRecord(_newDegree)
+                        _degrees = _degrees.filter(
+                            (item) => (item.rollno = mappedData.id)
+                        )
+                        _degrees.push(mappedData)
+                        setDegrees(_degrees)
+                    }
+                } else {
+                    throw new Error('No Certificate to deploy!')
+                }
             } catch (error) {
                 console.log(error)
                 throw new Error(error.message)
@@ -446,15 +422,15 @@ const CertificateRecords: React.FC<Props> = (props) => {
     const updateDegree = async (): Promise<String> => {
         await connectToMetaMask()
         stopCronJobFunction()
+        setSubmitted(true)
         if (degree.url) {
-            setSubmitted(true)
             let _degrees = [...degrees]
             let _degree = { ...degree }
             try {
                 await fetchContributionsData()
 
                 const { dataForBlockchain, dataForDatabase } =
-                    await cvGeneratorAndUploader()
+                    await cvGeneratorAndUploader([student])
 
                 const index = findIndexById(_degree.rollno)
                 _degrees[index] = _degree
@@ -891,7 +867,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                             ></Column>
                             <Column
                                 field="url"
-                                header="url"
+                                header="Url"
                                 body={urlBodyTemplate}
                                 sortable
                                 headerStyle={{ minWidth: '15rem' }}
