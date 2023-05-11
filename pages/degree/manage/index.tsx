@@ -371,7 +371,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                 setStudentDataToFetch(degree.rollno)
 
                 await fetchContributionsData()
-                var { dataForBlockchain, dataForDatabase } =
+                const { dataForBlockchain, dataForDatabase } =
                     await cvGeneratorAndUploader([student])
                 const _tempDataForDatabase = dataForDatabase?.pop()
                 const _tempDataForBlockchain = dataForBlockchain?.pop()
@@ -388,7 +388,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                         _tempDataForBlockchain.email =
                             _newDegree?.data?.CreateCertificate?.student?.email
                         await contract.functions.addCertificate(
-                            ...Object.values(_tempDataForBlockchain),
+                            ..._tempDataForBlockchain,
                             {
                                 from: sessionStorage.getItem('walletAddress'),
                             }
@@ -445,7 +445,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                         _updatedDegree?.data?.UpdateCertificate?.student?.email
                     console.log(_tempDataForBlockchain, _updatedDegree)
                     await contract.functions.updateCertificate(
-                        ...Object.values(_tempDataForBlockchain),
+                        ..._tempDataForBlockchain,
                         {
                             from: sessionStorage.getItem('walletAddress'),
                         }

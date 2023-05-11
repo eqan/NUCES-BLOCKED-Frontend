@@ -14,6 +14,8 @@ export const INDEX_ALL_CONTRIBUTIONS = gql`
                     name
                     cgpa
                     honours
+                    batch
+                    email
                 }
             }
             societyHeadsContributions {
@@ -27,6 +29,8 @@ export const INDEX_ALL_CONTRIBUTIONS = gql`
                     name
                     cgpa
                     honours
+                    batch
+                    email
                 }
             }
             teachersContribution {
@@ -40,6 +44,8 @@ export const INDEX_ALL_CONTRIBUTIONS = gql`
                     name
                     cgpa
                     honours
+                    batch
+                    email
                 }
             }
         }

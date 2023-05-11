@@ -16,7 +16,7 @@ export async function generatePDFBlob(student: Student): Promise<Blob> {
 }
 
 export async function cvGeneratorAndUploader(contributions: Student[]) {
-    const dataForBlockchain: Certificate[] = []
+    const dataForBlockchain = []
     const dataForDatabase: CertificateForDatabase[] = []
 
     for (const student of contributions) {
@@ -29,14 +29,15 @@ export async function cvGeneratorAndUploader(contributions: Student[]) {
                 'application/pdf',
                 `Academic portfolio of ${student.heading.id}`
             )
-            dataForBlockchain.push({
-                id: student.metaDataDetails.rollNumber,
-                name: student.heading.studentName,
-                email: student.metaDataDetails.email,
+            dataForBlockchain.push([
+                student.metaDataDetails.rollNumber,
+                student.heading.studentName,
+                student.metaDataDetails.email,
                 url,
-                cgpa: student.topPriorityInformation.cgpa,
-                batch: student.heading.batch,
-            })
+                student.topPriorityInformation.cgpa,
+                student.heading.batch,
+                student?.topPriorityInformation?.honors || '',
+            ])
             dataForDatabase.push({
                 id: student.metaDataDetails.rollNumber,
                 url,
