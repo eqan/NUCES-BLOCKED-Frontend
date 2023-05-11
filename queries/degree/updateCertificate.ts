@@ -7,6 +7,11 @@ export const UPDATE_CERTIFICATE = gql`
         UpdateCertificate(UpdateCertificateInput: $UpdateCertificateInput) {
             id
             url
+            student {
+                name
+                email
+                batch
+            }
         }
     }
 `
