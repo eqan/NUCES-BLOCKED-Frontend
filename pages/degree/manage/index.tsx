@@ -37,11 +37,12 @@ import { ethers } from 'ethers'
 import { cvGeneratorAndUploader } from '../../../utils/CVGeneratorUtils'
 import axios from 'axios'
 import FileSaver from 'file-saver'
-import { Props } from 'react-toggle-dark-mode'
 import {
     CertificateInterface,
     IndexAllContributionsForResume,
 } from '../../../utils/interfaces/CVGenerator'
+import { Props } from '../../../utils/interfaces/UserPropsForAuthentication'
+import { serverSideProps } from '../../../utils/requireAuthentication'
 
 const CertificateRecords: React.FC<Props> = (props) => {
     let CertificateRecordInterface = {
@@ -1011,37 +1012,5 @@ const CertificateRecords: React.FC<Props> = (props) => {
     )
 }
 
-export const getServerSideProps: GetServerSideProps = requireAuthentication(
-    async (ctx) => {
-        const { req } = ctx
-        if (req.headers.cookie) {
-            const tokens = req.headers.cookie.split(';')
-            const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
-            if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
-                await apolloClient
-                    .query({
-                        query: GET_USER_DATA,
-                        variables: { userEmail },
-                    })
-                    .then((result) => {
-                        userData = result.data.GetUserDataByUserEmail
-                    })
-                    .catch((error) => {
-                        console.log(error)
-                    })
-            }
-            return {
-                props: {
-                    userType: userData?.type || null,
-                    userimg: userData?.imgUrl || null,
-                },
-            }
-        }
-    }
-)
-
+export const getServerSideProps: GetServerSideProps = serverSideProps
 export default CertificateRecords
