@@ -15,7 +15,11 @@ export async function generatePDFBlob(student: Student): Promise<Blob> {
     }
 }
 
-export async function cvGeneratorAndUploader(contributions: Student[]) {
+export async function cvGeneratorAndUploader(
+    contributions: Student[],
+    setValue?: React.Dispatch<React.SetStateAction<number>>,
+    valueIncrement?: number
+) {
     const dataForBlockchain = []
     const dataForDatabase: CertificateForDatabase[] = []
 
@@ -42,6 +46,8 @@ export async function cvGeneratorAndUploader(contributions: Student[]) {
                 id: student.metaDataDetails.rollNumber,
                 url,
             })
+            if (setValue)
+                setValue((prevProgress) => prevProgress + valueIncrement)
         } catch (error) {
             console.error(error)
             throw new Error(error)
