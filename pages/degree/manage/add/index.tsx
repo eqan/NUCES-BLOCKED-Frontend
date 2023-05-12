@@ -35,6 +35,7 @@ import { ethers } from 'ethers'
 import ABI from '../../../../contracts/CertificateStore.json'
 import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
 import { cvGeneratorAndUploader } from '../../../../utils/CVGeneratorUtils'
+import { UPDATE_ELIGIBILE_STUDENTS_TO_INPROGRESS } from '../../../../queries/students/updateEligibleStudentsToInProgress'
 
 interface Props {
     userType: string | null
@@ -242,6 +243,9 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [updateEligibilityStatusesForAllStudents] = useMutation(
         UPDATE_ELIGIBILITY_STATUS_FOR_ALL_STUDENTS
     )
+    const [updateEligibleStudentsToInprogress] = useMutation(
+        UPDATE_ELIGIBILE_STUDENTS_TO_INPROGRESS
+    )
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
@@ -253,7 +257,13 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         'ALREADY_PUBLISHED',
         'NOT_ELIGIBLE',
         'NOT_ALLOWED',
+        'IN_PROGRESS',
     ]
+    // Create a new options array without the IN_PROGRESS option
+    const optionsWithoutInProgress = eligibilityStatusEnums.filter(
+        (option) => option !== 'IN_PROGRESS'
+    )
+
     const [
         studentsData,
         studentsLoading,
@@ -389,7 +399,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             const index = data?.rowIndex
             _students[index] = _student
             if (_student != null) {
-                const data = await updateStudentFunction({
+                await updateStudentFunction({
                     variables: {
                         UpdateStudentInput: {
                             id: _student.id,
@@ -410,7 +420,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    // TODO: Issue in button double click when generating degrees
     const generateDegrees = async () => {
         if (contributions && contributions?.length > 0) {
             await connectToMetaMask()
@@ -421,6 +430,11 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     setTextContent('Self-Generating Certificates')
                     setIsIntermidate(false)
 
+                    await updateEligibleStudentsToInprogress()
+                    locallyUpdateStudentsEligbilityToDesired(
+                        'ELIGIBLE',
+                        'IN_PROGRESS'
+                    )
                     // Calculate progress percentage for cvGeneratorAndUploader
                     const contributionCount = contributions?.length || 0
 
@@ -430,7 +444,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
                     const { dataForBlockchain, dataForDatabase } =
                         await cvGeneratorAndUploader(contributions)
-                    if (dataForBlockchain || dataForBlockchain?.length > 0) {
+                    if (dataForBlockchain && dataForBlockchain?.length > 0) {
                         console.log(dataForBlockchain, dataForDatabase)
                         setValue(
                             (prevProgress) =>
@@ -466,6 +480,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                 }
                             )
                         }
+                        locallyUpdateStudentsEligbilityToDesired(
+                            'IN_PROGRESS',
+                            'ALREADY_PUBLISHED'
+                        )
                         setValue(100)
                         toast.success('Certificates have been deployed!')
                     } else {
@@ -485,13 +503,26 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    const locallyUpdateThePaginatedResults = () => {
+    const locallyUpdateEligibilityOfStudents = () => {
         // Locally Updated the eligibility for the paginated results
         const currentYear = new Date().getFullYear()
         for (const student of students) {
             const batchYear = parseInt(student.batch)
-            if (batchYear + 4 <= currentYear) {
+            if (
+                batchYear + 4 <= currentYear &&
+                student.eligibilityStatus == 'NOT_ELIGIBLE'
+            ) {
                 student.eligibilityStatus = 'ELIGIBLE'
+            }
+        }
+        setStudents(students)
+    }
+
+    const locallyUpdateStudentsEligbilityToDesired = (from, to) => {
+        // Locally Updated the eligibility for the paginated results
+        for (const student of students) {
+            if (student.eligibilityStatus == from) {
+                student.eligibilityStatus = to
             }
         }
         setStudents(students)
@@ -502,7 +533,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             setTextContent('Updating Students Eligibility Criteria')
             setIsIntermidate(true)
             await updateEligibilityStatusesForAllStudents()
-            locallyUpdateThePaginatedResults()
+            locallyUpdateEligibilityOfStudents()
             toast.success('Eligibility Criteras Updated Successfully!')
             setIsIntermidate(false)
             setTextContent('')
@@ -545,6 +576,8 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 return 'info'
             case 'NOT_ALLOWED':
                 return 'danger'
+            case 'IN_PROGRESS':
+                return 'Primary'
             default:
                 return null
         }
@@ -580,7 +613,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         return (
             <Dropdown
                 value={options.value}
-                options={eligibilityStatusEnums}
+                options={optionsWithoutInProgress}
                 onChange={(e) => {
                     updateSelectedStudent(options, e.value),
                         options.editorCallback(e.value)
