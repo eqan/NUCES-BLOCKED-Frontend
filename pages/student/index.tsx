@@ -21,11 +21,7 @@ import apolloClient from '../../apollo-client'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { toast, Toaster } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
-
-interface Props {
-    userType: string | null
-    userimg: string | null
-}
+import { Props } from 'react-toggle-dark-mode'
 
 interface StudentInterface {
     id: string

@@ -36,75 +36,11 @@ import ABI from '../../../../contracts/CertificateStore.json'
 import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
 import { cvGeneratorAndUploader } from '../../../../utils/CVGeneratorUtils'
 import { UPDATE_ELIGIBILE_STUDENTS_TO_INPROGRESS } from '../../../../queries/students/updateEligibleStudentsToInProgress'
-
-interface Props {
-    userType: string | null
-    userimg: string | null
-}
-
-export interface CertificateForDatabase {
-    id: string
-    url: string
-}
-
-export interface Certificate {
-    id: string
-    name: string
-    email: string
-    url: string
-    cgpa: string
-    batch: string
-    honors: string | null
-}
-interface StudentInterface {
-    id: string
-    name: string
-    rollno: string
-    email: string
-    date: string
-    batch: string
-    eligibilityStatus: string
-    honours: string
-}
-export interface IndexAllContributionsForResume {
-    careerCounsellorContributions: {
-        student: {
-            name: string
-            cgpa: string
-            honours: string
-        }
-        studentId: string
-        careerCounsellorContributionType: string
-        contribution: string
-        contributor: string
-        title: string
-        updatedAt: string
-    }[]
-    societyHeadsContributions: {
-        student: {
-            name: string
-            cgpa: string
-            honours: string
-        }
-        societyHeadContributionType: string
-        contribution: string
-        contributor: string
-        title: string
-        updatedAt: string
-    }[]
-    teacherContributions: {
-        student: {
-            name: string
-            cgpa: string
-            honours: string
-        }
-        teacherContributionType: string
-        contribution: string
-        contributor: string
-        title: string
-        updatedAt: string
-    }[]
-}
+import {
+    IndexAllContributionsForResume,
+    StudentInterface,
+} from '../../../../utils/interfaces/CVGenerator'
+import { Props } from '../../../../utils/interfaces/UserPropsForAuthentication'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const mapStudentToStudentRecord = (student: StudentInterface) => {

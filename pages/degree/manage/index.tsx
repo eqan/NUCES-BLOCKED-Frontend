@@ -31,26 +31,18 @@ import {
     StudentMetaDataDetails,
     StudentTopSectionInformation,
 } from '../../../utils/resumer-generator/interfaces/interfaces'
-import { IndexAllContributionsForResume } from './add'
 import { DeployedContracts } from '../../../contracts/deployedAddresses'
 import ABI from '../../../contracts/CertificateStore.json'
 import { ethers } from 'ethers'
 import { cvGeneratorAndUploader } from '../../../utils/CVGeneratorUtils'
 import axios from 'axios'
 import FileSaver from 'file-saver'
+import { Props } from 'react-toggle-dark-mode'
+import {
+    CertificateInterface,
+    IndexAllContributionsForResume,
+} from '../../../utils/interfaces/CVGenerator'
 
-interface Props {
-    userType: string | null
-    userimg: string | null
-}
-
-interface CertificateInterface {
-    id: string
-    name: string
-    rollno: string
-    date: string
-    url: string
-}
 const CertificateRecords: React.FC<Props> = (props) => {
     let CertificateRecordInterface = {
         id: '',

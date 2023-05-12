@@ -32,6 +32,7 @@ import { validateTransactionBalance } from '../../utils/checkEligibleTransaction
 import useMetaMask from '../../utils/customHooks/useMetaMask'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
+import { Props } from 'react-toggle-dark-mode'
 
 interface ResultsInterface {
     id: string
@@ -40,11 +41,6 @@ interface ResultsInterface {
     url: string
     date: string
 }
-interface Props {
-    userType: string | null
-    userimg: string | null
-}
-
 const SemesterResult: React.FC<Props> = (props) => {
     let ResultsRecordInterface = {
         id: '',
