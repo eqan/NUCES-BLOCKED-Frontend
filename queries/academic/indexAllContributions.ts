@@ -1,8 +1,16 @@
 import { gql, useQuery } from '@apollo/client'
 
-export const INDEX_ALL_CONTRIBUTIONS = gql`
-    query IndexAllContributions($stringId: String!) {
-        IndexAllContributionsForResume(stringId: $stringId) {
+export const INDEX_ALL_CONTRIBUTIONS_QUERY = gql`
+    query IndexAllContributions(
+        $studentId: String!
+        $eligibility: EligibilityStatusEnum!
+    ) {
+        IndexAllContributionsOnCriteria(
+            IndexAllContributionsDto: {
+                studentId: $studentId
+                eligibility: $eligibility
+            }
+        ) {
             careerCounsellorContributions {
                 studentId
                 careerCounsellorContributionType
@@ -52,12 +60,16 @@ export const INDEX_ALL_CONTRIBUTIONS = gql`
     }
 `
 
-export function returnFetchIndexedContributionsHook(studentId: string | null) {
+export function useFetchIndexedContributions(
+    studentId: string,
+    eligibility: string
+) {
     const { data, loading, error, refetch } = useQuery(
-        INDEX_ALL_CONTRIBUTIONS,
+        INDEX_ALL_CONTRIBUTIONS_QUERY,
         {
             variables: {
-                stringId: studentId,
+                studentId,
+                eligibility,
             },
         }
     )

@@ -12,7 +12,7 @@ import { FileUpload } from 'primereact/fileupload'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useEventListener } from 'primereact/hooks'
 import { useRouter } from 'next/router'
-import { returnFetchUsersHook } from '../../queries/users/getUsers'
+import { useFetchUsersHook } from '../../queries/users/getUsers'
 import { DELETE_USER } from '../../queries/users/removeUsers'
 import { CREATE_USER } from '../../queries/users/addUser'
 import { useMutation } from '@apollo/client'
@@ -94,7 +94,7 @@ const UserRecords: React.FC<Props> = (props) => {
     const symbolCheck = new RegExp('^(?=.*[@$!%*?&])')
 
     const [usersData, usersLoading, usersFetchingError, usersRefetchHook] =
-        returnFetchUsersHook(globalFilter, page + 1, pageLimit)
+        useFetchUsersHook(globalFilter, page + 1, pageLimit)
 
     const [
         deleteuserFunction,

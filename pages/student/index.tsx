@@ -11,7 +11,7 @@ import { Skeleton } from 'primereact/skeleton'
 import { classNames } from 'primereact/utils'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { CREATE_STUDENT } from '../../queries/students/addStudent'
-import { returnFetchStudentsHook } from '../../queries/students/getStudents'
+import { useFetchStudentsHook } from '../../queries/students/getStudents'
 import { DELETE_STUDENT } from '../../queries/students/removeStudent'
 import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
 import { GetServerSideProps } from 'next'
@@ -82,7 +82,7 @@ const StudentRecords: React.FC<Props> = (props) => {
         studentsLoading,
         studentsFetchingError,
         studentsRefetchHook,
-    ] = returnFetchStudentsHook(globalFilter, page + 1, pageLimit)
+    ] = useFetchStudentsHook(globalFilter, page + 1, pageLimit)
 
     const [
         deleteStudentFunction,

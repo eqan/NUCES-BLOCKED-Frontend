@@ -8,7 +8,7 @@ import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { returnFetchResultsHook } from '../../queries/results/getResult'
+import { useFetchResultsHook } from '../../queries/results/getResult'
 import { useMutation } from '@apollo/client'
 import { DELETE_RESULT } from '../../queries/results/removeResult'
 import { CREATE_RESULT } from '../../queries/results/addResult'
@@ -86,7 +86,7 @@ const SemesterResult: React.FC<Props> = (props) => {
         resultsLoading,
         resultsFetchingError,
         resultsRefetchHook,
-    ] = returnFetchResultsHook(globalFilter, page + 1, pageLimit)
+    ] = useFetchResultsHook(globalFilter, page + 1, pageLimit)
 
     const [
         deleteResultFunction,

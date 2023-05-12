@@ -6,7 +6,7 @@ import { Button } from 'primereact/button'
 import { useMutation } from '@apollo/client'
 import { Toaster, toast } from 'sonner'
 import { DataTable } from 'primereact/datatable'
-import { returnFetchStudentsHook } from '../../../../queries/students/getStudents'
+import { useFetchStudentsHook } from '../../../../queries/students/getStudents'
 import { UPDATE_STUDENT } from '../../../../queries/students/updateStudent'
 import { Column } from 'primereact/column'
 import { InputText } from 'primereact/inputtext'
@@ -14,7 +14,6 @@ import { Skeleton } from 'primereact/skeleton'
 import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
 import { ThemeContext } from '../../../../utils/customHooks/themeContextProvider'
-import { returnFetchIndexedContributionsHook } from '../../../../queries/academic/indexAllContributions'
 import {
     Footer,
     Student,
@@ -39,6 +38,8 @@ import {
 import { Props } from '../../../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../../../utils/requireAuthentication'
 import { Dialog } from 'primereact/dialog'
+import { useIndexRecordsByEligibilityHook } from '../../../../queries/students/getStudentsByEligibility'
+import { useFetchIndexedContributions } from '../../../../queries/academic/indexAllContributions'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const mapStudentToStudentRecord = (student: StudentInterface) => {
@@ -166,6 +167,8 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [students, setStudents] = useState<StudentInterface[]>([])
     const [textContent, setTextContent] = useState<string>('')
     const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
+    const [typeOfDataToFetch, setTypeOfDataToFetch] =
+        useState<string>('ELIGIBLE')
     const [contributions, setContributions] = useState<Student[]>([])
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
     const [submitted, setSubmitted] = useState<boolean>(true)
@@ -207,14 +210,21 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         studentsLoading,
         studentsFetchingError,
         studentsRefetchHook,
-    ] = returnFetchStudentsHook(globalFilter, page + 1, pageLimit)
+    ] = useFetchStudentsHook(globalFilter, page + 1, pageLimit)
+
+    const [
+        eligibilityBoundStudentsData,
+        eligibilityBoundStudentsLoading,
+        eligibilityBoundStudentsError,
+        eligibilityBoundStudentsRefetchHook,
+    ] = useIndexRecordsByEligibilityHook('ALREADY_PUBLISHED')
 
     const [
         contributionsData,
         contributionsLoading,
         contributionsFetchingError,
         contributionsRefetchHook,
-    ] = returnFetchIndexedContributionsHook(studentDataToFetch)
+    ] = useFetchIndexedContributions(studentDataToFetch, typeOfDataToFetch)
 
     const [
         updateStudentFunction,
@@ -275,6 +285,20 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         setIsLoading(false)
     }
 
+    const initalPromptForInProgressDegress = () => {
+        if (!eligibilityBoundStudentsLoading) {
+            try {
+                let studentsData =
+                    eligibilityBoundStudentsData?.IndexByEligibilityStatus
+                if (studentsData.length > 0) {
+                    openContinueInProgress()
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+    }
+
     useEffect(() => {
         if (window.ethereum !== 'undefined') {
             const abiArray = ABI.abi as any[]
@@ -289,6 +313,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         } else {
             console.error('Metamask not found')
         }
+        initalPromptForInProgressDegress()
     }, [])
 
     useEffect(() => {
@@ -358,6 +383,21 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const compileInProgressDegreesInBackGround = async () => {
+        toast.message('Continuing from where you left...')
+        if (contributions && contributions?.length > 0) {
+            setSubmitted(true)
+            setContinueInProgressDialog(false)
+            setTypeOfDataToFetch('IN_PROGRESS')
+            await contributionsRefetchHook()
+            await generateDegrees()
+            setTypeOfDataToFetch('ELIGIBLE')
+            return 'Degree Generation in background complete!'
+        } else {
+            toast.message('Currently data is being fetched in the background!')
+        }
+    }
+
     const generateDegrees = async () => {
         if (contributions && contributions?.length > 0) {
             await connectToMetaMask()
@@ -371,8 +411,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
                     await updateEligiblilityOfStudents({
                         variables: {
-                            from: 'ELIGIBLE',
-                            to: 'IN_PROGRESS',
+                            UpdateEligibilityInput: {
+                                from: 'ELIGIBLE',
+                                to: 'IN_PROGRESS',
+                            },
                         },
                     })
                     locallyUpdateStudentsEligbilityToDesired(
@@ -428,7 +470,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                         )
                         setValue(100)
                         toast.success('Certificates have been deployed!')
-                        setIsButtonDisabled(false)
                     } else {
                         toast.error('No contributions found!')
                     }
@@ -443,8 +484,8 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         } else {
             await fetchContributionsData()
             toast.message('Currently data is being fetched in the background!')
-            setIsButtonDisabled(false)
         }
+        setIsButtonDisabled(false)
     }
 
     const locallyUpdateEligibilityOfStudents = () => {
@@ -462,7 +503,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         setStudents(students)
     }
 
-    const locallyUpdateStudentsEligbilityToDesired = (from, to) => {
+    const locallyUpdateStudentsEligbilityToDesired = (
+        from: string,
+        to: string
+    ) => {
         // Locally Updated the eligibility for the paginated results
         for (const student of students) {
             if (student.eligibilityStatus == from) {
@@ -502,8 +546,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         setContinueInProgressDialog(false)
         await updateEligiblilityOfStudents({
             variables: {
-                from: 'IN_PROGRESS',
-                to: 'ELIGIBLE',
+                UpdateEligibilityInput: {
+                    from: 'IN_PROGRESS',
+                    to: 'ELIGIBLE',
+                },
             },
         })
     }
@@ -520,17 +566,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 label="Yes"
                 icon="pi pi-check"
                 className="p-button-text"
-                onClick={() => {
-                    toast.promise(updateDegree, {
-                        loading: 'Continuing from where you left...',
-                        success: (data) => {
-                            return data
-                        },
-                        error: (error) => {
-                            return error.message
-                        },
-                    })
-                }}
+                onClick={compileInProgressDegreesInBackGround}
             />
         </>
     )

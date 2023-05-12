@@ -9,7 +9,7 @@ import { Toolbar } from 'primereact/toolbar'
 import { classNames } from 'primereact/utils'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { CREATE_CERTIFICATE } from '../../../queries/degree/addCertificate'
-import { returnFetchCertificatesHook } from '../../../queries/degree/getCertificates'
+import { useFetchCertificatesHook } from '../../../queries/degree/getCertificates'
 import { DELETE_CERTIFICATE } from '../../../queries/degree/removeCertificate'
 import { UPDATE_CERTIFICATE } from '../../../queries/degree/updateCertificate'
 import { useRouter } from 'next/router'
@@ -19,7 +19,6 @@ import { ThemeContext } from '../../../utils/customHooks/themeContextProvider'
 import useMetaMask from '../../../utils/customHooks/useMetaMask'
 import { START_CERTIFICATE_CRON_JOB } from '../../../queries/degree/startCronJob'
 import { STOP_CERTIFICATE_CRON_JOB } from '../../../queries/degree/stopCronJob'
-import { returnFetchIndexedContributionsHook } from '../../../queries/academic/indexAllContributions'
 import {
     Footer,
     Student,
@@ -39,6 +38,7 @@ import {
 } from '../../../interfaces/CVGenerator'
 import { Props } from '../../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../../utils/requireAuthentication'
+import { useFetchIndexedContributions } from '../../../queries/academic/indexAllContributions'
 
 const CertificateRecords: React.FC<Props> = (props) => {
     let CertificateRecordInterface = {
@@ -195,7 +195,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         certificatesLoading,
         certificatesFetchingError,
         certificatesRefetchHook,
-    ] = returnFetchCertificatesHook(globalFilter, page + 1, pageLimit)
+    ] = useFetchCertificatesHook(globalFilter, page + 1, pageLimit)
 
     const [
         deleteCertificateFunction,
@@ -232,7 +232,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         contributionsLoading,
         contributionsFetchingError,
         contributionsRefetchHook,
-    ] = returnFetchIndexedContributionsHook(studentDataToFetch)
+    ] = useFetchIndexedContributions(studentDataToFetch, 'ELIGIBLE')
 
     const fetchData = async () => {
         setIsLoading(true)

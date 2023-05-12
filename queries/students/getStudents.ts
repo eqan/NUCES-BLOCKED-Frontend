@@ -18,7 +18,7 @@ export const GET_STUDENTS = gql`
     }
 `
 
-export function returnFetchStudentsHook(
+export function useFetchStudentsHook(
     studentId: string,
     page: number,
     limit: number

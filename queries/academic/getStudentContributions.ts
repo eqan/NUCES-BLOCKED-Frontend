@@ -51,7 +51,7 @@ export const GET_STUDENT_CONTRIBUTIONS = gql`
     }
 `
 
-export function returnFetchContributionsHook(
+export function useFetchContributionsHook(
     contributor: string,
     contributionType: string,
     page: number,

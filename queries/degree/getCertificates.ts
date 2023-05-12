@@ -16,7 +16,7 @@ export const GET_CERTIFICATES = gql`
     }
 `
 
-export function returnFetchCertificatesHook(
+export function useFetchCertificatesHook(
     studentId: string,
     page: number,
     limit: number
