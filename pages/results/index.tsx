@@ -18,9 +18,7 @@ import { STOP_RESULT_CRON_JOB } from '../../queries/results/stopCronJob'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { GetServerSideProps } from 'next'
-import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
-import jwt from 'jsonwebtoken'
 import FileSaver from 'file-saver'
 import axios from 'axios'
 import { ethers } from 'ethers'
@@ -32,6 +30,8 @@ import { validateTransactionBalance } from '../../utils/checkEligibleTransaction
 import useMetaMask from '../../utils/customHooks/useMetaMask'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
+import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface ResultsInterface {
     id: string
@@ -40,11 +40,6 @@ interface ResultsInterface {
     url: string
     date: string
 }
-interface Props {
-    userType: string | null
-    userimg: string | null
-}
-
 const SemesterResult: React.FC<Props> = (props) => {
     let ResultsRecordInterface = {
         id: '',
@@ -1008,37 +1003,5 @@ const SemesterResult: React.FC<Props> = (props) => {
     )
 }
 
-export const getServerSideProps: GetServerSideProps = requireAuthentication(
-    async (ctx) => {
-        const { req } = ctx
-        if (req.headers.cookie) {
-            const tokens = req.headers.cookie.split(';')
-            const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
-            if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
-                await apolloClient
-                    .query({
-                        query: GET_USER_DATA,
-                        variables: { userEmail },
-                    })
-                    .then((result) => {
-                        userData = result.data.GetUserDataByUserEmail
-                    })
-                    .catch((error) => {
-                        console.log(error)
-                    })
-            }
-            return {
-                props: {
-                    userType: userData?.type || null,
-                    userimg: userData?.imgUrl || null,
-                },
-            }
-        }
-    }
-)
-
+export const getServerSideProps: GetServerSideProps = serverSideProps
 export default SemesterResult

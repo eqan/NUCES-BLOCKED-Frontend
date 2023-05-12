@@ -26,17 +26,11 @@ import { Skeleton } from 'primereact/skeleton'
 import { Image as PrimeImage } from 'primereact/image'
 import { Panel } from 'primereact/panel'
 import { GET_USER_DATA } from '../../queries/users/getUser'
-import { NFT_STORAGE_TOKEN } from '../../constants/env-variables'
-import { NFTStorage } from 'nft.storage'
-import { extractActualDataFromIPFS } from '../../utils/extractActualDataFromIPFS'
 import { Toaster, toast } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
-
-interface Props {
-    userType: string
-    userimg: string
-}
+import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface UserInterface {
     id: string
@@ -1147,37 +1141,5 @@ const UserRecords: React.FC<Props> = (props) => {
     )
 }
 
-export const getServerSideProps: GetServerSideProps = requireAuthentication(
-    async (ctx) => {
-        const { req } = ctx
-        if (req.headers.cookie) {
-            const tokens = req.headers.cookie.split(';')
-            const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
-            if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
-                await apolloClient
-                    .query({
-                        query: GET_USER_DATA,
-                        variables: { userEmail },
-                    })
-                    .then((result) => {
-                        userData = result.data.GetUserDataByUserEmail
-                    })
-                    .catch((error) => {
-                        console.log(error)
-                    })
-                return {
-                    props: {
-                        userType: userData?.type || null,
-                        userimg: userData?.imgUrl || null,
-                    },
-                }
-            }
-        }
-    }
-)
-
+export const getServerSideProps: GetServerSideProps = serverSideProps
 export default UserRecords

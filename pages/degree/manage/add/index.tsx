@@ -35,75 +35,13 @@ import { ethers } from 'ethers'
 import ABI from '../../../../contracts/CertificateStore.json'
 import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
 import { cvGeneratorAndUploader } from '../../../../utils/CVGeneratorUtils'
-
-interface Props {
-    userType: string | null
-    userimg: string | null
-}
-
-export interface CertificateForDatabase {
-    id: string
-    url: string
-}
-
-export interface Certificate {
-    id: string
-    name: string
-    email: string
-    url: string
-    cgpa: string
-    batch: string
-    honors: string | null
-}
-interface StudentInterface {
-    id: string
-    name: string
-    rollno: string
-    email: string
-    date: string
-    batch: string
-    eligibilityStatus: string
-    honours: string
-}
-export interface IndexAllContributionsForResume {
-    careerCounsellorContributions: {
-        student: {
-            name: string
-            cgpa: string
-            honours: string
-        }
-        studentId: string
-        careerCounsellorContributionType: string
-        contribution: string
-        contributor: string
-        title: string
-        updatedAt: string
-    }[]
-    societyHeadsContributions: {
-        student: {
-            name: string
-            cgpa: string
-            honours: string
-        }
-        societyHeadContributionType: string
-        contribution: string
-        contributor: string
-        title: string
-        updatedAt: string
-    }[]
-    teacherContributions: {
-        student: {
-            name: string
-            cgpa: string
-            honours: string
-        }
-        teacherContributionType: string
-        contribution: string
-        contributor: string
-        title: string
-        updatedAt: string
-    }[]
-}
+import { UPDATE_ELIGIBILE_STUDENTS_TO_INPROGRESS } from '../../../../queries/students/updateEligibleStudentsToInProgress'
+import {
+    IndexAllContributionsForResume,
+    StudentInterface,
+} from '../../../../utils/interfaces/CVGenerator'
+import { Props } from '../../../../utils/interfaces/UserPropsForAuthentication'
+import { serverSideProps } from '../../../../utils/requireAuthentication'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const mapStudentToStudentRecord = (student: StudentInterface) => {
@@ -242,6 +180,9 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [updateEligibilityStatusesForAllStudents] = useMutation(
         UPDATE_ELIGIBILITY_STATUS_FOR_ALL_STUDENTS
     )
+    const [updateEligibleStudentsToInprogress] = useMutation(
+        UPDATE_ELIGIBILE_STUDENTS_TO_INPROGRESS
+    )
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
@@ -253,7 +194,13 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         'ALREADY_PUBLISHED',
         'NOT_ELIGIBLE',
         'NOT_ALLOWED',
+        'IN_PROGRESS',
     ]
+    // Create a new options array without the IN_PROGRESS option
+    const optionsWithoutInProgress = eligibilityStatusEnums.filter(
+        (option) => option !== 'IN_PROGRESS'
+    )
+
     const [
         studentsData,
         studentsLoading,
@@ -389,7 +336,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             const index = data?.rowIndex
             _students[index] = _student
             if (_student != null) {
-                const data = await updateStudentFunction({
+                await updateStudentFunction({
                     variables: {
                         UpdateStudentInput: {
                             id: _student.id,
@@ -410,81 +357,109 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    // TODO: Issue in button double click when generating degrees
     const generateDegrees = async () => {
-        await connectToMetaMask()
-        stopCronJobFunction()
-        try {
-            if (isMetaMaskConnected) {
-                setTextContent('Collecting Data')
-                setTextContent('Self-Generating Certificates')
-                setIsIntermidate(false)
-                await fetchContributionsData()
+        if (contributions && contributions?.length > 0) {
+            await connectToMetaMask()
+            stopCronJobFunction()
+            try {
+                if (isMetaMaskConnected) {
+                    setTextContent('Collecting Data')
+                    setTextContent('Self-Generating Certificates')
+                    setIsIntermidate(false)
 
-                // Calculate progress percentage for cvGeneratorAndUploader
-                const contributionCount = contributions?.length || 0
+                    await updateEligibleStudentsToInprogress()
+                    locallyUpdateStudentsEligbilityToDesired(
+                        'ELIGIBLE',
+                        'IN_PROGRESS'
+                    )
+                    // Calculate progress percentage for cvGeneratorAndUploader
+                    const contributionCount = contributions?.length || 0
 
-                const cvGeneratorPercentage = Math.round(
-                    (50 / contributionCount) * 100
-                )
-
-                const { dataForBlockchain, dataForDatabase } =
-                    await cvGeneratorAndUploader(contributions)
-                if (dataForBlockchain || dataForBlockchain?.length > 0) {
-                    console.log(dataForBlockchain, dataForDatabase)
-                    setValue(
-                        (prevProgress) => prevProgress + cvGeneratorPercentage
+                    const cvGeneratorPercentage = Math.round(
+                        (50 / contributionCount) * 100
                     )
 
-                    // Calculate progress percentage for uploading to database
-                    const databaseUploadPercentage = 25
-                    setValue(
-                        (prevProgress) =>
-                            prevProgress + databaseUploadPercentage
-                    )
-                    // let isDataUploadedSuccessfully =
-                    //     await createCertificateFunction({
-                    //         variables: {
-                    //             certificates: dataForDatabase,
-                    //         },
-                    //     })
+                    const { dataForBlockchain, dataForDatabase } =
+                        await cvGeneratorAndUploader(contributions)
+                    if (dataForBlockchain && dataForBlockchain?.length > 0) {
+                        console.log(dataForBlockchain, dataForDatabase)
+                        setValue(
+                            (prevProgress) =>
+                                prevProgress + cvGeneratorPercentage
+                        )
 
-                    // Calculate progress percentage for uploading to blockchain
-                    const blockchainUploadPercentage = 25
-                    setValue(
-                        (prevProgress) =>
-                            prevProgress + blockchainUploadPercentage
-                    )
-                    // if (isDataUploadedSuccessfully) {
-                    await contract.functions.addCertificates(
-                        dataForBlockchain,
-                        {
-                            from: sessionStorage.getItem('walletAddress'),
+                        // Calculate progress percentage for uploading to database
+                        const databaseUploadPercentage = 25
+                        setValue(
+                            (prevProgress) =>
+                                prevProgress + databaseUploadPercentage
+                        )
+                        let isDataUploadedSuccessfully =
+                            await createCertificateFunction({
+                                variables: {
+                                    certificates: dataForDatabase,
+                                },
+                            })
+
+                        // Calculate progress percentage for uploading to blockchain
+                        const blockchainUploadPercentage = 25
+                        setValue(
+                            (prevProgress) =>
+                                prevProgress + blockchainUploadPercentage
+                        )
+                        if (isDataUploadedSuccessfully) {
+                            await contract.functions.addCertificates(
+                                dataForBlockchain,
+                                {
+                                    from: sessionStorage.getItem(
+                                        'walletAddress'
+                                    ),
+                                }
+                            )
                         }
-                    )
-                    // }
-                    setValue(100)
-                    toast.success('Certificates have been deployed!')
-                } else {
-                    toast.error('No contributions found!')
+                        locallyUpdateStudentsEligbilityToDesired(
+                            'IN_PROGRESS',
+                            'ALREADY_PUBLISHED'
+                        )
+                        setValue(100)
+                        toast.success('Certificates have been deployed!')
+                    } else {
+                        toast.error('No contributions found!')
+                    }
                 }
+            } catch (error) {
+                toast.error(error.message)
+                console.log(error)
             }
-        } catch (error) {
-            toast.error(error.message)
-            console.log(error)
+            setValue(0)
+            setTextContent('')
+            startCronJobFunction()
+        } else {
+            await fetchContributionsData()
+            toast.message('Currently data is being fetched in the background!')
         }
-        setValue(0)
-        setTextContent('')
-        startCronJobFunction()
     }
 
-    const locallyUpdateThePaginatedResults = () => {
+    const locallyUpdateEligibilityOfStudents = () => {
         // Locally Updated the eligibility for the paginated results
         const currentYear = new Date().getFullYear()
         for (const student of students) {
             const batchYear = parseInt(student.batch)
-            if (batchYear + 4 <= currentYear) {
+            if (
+                batchYear + 4 <= currentYear &&
+                student.eligibilityStatus == 'NOT_ELIGIBLE'
+            ) {
                 student.eligibilityStatus = 'ELIGIBLE'
+            }
+        }
+        setStudents(students)
+    }
+
+    const locallyUpdateStudentsEligbilityToDesired = (from, to) => {
+        // Locally Updated the eligibility for the paginated results
+        for (const student of students) {
+            if (student.eligibilityStatus == from) {
+                student.eligibilityStatus = to
             }
         }
         setStudents(students)
@@ -495,7 +470,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
             setTextContent('Updating Students Eligibility Criteria')
             setIsIntermidate(true)
             await updateEligibilityStatusesForAllStudents()
-            locallyUpdateThePaginatedResults()
+            locallyUpdateEligibilityOfStudents()
             toast.success('Eligibility Criteras Updated Successfully!')
             setIsIntermidate(false)
             setTextContent('')
@@ -538,6 +513,8 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 return 'info'
             case 'NOT_ALLOWED':
                 return 'danger'
+            case 'IN_PROGRESS':
+                return 'Primary'
             default:
                 return null
         }
@@ -573,7 +550,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         return (
             <Dropdown
                 value={options.value}
-                options={eligibilityStatusEnums}
+                options={optionsWithoutInProgress}
                 onChange={(e) => {
                     updateSelectedStudent(options, e.value),
                         options.editorCallback(e.value)
@@ -744,34 +721,5 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     )
 }
 
-export const getServerSideProps: GetServerSideProps = requireAuthentication(
-    async (ctx) => {
-        const { req } = ctx
-        if (req.headers.cookie) {
-            const tokens = req.headers.cookie.split(';')
-            const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
-            if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
-                await apolloClient
-                    .query({
-                        query: GET_USER_DATA,
-                        variables: { userEmail },
-                    })
-                    .then((result) => {
-                        userData = result.data.GetUserDataByUserEmail
-                    })
-            }
-            return {
-                props: {
-                    userType: userData?.type || null,
-                    userimg: userData?.imgUrl || null,
-                },
-            }
-        }
-    }
-)
-
+export const getServerSideProps: GetServerSideProps = serverSideProps
 export default AutomaticeCertificateGenerator
