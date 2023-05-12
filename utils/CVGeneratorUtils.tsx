@@ -2,7 +2,7 @@ import { CV } from './resumer-generator/CV/CV'
 import { pdf } from '@react-pdf/renderer'
 import { Student } from './resumer-generator/interfaces/interfaces'
 import fileUploaderToNFTStorage from './fileUploaderToNFTStorage'
-import { CertificateForDatabase } from './interfaces/CVGenerator'
+import { CertificateForDatabase } from '../interfaces/CVGenerator'
 
 export async function generatePDFBlob(student: Student): Promise<Blob> {
     if (student) {

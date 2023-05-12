@@ -30,7 +30,7 @@ import { validateTransactionBalance } from '../../utils/checkEligibleTransaction
 import useMetaMask from '../../utils/customHooks/useMetaMask'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
-import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { Props } from '../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface ResultsInterface {

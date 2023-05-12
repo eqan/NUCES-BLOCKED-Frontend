@@ -40,8 +40,8 @@ import FileSaver from 'file-saver'
 import {
     CertificateInterface,
     IndexAllContributionsForResume,
-} from '../../../utils/interfaces/CVGenerator'
-import { Props } from '../../../utils/interfaces/UserPropsForAuthentication'
+} from '../../../interfaces/CVGenerator'
+import { Props } from '../../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../../utils/requireAuthentication'
 
 const CertificateRecords: React.FC<Props> = (props) => {

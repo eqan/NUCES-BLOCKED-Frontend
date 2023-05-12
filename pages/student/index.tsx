@@ -21,7 +21,7 @@ import apolloClient from '../../apollo-client'
 import { GET_USER_DATA } from '../../queries/users/getUser'
 import { toast, Toaster } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
-import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { Props } from '../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface StudentInterface {

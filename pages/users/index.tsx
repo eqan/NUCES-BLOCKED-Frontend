@@ -29,7 +29,7 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
-import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { Props } from '../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface UserInterface {

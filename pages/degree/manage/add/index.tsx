@@ -39,8 +39,8 @@ import { UPDATE_ELIGIBILE_STUDENTS_TO_INPROGRESS } from '../../../../queries/stu
 import {
     IndexAllContributionsForResume,
     StudentInterface,
-} from '../../../../utils/interfaces/CVGenerator'
-import { Props } from '../../../../utils/interfaces/UserPropsForAuthentication'
+} from '../../../../interfaces/CVGenerator'
+import { Props } from '../../../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../../../utils/requireAuthentication'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {

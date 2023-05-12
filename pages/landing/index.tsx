@@ -8,9 +8,6 @@ import { Divider } from 'primereact/divider'
 import { InputText } from 'primereact/inputtext'
 import Head from 'next/head'
 
-import { LayoutContext } from '../../layout/context/layoutcontext'
-;<title>Sling Academy</title>
-
 const LandingPage = () => {
     const contextPath = getConfig().publicRuntimeConfig.contextPath
 
@@ -46,14 +43,11 @@ const LandingPage = () => {
                     <Link href="/landings">
                         <a className="flex align-items-center">
                             <img
-                                src={`${contextPath}/demo/images/landing/icon.png`}
-                                alt="Sakai Logo"
+                                src={`${contextPath}/assets/images/landing/iconv2.png`}
+                                alt="NUCES BLOCKED Logo"
                                 height="50"
                                 className="mr-0 lg:mr-2"
                             />
-                            <span className="text-900 font-medium text-2xl line-height-3 mr-8">
-                                NUCES BLOCKED
-                            </span>
                         </a>
                     </Link>
                     <StyleClass
@@ -152,7 +146,7 @@ const LandingPage = () => {
                     </div>
                     <div className="flex justify-content-center md:justify-content-end">
                         <img
-                            src={`${contextPath}/demo/images/landing/logo.png`}
+                            src={`${contextPath}/assets/images/landing/university.png`}
                             alt="Hero Image"
                             className="w-9 md:w-auto"
                         />
@@ -178,7 +172,7 @@ const LandingPage = () => {
                                 </h3>
 
                                 <img
-                                    src={`${contextPath}/demo/images/landing/block.png`}
+                                    src={`${contextPath}/assets/images/landing/blockchain.png`}
                                     className="w-10 h-10 mx-auto"
                                     alt="free"
                                 />
@@ -207,7 +201,7 @@ const LandingPage = () => {
                                 </h3>
 
                                 <img
-                                    src={`${contextPath}/demo/images/landing/ber.png`}
+                                    src={`${contextPath}/assets/images/landing/academic-profile.png`}
                                     className="w-10 h-10 mx-auto"
                                     alt="startup"
                                 />
@@ -233,7 +227,7 @@ const LandingPage = () => {
                                 </h3>
 
                                 <img
-                                    src={`${contextPath}/demo/images/landing/ser.png`}
+                                    src={`${contextPath}/assets/images/landing/verification.png`}
                                     className="w-10 h-10 mx-auto"
                                     alt="enterprise"
                                 />
