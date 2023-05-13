@@ -17,7 +17,7 @@ export const GET_USERS = gql`
     }
 `
 
-export function returnFetchUsersHook(id: string, page: number, limit: number) {
+export function useFetchUsersHook(id: string, page: number, limit: number) {
     const { data, loading, error, refetch } = useQuery(GET_USERS, {
         variables: {
             filterUserDto: {

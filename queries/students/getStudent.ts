@@ -10,7 +10,7 @@ export const GET_STUDENT = gql`
         }
     }
 `
-export function returnFetchStudentHook(studentId: string) {
+export function useFetchStudentHook(studentId: string) {
     const { data, loading, error, refetch } = useQuery(GET_STUDENT, {
         variables: {
             studentId: studentId,

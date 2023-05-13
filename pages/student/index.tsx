@@ -9,19 +9,15 @@ import { InputText } from 'primereact/inputtext'
 import { Toolbar } from 'primereact/toolbar'
 import { Skeleton } from 'primereact/skeleton'
 import { classNames } from 'primereact/utils'
-import jwt from 'jsonwebtoken'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { CREATE_STUDENT } from '../../queries/students/addStudent'
-import { returnFetchStudentsHook } from '../../queries/students/getStudents'
+import { useFetchStudentsHook } from '../../queries/students/getStudents'
 import { DELETE_STUDENT } from '../../queries/students/removeStudent'
 import { UPDATE_STUDENT } from '../../queries/students/updateStudent'
 import { GetServerSideProps } from 'next'
-import { requireAuthentication } from '../../layout/context/requireAuthetication'
-import apolloClient from '../../apollo-client'
-import { GET_USER_DATA } from '../../queries/users/getUser'
 import { toast, Toaster } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
-import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { Props } from '../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface StudentInterface {
@@ -86,7 +82,7 @@ const StudentRecords: React.FC<Props> = (props) => {
         studentsLoading,
         studentsFetchingError,
         studentsRefetchHook,
-    ] = returnFetchStudentsHook(globalFilter, page + 1, pageLimit)
+    ] = useFetchStudentsHook(globalFilter, page + 1, pageLimit)
 
     const [
         deleteStudentFunction,

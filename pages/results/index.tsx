@@ -8,7 +8,7 @@ import { Toolbar } from 'primereact/toolbar'
 import { Dropdown } from 'primereact/dropdown'
 import { classNames } from 'primereact/utils'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { returnFetchResultsHook } from '../../queries/results/getResult'
+import { useFetchResultsHook } from '../../queries/results/getResult'
 import { useMutation } from '@apollo/client'
 import { DELETE_RESULT } from '../../queries/results/removeResult'
 import { CREATE_RESULT } from '../../queries/results/addResult'
@@ -18,19 +18,17 @@ import { STOP_RESULT_CRON_JOB } from '../../queries/results/stopCronJob'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { GetServerSideProps } from 'next'
-import apolloClient from '../../apollo-client'
 import FileSaver from 'file-saver'
 import axios from 'axios'
 import { ethers } from 'ethers'
 import ABI from '../../contracts/SemesterStore.json'
 import { DeployedContracts } from '../../contracts/deployedAddresses'
-import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
 import { validateTransactionBalance } from '../../utils/checkEligibleTransaction'
 import useMetaMask from '../../utils/customHooks/useMetaMask'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
-import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { Props } from '../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface ResultsInterface {
@@ -88,7 +86,7 @@ const SemesterResult: React.FC<Props> = (props) => {
         resultsLoading,
         resultsFetchingError,
         resultsRefetchHook,
-    ] = returnFetchResultsHook(globalFilter, page + 1, pageLimit)
+    ] = useFetchResultsHook(globalFilter, page + 1, pageLimit)
 
     const [
         deleteResultFunction,

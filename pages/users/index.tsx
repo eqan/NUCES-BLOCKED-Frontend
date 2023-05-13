@@ -12,24 +12,20 @@ import { FileUpload } from 'primereact/fileupload'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useEventListener } from 'primereact/hooks'
 import { useRouter } from 'next/router'
-import { returnFetchUsersHook } from '../../queries/users/getUsers'
+import { useFetchUsersHook } from '../../queries/users/getUsers'
 import { DELETE_USER } from '../../queries/users/removeUsers'
 import { CREATE_USER } from '../../queries/users/addUser'
 import { useMutation } from '@apollo/client'
 import { UPDATE_USER } from '../../queries/users/updateUsers'
 import { GetServerSideProps } from 'next'
-import { requireAuthentication } from '../../layout/context/requireAuthetication'
-import apolloClient from '../../apollo-client'
-import jwt from 'jsonwebtoken'
 import getConfig from 'next/config'
 import { Skeleton } from 'primereact/skeleton'
 import { Image as PrimeImage } from 'primereact/image'
 import { Panel } from 'primereact/panel'
-import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Toaster, toast } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
-import { Props } from '../../utils/interfaces/UserPropsForAuthentication'
+import { Props } from '../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../utils/requireAuthentication'
 
 interface UserInterface {
@@ -98,7 +94,7 @@ const UserRecords: React.FC<Props> = (props) => {
     const symbolCheck = new RegExp('^(?=.*[@$!%*?&])')
 
     const [usersData, usersLoading, usersFetchingError, usersRefetchHook] =
-        returnFetchUsersHook(globalFilter, page + 1, pageLimit)
+        useFetchUsersHook(globalFilter, page + 1, pageLimit)
 
     const [
         deleteuserFunction,

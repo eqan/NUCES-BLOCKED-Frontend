@@ -9,7 +9,7 @@ import { GetServerSideProps } from 'next'
 import { requireAuthentication } from '../../layout/context/requireAuthetication'
 import apolloClient from '../../apollo-client'
 import jwt from 'jsonwebtoken'
-import { returnFetchContributionsHook } from '../../queries/academic/getStudentContributions'
+import { useFetchContributionsHook } from '../../queries/academic/getStudentContributions'
 import { useRouter } from 'next/router'
 import { Skeleton } from 'primereact/skeleton'
 import { CREATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/createStudentContributionAdmin'
@@ -19,7 +19,7 @@ import { GET_USER_DATA } from '../../queries/users/getUser'
 import { Dropdown } from 'primereact/dropdown'
 import { UPDATE_STUDENT_CONTRIBUTIONS } from '../../queries/academic/updateStudentContribution.dto'
 import { classNames } from 'primereact/utils'
-import { returnFetchStudentHook } from '../../queries/students/getStudent'
+import { useFetchStudentHook } from '../../queries/students/getStudent'
 import { toast, Toaster } from 'sonner'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 interface Props {
@@ -84,14 +84,14 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         studentDataLoading,
         studentDataError,
         studentDataRefetch,
-    ] = returnFetchStudentHook(fetchStudentDataId)
+    ] = useFetchStudentHook(fetchStudentDataId)
 
     const [
         contributionsData,
         contributionsLoading,
         contributionsFetchingError,
         contributionsRefetchHook,
-    ] = returnFetchContributionsHook(
+    ] = useFetchContributionsHook(
         props ? props.userSubType : null,
         props ? props.userType : null,
         page + 1,

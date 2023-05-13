@@ -15,11 +15,7 @@ export const GET_RESULTS = gql`
     }
 `
 
-export function returnFetchResultsHook(
-    id: string,
-    page: number,
-    limit: number
-) {
+export function useFetchResultsHook(id: string, page: number, limit: number) {
     const { data, loading, error, refetch } = useQuery(GET_RESULTS, {
         variables: {
             FilterResultInput: {

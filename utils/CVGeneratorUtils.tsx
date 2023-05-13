@@ -2,7 +2,7 @@ import { CV } from './resumer-generator/CV/CV'
 import { pdf } from '@react-pdf/renderer'
 import { Student } from './resumer-generator/interfaces/interfaces'
 import fileUploaderToNFTStorage from './fileUploaderToNFTStorage'
-import { CertificateForDatabase } from './interfaces/CVGenerator'
+import { CertificateForDatabase } from '../interfaces/CVGenerator'
 
 export async function generatePDFBlob(student: Student): Promise<Blob> {
     if (student) {
@@ -15,7 +15,11 @@ export async function generatePDFBlob(student: Student): Promise<Blob> {
     }
 }
 
-export async function cvGeneratorAndUploader(contributions: Student[]) {
+export async function cvGeneratorAndUploader(
+    contributions: Student[],
+    setValue?: React.Dispatch<React.SetStateAction<number>>,
+    valueIncrement?: number
+) {
     const dataForBlockchain = []
     const dataForDatabase: CertificateForDatabase[] = []
 
@@ -42,6 +46,8 @@ export async function cvGeneratorAndUploader(contributions: Student[]) {
                 id: student.metaDataDetails.rollNumber,
                 url,
             })
+            if (setValue)
+                setValue((prevProgress) => prevProgress + valueIncrement)
         } catch (error) {
             console.error(error)
             throw new Error(error)
