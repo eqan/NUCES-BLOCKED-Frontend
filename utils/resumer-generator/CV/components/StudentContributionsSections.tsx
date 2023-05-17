@@ -25,7 +25,7 @@ export const Contributions = (
                 key={index}
                 contributionType={subContribution.contributionType}
                 title={subContribution.title}
-                dates={subContribution.date}
+                dates={subContribution.date.slice(0, 10)}
                 contributor={subContribution.contributor}
             >
                 <ItemText>{subContribution.contribution}</ItemText>

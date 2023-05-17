@@ -217,7 +217,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         eligibilityBoundStudentsLoading,
         eligibilityBoundStudentsError,
         eligibilityBoundStudentsRefetchHook,
-    ] = useIndexRecordsByEligibilityHook('ALREADY_PUBLISHED')
+    ] = useIndexRecordsByEligibilityHook('ELIGIBLE')
 
     const [
         contributionsData,
@@ -271,10 +271,10 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         if (!contributionsLoading) {
             try {
                 let contributions =
-                    contributionsData?.IndexAllContributionsForResume
+                    contributionsData?.IndexAllContributionsOnCriteria
                 const contributionRecords =
                     mapContributionToStudentRecord(contributions) || []
-                console.log(contributions)
+                console.log(contributionsData)
                 setContributions(contributionRecords)
             } catch (error) {
                 console.log(error)
@@ -313,7 +313,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         } else {
             console.error('Metamask not found')
         }
-        initalPromptForInProgressDegress()
+        // initalPromptForInProgressDegress()
     }, [])
 
     useEffect(() => {
@@ -385,14 +385,13 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
 
     const compileInProgressDegreesInBackGround = async () => {
         toast.message('Continuing from where you left...')
+        setTypeOfDataToFetch('ELIGIBLE')
         if (contributions && contributions?.length > 0) {
             setSubmitted(true)
             setContinueInProgressDialog(false)
-            setTypeOfDataToFetch('IN_PROGRESS')
-            await contributionsRefetchHook()
             await generateDegrees()
             setTypeOfDataToFetch('ELIGIBLE')
-            return 'Degree Generation in background complete!'
+            toast.success('Degree Generation in background complete!')
         } else {
             toast.message('Currently data is being fetched in the background!')
         }
