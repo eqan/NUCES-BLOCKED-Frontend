@@ -711,7 +711,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         return (
             <>
                 <span className="p-column-title">Last Updated</span>
-                {rowData.date}
+                {rowData.date.slice(0, 10)}
             </>
         )
     }
