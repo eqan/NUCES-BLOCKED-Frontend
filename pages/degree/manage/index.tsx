@@ -30,8 +30,6 @@ import { DeployedContracts } from '../../../contracts/deployedAddresses'
 import ABI from '../../../contracts/CertificateStore.json'
 import { ethers } from 'ethers'
 import { cvGeneratorAndUploader } from '../../../utils/CVGeneratorUtils'
-import axios from 'axios'
-import FileSaver from 'file-saver'
 import {
     CertificateInterface,
     IndexAllContributionsForResume,
@@ -39,6 +37,7 @@ import {
 import { Props } from '../../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../../utils/requireAuthentication'
 import { useFetchIndexedContributions } from '../../../queries/academic/indexAllContributions'
+import { downloadCertificateResult } from '../../../utils/downloadCertificateResult'
 
 const CertificateRecords: React.FC<Props> = (props) => {
     let CertificateRecordInterface = {
@@ -628,22 +627,6 @@ const CertificateRecords: React.FC<Props> = (props) => {
                 {rowData.url}
             </>
         )
-    }
-
-    const downloadCertificateResult = async (certificate) => {
-        try {
-            console.log(certificate)
-            const response = await axios.get(certificate.url, {
-                responseType: 'blob',
-            })
-            const blob = new Blob([response.data], { type: 'application/pdf' })
-            console.log(response)
-            FileSaver.saveAs(blob, `${certificate.id}.pdf`)
-        } catch (error) {
-            console.error(error)
-            throw new Error(error.message)
-        }
-        return 'Certificate Downloaded!'
     }
 
     const actionBodyTemplate = (rowData) => {

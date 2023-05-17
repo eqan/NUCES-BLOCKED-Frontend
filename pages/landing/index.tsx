@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import getConfig from 'next/config'
 import { StyleClass } from 'primereact/styleclass'
@@ -7,14 +7,48 @@ import { Ripple } from 'primereact/ripple'
 import { Divider } from 'primereact/divider'
 import { InputText } from 'primereact/inputtext'
 import Head from 'next/head'
+import { useFetchCertificateHook } from '../../queries/degree/getCertificate'
+import { downloadCertificateResult } from '../../utils/downloadCertificateResult'
+import { Toaster, toast } from 'sonner'
 
 const LandingPage = () => {
     const contextPath = getConfig().publicRuntimeConfig.contextPath
+    const [studentId, setStudentId] = useState<string>('')
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [certificate, setCertificate] = useState<string>(null)
+    const [
+        certificatesData,
+        certificatesLoading,
+        certificatesFetchingError,
+        certificatesRefetchHook,
+    ] = useFetchCertificateHook(studentId)
 
     const menuRef = useRef()
 
+    const fetchData = async () => {
+        setIsLoading(true)
+        if (!certificatesLoading) {
+            try {
+                let certificate: string =
+                    certificatesData?.GetCertificateByRollNumber
+                setCertificate(certificate)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+
+    useEffect(() => {
+        if (!certificatesLoading && certificatesData) {
+            fetchData()
+        }
+    }, [certificatesData, certificatesLoading])
+
     return (
         <div className="surface-0 flex justify-content-center">
+            <Toaster richColors />
             <Head>
                 <title>NUCES BLOCKED</title>
                 <meta charSet="UTF-8" />
@@ -135,6 +169,11 @@ const LandingPage = () => {
                             placeholder="Enter Hash"
                             className="w-full md:w-30rem mb-5"
                             style={{ padding: '1rem' }}
+                            onInput={(e) =>
+                                setStudentId(
+                                    (e.target as HTMLInputElement).value
+                                )
+                            }
                         />
                         <br />
 
@@ -142,6 +181,21 @@ const LandingPage = () => {
                             type="button"
                             label="Download"
                             className=" text-xl border-none mt-3 bg-blue-500 font-normal line-height-3 px-3 text-white"
+                            onClick={() => {
+                                toast.promise(
+                                    downloadCertificateResult(certificate),
+                                    {
+                                        loading:
+                                            'Certificate is being downloaded...',
+                                        success: (data) => {
+                                            return data
+                                        },
+                                        error: (error) => {
+                                            return error.message
+                                        },
+                                    }
+                                )
+                            }}
                         ></Button>
                     </div>
                     <div className="flex justify-content-center md:justify-content-end">
