@@ -1,12 +1,7 @@
-import { Button } from 'primereact/button'
-import { Menu } from 'primereact/menu'
-import React, { useRef, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { GetServerSideProps } from 'next'
-import { requireAuthentication } from '../layout/context/requireAuthetication'
-import apolloClient from '../apollo-client'
-import jwt from 'jsonwebtoken'
-import { GET_USER_DATA } from '../queries/users/getUser'
 import { useRouter } from 'next/router'
+import { serverSideProps } from '../utils/requireAuthentication'
 
 interface Props {
     userType: string | null
@@ -237,39 +232,5 @@ const dashboard: React.FC<Props> = (props) => {
         </div>
     )
 }
-export const getServerSideProps: GetServerSideProps = requireAuthentication(
-    async (ctx) => {
-        const { req } = ctx
-        if (req.rawHeaders) {
-            const tokens = req.rawHeaders
-            const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
-            if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
-                await apolloClient
-                    .query({
-                        query: GET_USER_DATA,
-                        variables: { userEmail },
-                    })
-                    .then((result) => {
-                        userData = result.data.GetUserDataByUserEmail
-                    })
-                    .catch((error) => {
-                        console.log(error)
-                    })
-            }
-            return {
-                props: {
-                    userType: userData?.type || null,
-                    userName: userData?.name || null,
-                    userEmail: userData?.email || null,
-                    userimg: userData?.imgUrl || null,
-                },
-            }
-        }
-    }
-)
-
+export const getServerSideProps: GetServerSideProps = serverSideProps
 export default dashboard
