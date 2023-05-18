@@ -14,6 +14,7 @@ import { Skeleton } from 'primereact/skeleton'
 import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
 import { ThemeContext } from '../../../../utils/customHooks/themeContextProvider'
+import { useFetchUsersHook } from '../../../../queries/users/getUsers'
 import {
     Footer,
     Student,
@@ -42,6 +43,8 @@ import { Dialog } from 'primereact/dialog'
 import { useIndexRecordsByEligibilityHook } from '../../../../queries/students/getStudentsByEligibility'
 import { useFetchIndexedContributions } from '../../../../queries/academic/indexAllContributions'
 import { ProgressSpinner } from 'primereact/progressspinner'
+import { UserInterface } from '../../../users'
+import { sendMail } from '../../../../utils/mailService'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const mapStudentToStudentRecord = (student: StudentInterface) => {
@@ -162,11 +165,23 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const mapUserToUserRecord = (user: UserInterface) => {
+        return {
+            id: user.id,
+            name: user.name,
+            password: user.password,
+            role: user.type,
+            email: user.email,
+            imgUrl: user.imgUrl,
+            subType: user.subType,
+        }
+    }
     const router = useRouter()
     const { theme } = useContext(ThemeContext)
     const [account, isMetaMaskConnected, connectToMetaMask] = useMetaMask()
     const [value, setValue] = useState<number>(0)
     const [students, setStudents] = useState<StudentInterface[]>([])
+    const [users, setUsers] = useState<UserInterface[]>([])
     const [textContent, setTextContent] = useState<string>('')
     const [studentDataToFetch, setStudentDataToFetch] = useState<string>('')
     const [typeOfDataToFetch, setTypeOfDataToFetch] =
@@ -209,6 +224,9 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const optionsWithoutInProgress = eligibilityStatusEnums.filter(
         (option) => option !== 'IN_PROGRESS'
     )
+
+    const [usersData, usersLoading, usersFetchingError, usersRefetchHook] =
+        useFetchUsersHook('VALIDATOR', 0, 0)
 
     const [
         studentsData,
@@ -343,6 +361,28 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         checkIfEligibleToDeploy()
         // initalPromptForInProgressDegress()
     }, [])
+
+    const fetchData = async () => {
+        setIsLoading(true)
+        if (!usersLoading) {
+            try {
+                let _users = usersData?.GetAllUsers.items.filter(
+                    (val) => val.id != ''
+                )
+                const usersRecord = _users.map(mapUserToUserRecord) || []
+                setUsers(usersRecord)
+            } catch (error) {
+                console.log(error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+    }
+    useEffect(() => {
+        if (!usersLoading && usersData) {
+            fetchData()
+        }
+    }, [usersData, usersLoading])
 
     useEffect(() => {
         if (
@@ -558,6 +598,21 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const sendMailsToRelevantPeople = () => {
+        if (!usersLoading) {
+            users.map((user) => {
+                sendMail(
+                    'Admin',
+                    user.email,
+                    user.name,
+                    'http://localhost:3000/confirmVote'
+                )
+            })
+        } else {
+            toast.message('Users are being fetched!')
+        }
+    }
+
     const onPageChange = (event) => {
         setPage(event.first / event.rows)
         setPageLimit(event.rows)
@@ -750,6 +805,13 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                         alignItems: 'center',
                                     }}
                                 >
+                                    <Button
+                                        label="Send mails for Voting"
+                                        style={{ marginRight: '10px' }}
+                                        className="p-button-info"
+                                        onClick={sendMailsToRelevantPeople}
+                                        disabled={isButtonDisabled}
+                                    />
                                     <Button
                                         label="Auto Update Eligibility"
                                         style={{ marginRight: '10px' }}

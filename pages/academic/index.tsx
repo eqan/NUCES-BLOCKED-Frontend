@@ -427,6 +427,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
     }
 
     const addContribution = async () => {
+        setSubmitted(true)
         if (
             addContributionData.contribution &&
             addContributionData.studentId &&
@@ -434,7 +435,6 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
             addContributionData.title &&
             validateRollNo()
         ) {
-            setSubmitted(true)
             setAddContributionDialog(false)
             let _headers = [...headers]
 

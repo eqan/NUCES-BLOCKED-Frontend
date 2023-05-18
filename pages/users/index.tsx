@@ -28,7 +28,7 @@ import fileUploaderToNFTStorage from '../../utils/fileUploaderToNFTStorage'
 import { Props } from '../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../utils/requireAuthentication'
 
-interface UserInterface {
+export interface UserInterface {
     id: string
     name: string
     password: string
@@ -653,6 +653,7 @@ const UserRecords: React.FC<Props> = (props) => {
         { name: 'TEACHER' },
         { name: 'CAREER_COUNSELLOR' },
         { name: 'SOCIETY_HEAD' },
+        { name: 'VALIDATOR' },
     ]
     const LoadingTemplate = ({ w, h }: { w: string; h: string }) => {
         return (
