@@ -227,9 +227,9 @@ const SemesterResult: React.FC<Props> = (props) => {
 
     const addResult = async () => {
         await connectToMetaMask()
+        setSubmitted(true)
         if (isMetaMaskConnected) {
             if (result.semester && result.year && fileUploadRef.current) {
-                setSubmitted(true)
                 setAddResultDialog(false)
                 stopCronJobFunction()
                 let _results = [...results]
