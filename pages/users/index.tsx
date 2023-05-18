@@ -292,7 +292,7 @@ const UserRecords: React.FC<Props> = (props) => {
                 setUsers(_users)
             } catch (error) {
                 console.log(error)
-                throw new Error(error.message)
+                throw new Error(error.code)
             }
         } else {
             throw new Error('Please input all fields')
@@ -558,7 +558,7 @@ const UserRecords: React.FC<Props> = (props) => {
                             return data
                         },
                         error: (error) => {
-                            return error.message
+                            return error.code
                         },
                     })
                 }}

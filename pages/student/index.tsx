@@ -385,7 +385,10 @@ const StudentRecords: React.FC<Props> = (props) => {
         if (student.batch) {
             let temp = parseInt(student.batch)
             let today = new Date()
-            if (!(temp >= 2014 && temp <= today.getFullYear())) {
+            if (
+                !(temp >= 2014 && temp <= today.getFullYear()) ||
+                student.batch.length != 4
+            ) {
                 return 0
             }
             return 1
@@ -418,9 +421,6 @@ const StudentRecords: React.FC<Props> = (props) => {
                         stringbe += '0'
                     }
                 }
-            }
-            if (stringbe.length > 4) {
-                return
             }
             _student[`${name}`] = stringbe
             setStudent(_student)
@@ -611,6 +611,13 @@ const StudentRecords: React.FC<Props> = (props) => {
     }
 
     const cgpaBodyTemplate = (rowData) => {
+        if (rowData.cgpa.length == 1) {
+            rowData.cgpa += '.00'
+        } else if (rowData.cgpa.length == 2) {
+            rowData.cgpa += '00'
+        } else if (rowData.cgpa.length == 3) {
+            rowData.cgpa += '0'
+        }
         return (
             <>
                 <span className="p-column-title">CGPA</span>
@@ -1011,7 +1018,7 @@ const StudentRecords: React.FC<Props> = (props) => {
                                         student.batch &&
                                         !validateYear() && (
                                             <small className="p-invalid1">
-                                                Invalid year, range from 1990 to
+                                                Invalid year, range from 2014 to
                                                 Current Year
                                             </small>
                                         ))}

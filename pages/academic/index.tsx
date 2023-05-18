@@ -129,6 +129,22 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         },
     ] = useMutation(UPDATE_STUDENT_CONTRIBUTIONS)
 
+    useEffect(() => {
+        if (!props) {
+            router.push('/auth/login')
+        } else {
+            if (props.userType == 'ADMIN') {
+                router.push('/pages/notfound')
+            } else if (
+                props.userType !== 'TEACHER' &&
+                props.userType !== 'CAREER_COUNSELLOR' &&
+                props.userType !== 'SOCIETY_HEAD'
+            ) {
+                router.push('/auth/login')
+            }
+        }
+    }, [props])
+
     const mapSubRowToSubRowRecord = (
         data: object,
         contributionType: string,
@@ -301,22 +317,6 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
     }, [contributionsData, contributionsLoading])
 
     useEffect(() => {
-        if (!props) {
-            router.push('/auth/login')
-        } else {
-            if (props.userType == 'ADMIN') {
-                router.push('/pages/notfound')
-            } else if (
-                props.userType !== 'TEACHER' &&
-                props.userType !== 'CAREER_COUNSELLOR' &&
-                props.userType !== 'SOCIETY_HEAD'
-            ) {
-                router.push('/auth/login')
-            }
-        }
-    }, [props])
-
-    useEffect(() => {
         const handleRouteChange = () => {
             contributionsRefetchHook()
         }
@@ -332,6 +332,10 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
 
     const hideContributionDialog = () => {
         setSubmitted(false)
+        addContributionData.contribution = ''
+        addContributionData.studentId = ''
+        addContributionData.type = ''
+        addContributionData.title = ''
         setAddContributionDialog(false)
     }
 
@@ -427,6 +431,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
     }
 
     const addContribution = async () => {
+        setSubmitted(true)
         if (
             addContributionData.contribution &&
             addContributionData.studentId &&
@@ -434,7 +439,6 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
             addContributionData.title &&
             validateRollNo()
         ) {
-            setSubmitted(true)
             setAddContributionDialog(false)
             let _headers = [...headers]
 
@@ -491,6 +495,10 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         } else {
             throw new Error('Please fill all the fields to proceed!')
         }
+        addContributionData.contribution = ''
+        addContributionData.studentId = ''
+        addContributionData.type = ''
+        addContributionData.title = ''
         return 'Contribution Added!'
     }
 
@@ -708,6 +716,8 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
     }
 
     const dateBodyTemplate = (rowData) => {
+        console.log(rowData.date)
+        rowData.date = rowData.date.slice(0, 10)
         return (
             <>
                 <span className="p-column-title">Last Updated</span>
@@ -832,8 +842,8 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                         success: (data) => {
                             return data
                         },
-                        error: (error) => {
-                            return error.message
+                        error: () => {
+                            return 'Student Not Found!'
                         },
                     })
                 }}
@@ -963,7 +973,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                                     return data
                                 },
                                 error: (error) => {
-                                    return error.message
+                                    return 'Student Not Found!'
                                 },
                             }
                         )
@@ -1133,18 +1143,11 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                                     required
                                     onChange={(e) => onInputChange(e, 'title')}
                                     autoFocus
-                                    className={classNames(
-                                        {
-                                            'p-invalid':
-                                                submitted &&
-                                                !addContributionData.title,
-                                        },
-                                        {
-                                            'p-invalid1':
-                                                submitted &&
-                                                addContributionData.title,
-                                        }
-                                    )}
+                                    className={classNames({
+                                        'p-invalid':
+                                            submitted &&
+                                            !addContributionData.title,
+                                    })}
                                 />
                                 {submitted && !addContributionData.title && (
                                     <small className="p-invalid">
@@ -1188,18 +1191,11 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                                     onChange={(e) =>
                                         onInputChange(e, 'contribution')
                                     }
-                                    className={classNames(
-                                        {
-                                            'p-invalid':
-                                                submitted &&
-                                                !addContributionData.contribution,
-                                        },
-                                        {
-                                            'p-invalid1':
-                                                submitted &&
-                                                addContributionData.contribution,
-                                        }
-                                    )}
+                                    className={classNames({
+                                        'p-invalid':
+                                            submitted &&
+                                            !addContributionData.contribution,
+                                    })}
                                 />
                                 {submitted &&
                                     !addContributionData.contribution && (

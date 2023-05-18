@@ -218,7 +218,10 @@ const SemesterResult: React.FC<Props> = (props) => {
         if (result.year) {
             let temp = result.year
             let today = new Date()
-            if (!(temp >= 2014 && temp <= today.getFullYear())) {
+            if (
+                !(temp >= 2014 && temp <= today.getFullYear()) ||
+                result.year.toString().length != 4
+            ) {
                 return 0
             }
             return 1
@@ -227,9 +230,14 @@ const SemesterResult: React.FC<Props> = (props) => {
 
     const addResult = async () => {
         await connectToMetaMask()
+        setSubmitted(true)
         if (isMetaMaskConnected) {
-            if (result.semester && result.year && fileUploadRef.current) {
-                setSubmitted(true)
+            if (
+                result.semester &&
+                result.year &&
+                fileUploadRef.current &&
+                validateYear()
+            ) {
                 setAddResultDialog(false)
                 stopCronJobFunction()
                 let _results = [...results]
@@ -884,7 +892,9 @@ const SemesterResult: React.FC<Props> = (props) => {
                                         },
                                         {
                                             'p-invalid1':
-                                                submitted && result.year,
+                                                submitted &&
+                                                result.year &&
+                                                !validateYear(),
                                         }
                                     )}
                                 />
@@ -897,7 +907,7 @@ const SemesterResult: React.FC<Props> = (props) => {
                                         result.year &&
                                         !validateYear() && (
                                             <small className="p-invalid1">
-                                                Invalid year, range from 1990 to
+                                                Invalid year, range from 2014 to
                                                 Current Year
                                             </small>
                                         ))}
