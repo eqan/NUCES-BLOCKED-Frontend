@@ -115,6 +115,11 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
             url: 'http://localhost:3000/',
         },
         {
+            label: 'Update Password',
+            icon: 'pi pi-replay',
+            url: 'http://localhost:3000/auth/updatePassword',
+        },
+        {
             label: 'Log out',
             icon: 'pi pi-sign-out',
             url: 'http://localhost:3000/auth/login',

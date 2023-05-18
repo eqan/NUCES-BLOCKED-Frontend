@@ -104,6 +104,7 @@ const LoginPage = () => {
                                     Email
                                 </label>
                                 <InputText
+                                    id="email"
                                     type="text"
                                     placeholder="Email address"
                                     onChange={(e) => setEmail(e.target.value)}
@@ -118,6 +119,7 @@ const LoginPage = () => {
                                     Password
                                 </label>
                                 <InputText
+                                    id="password"
                                     type="password"
                                     onChange={(e) =>
                                         setPassword(e.target.value)
@@ -129,6 +131,7 @@ const LoginPage = () => {
                                 <div className="flex align-items-center justify-content-between mb-5 gap-5">
                                     <div className="flex align-items-center">
                                         <Checkbox
+                                            id="remeberme"
                                             checked={checked}
                                             onChange={(e) =>
                                                 setChecked(e.checked)

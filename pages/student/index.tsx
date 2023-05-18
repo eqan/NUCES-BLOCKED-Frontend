@@ -382,14 +382,15 @@ const StudentRecords: React.FC<Props> = (props) => {
     }
 
     const validateYear = () => {
-        if (student.batch) {
-            let temp = parseInt(student.batch)
-            let today = new Date()
-            if (!(temp >= 2014 && temp <= today.getFullYear())) {
-                return 0
-            }
-            return 1
+        let temp = parseInt(student.batch)
+        let today = new Date()
+        if (
+            !(temp >= 2014 && temp <= today.getFullYear()) ||
+            student.batch.length != 4
+        ) {
+            return 0
         }
+        return 1
     }
 
     const onInputChange = (e, name) => {

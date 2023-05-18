@@ -214,6 +214,7 @@ const UserRecords: React.FC<Props> = (props) => {
             'image/png',
             `User image of id ${id}`
         )
+        console.log(url)
         handleReset()
         return url
     }
@@ -229,6 +230,7 @@ const UserRecords: React.FC<Props> = (props) => {
 
     const saveUser = async () => {
         let message = ''
+        setSubmitted(true)
         if (
             user.name.trim() &&
             /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(user.email) &&
@@ -238,7 +240,6 @@ const UserRecords: React.FC<Props> = (props) => {
             validatepass(user.password) &&
             imgfile != img
         ) {
-            setSubmitted(true)
             setSaveUserDialog(false)
             setHidePasswordButton(false)
             const userSubType = setUserSubType()

@@ -129,6 +129,22 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         },
     ] = useMutation(UPDATE_STUDENT_CONTRIBUTIONS)
 
+    useEffect(() => {
+        if (!props) {
+            router.push('/auth/login')
+        } else {
+            if (props.userType == 'ADMIN') {
+                router.push('/pages/notfound')
+            } else if (
+                props.userType !== 'TEACHER' &&
+                props.userType !== 'CAREER_COUNSELLOR' &&
+                props.userType !== 'SOCIETY_HEAD'
+            ) {
+                router.push('/auth/login')
+            }
+        }
+    }, [props])
+
     const mapSubRowToSubRowRecord = (
         data: object,
         contributionType: string,
