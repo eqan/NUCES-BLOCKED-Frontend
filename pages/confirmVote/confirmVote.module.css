@@ -1,0 +1,9 @@
+.button-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-container > * + * {
+  margin-left: "100000px"; /* Add margin between buttons */
+}

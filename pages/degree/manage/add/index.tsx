@@ -27,7 +27,8 @@ import { STOP_CERTIFICATE_CRON_JOB } from '../../../../queries/degree/stopCronJo
 import { UPDATE_ELIGIBILITY_STATUS_FOR_ALL_STUDENTS } from '../../../../queries/students/autoUpdateEligibility'
 import { DeployedContracts } from '../../../../contracts/deployedAddresses'
 import { ethers } from 'ethers'
-import ABI from '../../../../contracts/CertificateStore.json'
+import CertificateContractABI from '../../../../contracts/CertificateStore.json'
+import DAOContractABI from '../../../../contracts/DAO.json'
 import { CREATE_CERTIFICATE_IN_BATCHES } from '../../../../queries/degree/addCertificatesInBatches'
 import { cvGeneratorAndUploader } from '../../../../utils/CVGeneratorUtils'
 import { UPDATE_ELIGIBITY_OF_STUDENTS } from '../../../../queries/students/updateEligibliltyOfStudents'
@@ -40,6 +41,7 @@ import { serverSideProps } from '../../../../utils/requireAuthentication'
 import { Dialog } from 'primereact/dialog'
 import { useIndexRecordsByEligibilityHook } from '../../../../queries/students/getStudentsByEligibility'
 import { useFetchIndexedContributions } from '../../../../queries/academic/indexAllContributions'
+import { ProgressSpinner } from 'primereact/progressspinner'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const mapStudentToStudentRecord = (student: StudentInterface) => {
@@ -171,13 +173,16 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         useState<string>('ELIGIBLE')
     const [contributions, setContributions] = useState<Student[]>([])
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
+    const [isEligbleToGenerate, setIsEligibleToGenerate] =
+        useState<boolean>(false)
     const [submitted, setSubmitted] = useState<boolean>(true)
     const [continueInProgressDialog, setContinueInProgressDialog] =
         useState<boolean>(false)
     const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false)
     const [startCronJobFunction] = useMutation(START_CERTIFICATE_CRON_JOB)
     const [stopCronJobFunction] = useMutation(STOP_CERTIFICATE_CRON_JOB)
-    const [contract, setContract] = useState(null)
+    const [degreeContract, setDegreeContract] = useState(null)
+    const [DAOContract, setDAOContract] = useState(null)
     const mode: ProgressBarModeType = isIntermediate
         ? 'indeterminate'
         : 'determinate'
@@ -299,20 +304,43 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
+    const checkIfEligibleToDeploy = async () => {
+        try {
+            if (DAOContract != null) {
+                const status: boolean =
+                    await DAOContract.functions.getProposalStatus(1, {
+                        from: sessionStorage.getItem('walletAddress'),
+                    })
+                console.log(status)
+                setIsEligibleToGenerate(status)
+            }
+        } catch (error) {
+            console.log(error.message)
+        }
+    }
+
     useEffect(() => {
         if (window.ethereum !== 'undefined') {
-            const abiArray = ABI.abi as any[]
+            const abiArrayForCertificate = CertificateContractABI.abi as any[]
+            const abiArrayForDAO = DAOContractABI.abi as any[]
             const provider = new ethers.providers.Web3Provider(window.ethereum)
             const signer = provider.getSigner()
-            const contractInstance = new ethers.Contract(
+            const certificateContractInstance = new ethers.Contract(
                 DeployedContracts.CertificateStore,
-                abiArray,
+                abiArrayForCertificate,
                 signer
             )
-            setContract(contractInstance)
+            const daoContractInstance = new ethers.Contract(
+                DeployedContracts.DAO,
+                abiArrayForDAO,
+                signer
+            )
+            setDegreeContract(certificateContractInstance)
+            setDAOContract(daoContractInstance)
         } else {
             console.error('Metamask not found')
         }
+        checkIfEligibleToDeploy()
         // initalPromptForInProgressDegress()
     }, [])
 
@@ -454,7 +482,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                 prevProgress + blockchainUploadPercentage
                         )
                         if (isDataUploadedSuccessfully) {
-                            await contract.functions.addCertificates(
+                            await degreeContract.functions.addCertificates(
                                 dataForBlockchain,
                                 {
                                     from: sessionStorage.getItem(
@@ -729,12 +757,30 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                         onClick={updateEligibilityStatuses}
                                         disabled={isButtonDisabled}
                                     />
-                                    <Button
-                                        label="Generate & Deploy Certificates"
-                                        className="p-button-success"
-                                        onClick={generateDegrees}
-                                        disabled={isLoading || isButtonDisabled}
-                                    />
+                                    {isLoading ? (
+                                        <ProgressSpinner
+                                            style={{
+                                                width: '50px',
+                                                height: '50px',
+                                            }}
+                                            strokeWidth="8"
+                                            fill="var(--surface-ground)"
+                                            animationDuration=".5s"
+                                        />
+                                    ) : (
+                                        <Button
+                                            label="Generate & Deploy Certificates"
+                                            className={`p-button ${
+                                                isEligbleToGenerate
+                                                    ? 'p-button-danger'
+                                                    : 'p-button-success'
+                                            }`}
+                                            onClick={generateDegrees}
+                                            disabled={
+                                                isLoading || isButtonDisabled
+                                            }
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </div>
