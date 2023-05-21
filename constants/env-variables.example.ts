@@ -1,2 +1,5 @@
 export const NFT_STORAGE_TOKEN = ''
 export const JWT_SECRET = ''
+export const EMAIL_JS_SERVICE_ID = ''
+export const EMAIL_JS_TEMPLATE_ID = ''
+export const EMAIL_JS_USER_ID = ''

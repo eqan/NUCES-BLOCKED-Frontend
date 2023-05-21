@@ -608,6 +608,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                     'http://localhost:3000/confirmVote'
                 )
             })
+            toast.success('Emails have been sent to validators!')
         } else {
             toast.message('Users are being fetched!')
         }
