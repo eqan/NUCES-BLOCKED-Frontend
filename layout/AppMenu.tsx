@@ -40,7 +40,7 @@ const AppMenu: React.FC<Props> = (userType) => {
                     to: '/academic',
                 },
                 {
-                    label: 'Manage Proposals',
+                    label: 'Proposals',
                     icon: 'pi pi-fw pi-book',
                     to: '/proposal',
                 },

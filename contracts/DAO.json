@@ -193,7 +193,7 @@
     },
     {
       "inputs": [],
-      "name": "updateProposalStatuses",
+      "name": "updateStatuses",
       "outputs": [
         {
           "internalType": "bool",

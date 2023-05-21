@@ -18,6 +18,13 @@ import { serverSideProps } from '../../utils/requireAuthentication'
 import { ethers } from 'ethers'
 import { Dialog } from 'primereact/dialog'
 import { useFetchProposalsHook } from '../../queries/proposals/getProposals'
+import { classNames } from 'primereact/utils'
+import { START_PROPOSAL_CRON_JOB } from '../../queries/proposals/startCron'
+import { STOP_PROPOSAL_CRON_JOB } from '../../queries/proposals/stopCron'
+import { validateTransactionBalance } from '../../utils/checkEligibleTransaction'
+import { CREATE_PROPOSAL } from '../../queries/proposals/addProposal'
+import { DELETE_PROPOSAL } from '../../queries/proposals/removeProposal'
+import { UPDATE_PROPOSALS } from '../../queries/proposals/updateProposals'
 
 interface ProposalInterface {
     id: string
@@ -28,6 +35,14 @@ interface ProposalInterface {
 }
 
 const Proposals: React.FC<Props> = (props) => {
+    let ProposalRecordInterface: ProposalInterface = {
+        id: '',
+        description: '',
+        yesVotes: 0,
+        noVotes: 0,
+        status: '',
+    }
+
     const mapProposalToProposalsRecord = (proposal: ProposalInterface) => {
         return {
             id: proposal.id,
@@ -42,22 +57,22 @@ const Proposals: React.FC<Props> = (props) => {
     const { theme } = useContext(ThemeContext)
     const [account, isMetaMaskConnected, connectToMetaMask] = useMetaMask()
     const [textContent, setTextContent] = useState<string>('')
-    const [isEligbleToGenerate, setIsEligibleToGenerate] =
-        useState<boolean>(false)
     const [submitted, setSubmitted] = useState<boolean>(true)
-    const [continueInProgressDialog, setContinueInProgressDialog] =
-        useState<boolean>(false)
+    const [addProposalDialog, setAddProposalDialog] = useState<boolean>(false)
     const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false)
     const [proposals, setProposals] = useState<ProposalInterface[]>([])
+    const [proposal, setProposal] = useState(ProposalRecordInterface)
+    const [provider, setProvider] = useState(null)
     const [DAOContract, setDAOContract] = useState(null)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
     const [pageLimit, setPageLimit] = useState(10)
     const [totalRecords, setTotalRecords] = useState(1)
+    const [startCronJobFunction] = useMutation(START_PROPOSAL_CRON_JOB)
+    const [stopCronJobFunction] = useMutation(STOP_PROPOSAL_CRON_JOB)
+    const [updateProposalsFunction] = useMutation(UPDATE_PROPOSALS)
     const dt = useRef<DataTable | null>(null)
-
-    const proposalsStatusEnums = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED']
 
     const [
         proposalsData,
@@ -65,6 +80,26 @@ const Proposals: React.FC<Props> = (props) => {
         proposalsFetchingError,
         proposalsRefetchHook,
     ] = useFetchProposalsHook(globalFilter, page + 1, pageLimit)
+
+    const [
+        addProposalFunction,
+        {
+            data: proposalCreateData,
+            loading: proposalCreateDataLoading,
+            error: proposalCreateDataError,
+            reset: proposalCreateDataReset,
+        },
+    ] = useMutation(CREATE_PROPOSAL)
+
+    const [
+        deleteProposalFunction,
+        {
+            data: proposalDeleteData,
+            loading: proposalDeteDataLoading,
+            error: proposalDeleteDataError,
+            reset: proposalDeleteDataReset,
+        },
+    ] = useMutation(DELETE_PROPOSAL)
 
     const fetchProposalsData = async () => {
         setIsLoading(true)
@@ -97,6 +132,7 @@ const Proposals: React.FC<Props> = (props) => {
                 signer
             )
             setDAOContract(daoContractInstance)
+            setProvider(provider)
         } else {
             console.error('Metamask not found')
         }
@@ -134,19 +170,80 @@ const Proposals: React.FC<Props> = (props) => {
 
     useEffect(() => {}, [globalFilter])
 
+    const addProposal = async () => {
+        await connectToMetaMask()
+        setSubmitted(true)
+        setAddProposalDialog(false)
+        if (isMetaMaskConnected) {
+            if (proposal.id && proposal.description) {
+                stopCronJobFunction()
+                let _proposals = [...proposals]
+                let _proposal = { ...proposal }
+                const id = _proposal.id
+                try {
+                    if (validateTransactionBalance(provider)) {
+                        _proposals[id] = _proposal
+
+                        let newProposal = await addProposalFunction({
+                            variables: {
+                                CreateProposalInput: {
+                                    id: _proposal.id,
+                                    description: _proposal.description,
+                                    yesVotes: 0,
+                                    noVotes: 0,
+                                    status: 'NOT_STARTED',
+                                },
+                            },
+                        })
+                        await DAOContract.functions.createProposal(
+                            _proposal.id,
+                            _proposal.description,
+                            { from: sessionStorage.getItem('walletAddress') }
+                        )
+                        newProposal = newProposal.data['CreateProposal']
+                        const mappedData: ProposalInterface =
+                            mapProposalToProposalsRecord(newProposal)
+                        _proposals.push(mappedData)
+                        setProposals(_proposals)
+                    } else {
+                        throw new Error(
+                            'Gas fees may not be sufficient, check your wallet!'
+                        )
+                    }
+                } catch (error) {
+                    console.log(error)
+                    await deleteProposalFunction({
+                        variables: {
+                            DeleteProposalInput: {
+                                id: [id],
+                            },
+                        },
+                    })
+                    throw new Error(error.message)
+                }
+            } else {
+                throw new Error('Please fill all the fields!')
+            }
+            startCronJobFunction()
+            setProposal(ProposalRecordInterface)
+            return 'Result has been added!'
+        } else {
+            throw new Error('Metamask not connected!')
+        }
+    }
     const onPageChange = (event) => {
         setPage(event.first / event.rows)
         setPageLimit(event.rows)
     }
 
-    const openContinueInProgress = () => {
+    const openAddProposalDialog = () => {
         setSubmitted(false)
-        setContinueInProgressDialog(true)
+        setAddProposalDialog(true)
     }
 
     const hideAddProposalDialog = async () => {
         setSubmitted(false)
-        setContinueInProgressDialog(false)
+        setAddProposalDialog(false)
     }
 
     const idBodyTemplate = (rowData) => {
@@ -251,6 +348,64 @@ const Proposals: React.FC<Props> = (props) => {
         )
     }
 
+    const onInputChange = (e, name) => {
+        const val = (e.target && e.target.value) || ''
+        let _proposal = { ...proposal }
+        if (name != '') {
+            _proposal[`${name}`] = val
+            setProposal(_proposal)
+            console.log(proposal)
+            return
+        }
+        _proposal[`${name}`] = val
+        setProposal(_proposal)
+        console.log(proposal)
+    }
+
+    const proposalDialogFooter = (
+        <>
+            <Button
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideAddProposalDialog}
+            />
+            <Button
+                label="Save"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={() => {
+                    toast.promise(addProposal, {
+                        loading: 'Proposal is being added...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
+            />
+        </>
+    )
+
+    const updateAndRefetchData = async () => {
+        stopCronJobFunction()
+        setIsButtonDisabled(true)
+        try {
+            await DAOContract.functions.updateStatuses({
+                from: sessionStorage.getItem('walletAddress'),
+            })
+            await updateProposalsFunction()
+            await fetchProposalsData()
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+        setIsButtonDisabled(false)
+        startCronJobFunction()
+    }
+
     return (
         <>
             <div className="grid crud-demo">
@@ -276,21 +431,15 @@ const Proposals: React.FC<Props> = (props) => {
                                         label="New"
                                         icon="pi pi-plus"
                                         className="p-button-success mr-2"
-                                        onClick={openContinueInProgress}
+                                        onClick={openAddProposalDialog}
+                                        disabled={isButtonDisabled}
                                     />
                                     <Button
                                         label="Update Statuses To Latest"
                                         style={{ marginRight: '10px' }}
                                         icon="pi pi-sync"
                                         className="p-button-info"
-                                        // onClick={sendMailsToRelevantPeople}
-                                        disabled={isButtonDisabled}
-                                    />
-                                    <Button
-                                        label="Auto Update Eligibility"
-                                        style={{ marginRight: '10px' }}
-                                        className="p-button-warning"
-                                        // onClick={updateEligibilityStatuses}
+                                        onClick={updateAndRefetchData}
                                         disabled={isButtonDisabled}
                                     />
                                 </div>
@@ -358,26 +507,73 @@ const Proposals: React.FC<Props> = (props) => {
                             </DataTable>
                         )}
                         <Dialog
-                            visible={continueInProgressDialog}
+                            visible={addProposalDialog}
                             style={{ width: '450px' }}
                             header="Confirm"
                             modal
                             className="p-fluid"
-                            // footer={continueInProgressDialogFooter}
+                            footer={proposalDialogFooter}
                             onHide={hideAddProposalDialog}
                         >
-                            <div className="flex align-items-center justify-content-center">
-                                <i
-                                    className="pi pi-exclamation-triangle mr-3"
-                                    style={{ fontSize: '2rem' }}
-                                />
-                                {
-                                    <span>
-                                        It seems like there are some degrees
-                                        which are inprogress of being published,
-                                        Do you want to continue the progress?
-                                    </span>
-                                }
+                            <div className="field">
+                                <label htmlFor="id">Proposal Name</label>
+                                <span className="p-input-icon-right">
+                                    <InputText
+                                        id="id"
+                                        value={proposal.id}
+                                        onChange={(e) => {
+                                            onInputChange(e, 'id')
+                                        }}
+                                        required
+                                        autoFocus
+                                        className={classNames(
+                                            {
+                                                'p-invalid':
+                                                    submitted && !proposal.id,
+                                            },
+                                            {
+                                                'p-invalid1':
+                                                    submitted && proposal.id,
+                                            }
+                                        )}
+                                    />
+                                    {submitted && !proposal.id && (
+                                        <small className="p-invalid">
+                                            Proposal name is required.
+                                        </small>
+                                    )}
+                                </span>
+                            </div>
+                            <div className="field">
+                                <label htmlFor="description">Description</label>
+                                <span className="p-input-icon-right">
+                                    <InputText
+                                        id="description"
+                                        value={proposal.description}
+                                        onChange={(e) => {
+                                            onInputChange(e, 'description')
+                                        }}
+                                        required
+                                        autoFocus
+                                        className={classNames(
+                                            {
+                                                'p-invalid':
+                                                    submitted &&
+                                                    !proposal.description,
+                                            },
+                                            {
+                                                'p-invalid1':
+                                                    submitted &&
+                                                    proposal.description,
+                                            }
+                                        )}
+                                    />
+                                    {submitted && !proposal.description && (
+                                        <small className="p-invalid">
+                                            Proposal description is required.
+                                        </small>
+                                    )}
+                                </span>
                             </div>
                         </Dialog>
                     </div>
