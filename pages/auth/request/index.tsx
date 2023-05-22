@@ -13,11 +13,11 @@ import apolloClient from '../../../apollo-client'
 import { GET_USER_DATA } from '../../../queries/users/getUser'
 import { UPDATE_USER } from '../../../queries/users/updateUsers'
 import { useMutation } from '@apollo/client'
-import emailjs from 'emailjs-com'
 import { toast, Toaster } from 'sonner'
 import { Messages } from 'primereact/messages'
 import generatePassword from '../../../utils/generateRandomPassword'
 import { ThemeContext } from '../../../utils/customHooks/themeContextProvider'
+import { sendMail } from '../../../utils/mailService'
 
 const RequestPage = () => {
     const [email, setEmail] = useState('')
@@ -57,26 +57,6 @@ const RequestPage = () => {
     let userData = null
     let password = null
 
-    const sendMail = () => {
-        emailjs
-            .send(
-                'service_j0q5w2d', // Replace with your service ID
-                'template_cd8qn4s', // Replace with your template ID
-                {
-                    from_name: 'Shahid',
-                    to_email: email,
-                    to_name: userData?.name,
-                    message: 'Your new password is ' + password,
-                },
-                'DgOS-LMG3_W6jujL0' // Replace with your user ID
-            )
-            .then(() => {
-                console.log('Email sent successfully!')
-            })
-            .catch((error) => {
-                console.error('Error sending email:', error)
-            })
-    }
     const Submitted = async () => {
         setSubmit(true)
         if (/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email)) {
@@ -104,8 +84,12 @@ const RequestPage = () => {
             })
             if (userData.email == email) {
                 password = generatePassword()
-                console.log(password)
-                sendMail()
+                sendMail(
+                    'NUCES BLOCKED',
+                    email,
+                    userData?.name,
+                    'Your new password is ' + password
+                )
                 toast.success('Email Sent!')
                 await updateUserFunction({
                     variables: {

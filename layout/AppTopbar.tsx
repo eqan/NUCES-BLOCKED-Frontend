@@ -249,6 +249,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     checked={isDarkMode}
                     onChange={onThemeChange}
                     size={30}
+                    title="Theme"
                 />
                 {props.userType === 'ADMIN' && !isMetaMaskConnected ? (
                     <>

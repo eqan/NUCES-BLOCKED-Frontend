@@ -16,7 +16,7 @@
         "p:test-file": "prettier -c ./.prettierrc --write ./src/components/markup.html"
     },
     "dependencies": {
-        "@apollo/client": "^3.7.3",
+        "@apollo/client": "^3.7.14",
         "@emotion/react": "^11.10.5",
         "@emotion/styled": "^11.10.5",
         "@faker-js/faker": "^7.6.0",
@@ -38,7 +38,6 @@
         "axios": "^1.3.4",
         "blob-stream": "^0.1.3",
         "cors": "^2.8.5",
-        "emailjs": "^4.0.2",
         "emailjs-com": "^3.2.0",
         "eslint-plugin-prettier": "^4.2.1",
         "ethers": "5.6.9",

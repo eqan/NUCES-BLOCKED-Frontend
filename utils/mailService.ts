@@ -1,4 +1,9 @@
 import emailjs from 'emailjs-com'
+import {
+    EMAIL_JS_SERVICE_ID,
+    EMAIL_JS_TEMPLATE_ID,
+    EMAIL_JS_USER_ID,
+} from '../constants/env-variables'
 
 export const sendMail = (
     userName: string,
@@ -8,15 +13,15 @@ export const sendMail = (
 ) => {
     emailjs
         .send(
-            'service_j0q5w2d', // Replace with your service ID
-            'template_cd8qn4s', // Replace with your template ID
+            EMAIL_JS_SERVICE_ID, // Replace with your service ID
+            EMAIL_JS_TEMPLATE_ID, // Replace with your template ID
             {
                 from_name: userName,
                 to_email: toEmail,
                 to_name: toName,
                 message: message,
             },
-            'DgOS-LMG3_W6jujL0' // Replace with your user ID
+            EMAIL_JS_USER_ID
         )
         .then(() => {
             console.log('Email sent successfully!')

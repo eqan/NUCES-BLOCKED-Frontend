@@ -40,6 +40,11 @@ const AppMenu: React.FC<Props> = (userType) => {
                     to: '/academic',
                 },
                 {
+                    label: 'Proposals',
+                    icon: 'pi pi-fw pi-book',
+                    to: '/proposal',
+                },
+                {
                     label: 'Academic Certificates',
                     icon: 'pi pi-fw pi-bookmark',
                     items: [

@@ -38,6 +38,7 @@ import { Props } from '../../../interfaces/UserPropsForAuthentication'
 import { serverSideProps } from '../../../utils/requireAuthentication'
 import { useFetchIndexedContributions } from '../../../queries/academic/indexAllContributions'
 import { downloadCertificateResult } from '../../../utils/downloadCertificateResult'
+import { checkIfEligibleToDeploy } from '../../../utils/getLatestProposalStatus'
 
 const CertificateRecords: React.FC<Props> = (props) => {
     let CertificateRecordInterface = {
@@ -175,6 +176,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
     const [degreeAddDialog, setAddDegreeDialog] = useState(false)
     const [degreeUpdateDialog, setUpdateDegreeDialog] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [isDisabled, setIsDisabled] = useState(true)
     const [deleteDegreeDialog, setDeleteDegreeDialog] = useState(false)
     const [deleteDegreesDialog, setDeleteDegreesDialog] = useState(false)
     const [degree, setDegree] = useState(CertificateRecordInterface)
@@ -299,6 +301,14 @@ const CertificateRecords: React.FC<Props> = (props) => {
                 signer
             )
             setContract(contractInstance)
+
+            checkIfEligibleToDeploy()
+                .then((status) => {
+                    setIsDisabled(!status)
+                })
+                .catch((error) => {
+                    console.log(error.message)
+                })
         } else {
             console.error('Metamask not found')
         }
@@ -351,7 +361,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         if (student) {
             await connectToMetaMask()
             stopCronJobFunction()
-            if (degree.rollno) {
+            if (degree.rollno && isMetaMaskConnected) {
                 setSubmitted(true)
                 setAddDegreeDialog(false)
                 let _degrees = [...degrees]
@@ -412,7 +422,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         if (student) {
             await connectToMetaMask()
             stopCronJobFunction()
-            if (degree.url) {
+            if (degree.url && isMetaMaskConnected) {
                 setSubmitted(true)
                 setUpdateDegreeDialog(false)
                 let _degrees = [...degrees]
@@ -476,28 +486,31 @@ const CertificateRecords: React.FC<Props> = (props) => {
     const deleteDegree = async () => {
         await connectToMetaMask()
         stopCronJobFunction()
-        let _degrees = degrees.filter((val) => val.id !== degree.id)
-        setDeleteDegreeDialog(false)
-        try {
-            await deleteCertificateFunction({
-                variables: {
-                    DeleteCertificateInput: {
-                        id: [degree.rollno],
+        if (isMetaMaskConnected) {
+            let _degrees = degrees.filter((val) => val.id !== degree.id)
+            setDeleteDegreeDialog(false)
+            try {
+                await deleteCertificateFunction({
+                    variables: {
+                        DeleteCertificateInput: {
+                            id: [degree.rollno],
+                        },
                     },
-                },
-            })
-            await contract.functions.removeCertificate(degree.id, {
-                from: sessionStorage.getItem('walletAddress'),
-            })
-            setDegrees(_degrees)
-            if (certificateDeleteDataError) {
-                throw new Error(certificateDeleteDataError.message)
+                })
+                await contract.functions.removeCertificate(degree.id, {
+                    from: sessionStorage.getItem('walletAddress'),
+                })
+                setDegrees(_degrees)
+                if (certificateDeleteDataError) {
+                    throw new Error(certificateDeleteDataError.message)
+                }
+            } catch (error) {
+                console.log(error)
+                throw new Error(error.message)
             }
-        } catch (error) {
-            console.log(error)
-            throw new Error(error.message)
+            setDegree(CertificateRecordInterface)
         }
-        setDegree(CertificateRecordInterface)
+
         startCronJobFunction()
         return 'Degree removed!'
     }
@@ -525,32 +538,39 @@ const CertificateRecords: React.FC<Props> = (props) => {
     const deleteSelectedDegrees = async () => {
         await connectToMetaMask()
         stopCronJobFunction()
-        let _degrees = degrees.filter((val) => !selectedDegrees.includes(val))
-        let _toBeDeletedDegrees = degrees
-            .filter((val) => selectedDegrees.includes(val))
-            .map((val) => val.id)
-        setDeleteDegreesDialog(false)
-        try {
-            await contract.functions.removeCertificates(_toBeDeletedDegrees, {
-                from: sessionStorage.getItem('walletAddress'),
-            })
+        if (isMetaMaskConnected) {
+            let _degrees = degrees.filter(
+                (val) => !selectedDegrees.includes(val)
+            )
+            let _toBeDeletedDegrees = degrees
+                .filter((val) => selectedDegrees.includes(val))
+                .map((val) => val.id)
+            setDeleteDegreesDialog(false)
+            try {
+                await contract.functions.removeCertificates(
+                    _toBeDeletedDegrees,
+                    {
+                        from: sessionStorage.getItem('walletAddress'),
+                    }
+                )
 
-            await deleteCertificateFunction({
-                variables: {
-                    DeleteCertificateInput: {
-                        id: _toBeDeletedDegrees,
+                await deleteCertificateFunction({
+                    variables: {
+                        DeleteCertificateInput: {
+                            id: _toBeDeletedDegrees,
+                        },
                     },
-                },
-            })
-            if (certificateDeleteDataError) {
-                throw new Error(certificateDeleteDataError.message)
+                })
+                if (certificateDeleteDataError) {
+                    throw new Error(certificateDeleteDataError.message)
+                }
+            } catch (error) {
+                console.log(error)
+                throw new Error(error.message)
             }
-        } catch (error) {
-            console.log(error)
-            throw new Error(error.message)
+            setSelectedDegrees([])
+            setDegrees(_degrees)
         }
-        setSelectedDegrees([])
-        setDegrees(_degrees)
         startCronJobFunction()
         return 'Selected degrees removed!'
     }
@@ -576,6 +596,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
                         icon="pi pi-plus"
                         className="p-button-success mr-2"
                         onClick={openNewAddDegreeDialog}
+                        disabled={isDisabled}
                     />
                     <Button
                         label="Delete"
@@ -651,11 +672,13 @@ const CertificateRecords: React.FC<Props> = (props) => {
                     icon="pi pi-refresh"
                     className="p-button-rounded p-button-warning mr-2"
                     onClick={() => editDegree(rowData)}
+                    disabled={isDisabled}
                 />
                 <Button
                     icon="pi pi-trash"
                     className="p-button-rounded p-button-danger"
                     onClick={() => confirmDeleteDegree(rowData)}
+                    disabled={isDisabled}
                 />
             </>
         )
