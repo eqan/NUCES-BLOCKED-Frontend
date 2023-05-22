@@ -2,7 +2,7 @@ import React, { useRef } from 'react'
 import ABI from '../../contracts/DAO.json'
 import { DeployedContracts } from '../../contracts/deployedAddresses'
 import Head from 'next/head'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
 import getConfig from 'next/config'
 import Link from 'next/link'
 import { StyleClass } from 'primereact/styleclass'
@@ -27,15 +27,24 @@ const VotePage = () => {
                 abiArray,
                 signer
             )
+            const latestProposalName: string = (
+                await contractInstance.functions.getLatestProposalName({
+                    from: sessionStorage.getItem('walletAddress'),
+                })
+            )[0]
+            console.log(latestProposalName)
             await contractInstance.functions
-                .vote(1, vote, {
+                .vote(latestProposalName, vote, {
                     from: sessionStorage.getItem('walletAddress'),
                 })
                 .then(() => {
-                    console.log('Successfully voted!')
+                    toast.success('Successfully voted!')
                 })
                 .catch((error) => {
                     console.log(error.message)
+                    toast.error(
+                        'Voting not successfull might be you already voted!'
+                    )
                 })
         } else {
             console.log('Metamask not connected!')

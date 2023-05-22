@@ -45,6 +45,7 @@ import { useFetchIndexedContributions } from '../../../../queries/academic/index
 import { ProgressSpinner } from 'primereact/progressspinner'
 import { UserInterface } from '../../../users'
 import { sendMail } from '../../../../utils/mailService'
+import { checkIfEligibleToDeploy } from '../../../../utils/getLatestProposalStatus'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const mapStudentToStudentRecord = (student: StudentInterface) => {
@@ -188,8 +189,8 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         useState<string>('ELIGIBLE')
     const [contributions, setContributions] = useState<Student[]>([])
     const [isIntermediate, setIsIntermidate] = useState<boolean>(false)
-    const [isEligbleToGenerate, setIsEligibleToGenerate] =
-        useState<boolean>(false)
+    const [isNotEligbleToGenerate, setIsNotEligbleToGenerate] =
+        useState<boolean>(true)
     const [submitted, setSubmitted] = useState<boolean>(true)
     const [continueInProgressDialog, setContinueInProgressDialog] =
         useState<boolean>(false)
@@ -197,7 +198,6 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     const [startCronJobFunction] = useMutation(START_CERTIFICATE_CRON_JOB)
     const [stopCronJobFunction] = useMutation(STOP_CERTIFICATE_CRON_JOB)
     const [degreeContract, setDegreeContract] = useState(null)
-    const [DAOContract, setDAOContract] = useState(null)
     const mode: ProgressBarModeType = isIntermediate
         ? 'indeterminate'
         : 'determinate'
@@ -322,25 +322,9 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    const checkIfEligibleToDeploy = async () => {
-        try {
-            if (DAOContract != null) {
-                const status: boolean =
-                    await DAOContract.functions.getProposalStatus(1, {
-                        from: sessionStorage.getItem('walletAddress'),
-                    })
-                console.log(status)
-                setIsEligibleToGenerate(status)
-            }
-        } catch (error) {
-            console.log(error.message)
-        }
-    }
-
     useEffect(() => {
         if (window.ethereum !== 'undefined') {
             const abiArrayForCertificate = CertificateContractABI.abi as any[]
-            const abiArrayForDAO = DAOContractABI.abi as any[]
             const provider = new ethers.providers.Web3Provider(window.ethereum)
             const signer = provider.getSigner()
             const certificateContractInstance = new ethers.Contract(
@@ -348,17 +332,19 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 abiArrayForCertificate,
                 signer
             )
-            const daoContractInstance = new ethers.Contract(
-                DeployedContracts.DAO,
-                abiArrayForDAO,
-                signer
-            )
             setDegreeContract(certificateContractInstance)
-            setDAOContract(daoContractInstance)
         } else {
             console.error('Metamask not found')
         }
+
         checkIfEligibleToDeploy()
+            .then((status) => {
+                setIsNotEligbleToGenerate(!status)
+            })
+            .catch((error) => {
+                console.log(error.message)
+            })
+
         // initalPromptForInProgressDegress()
     }, [])
 
@@ -834,13 +820,15 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                                         <Button
                                             label="Generate & Deploy Certificates"
                                             className={`p-button ${
-                                                isEligbleToGenerate
+                                                isNotEligbleToGenerate
                                                     ? 'p-button-danger'
                                                     : 'p-button-success'
                                             }`}
                                             onClick={generateDegrees}
                                             disabled={
-                                                isLoading || isButtonDisabled
+                                                isLoading ||
+                                                isButtonDisabled ||
+                                                isNotEligbleToGenerate
                                             }
                                         />
                                     )}

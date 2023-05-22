@@ -57,8 +57,10 @@ const Proposals: React.FC<Props> = (props) => {
     const { theme } = useContext(ThemeContext)
     const [account, isMetaMaskConnected, connectToMetaMask] = useMetaMask()
     const [textContent, setTextContent] = useState<string>('')
+    const [voterAddress, setVoterAddress] = useState<string>('')
     const [submitted, setSubmitted] = useState<boolean>(true)
     const [addProposalDialog, setAddProposalDialog] = useState<boolean>(false)
+    const [addVoterDialog, setAddVoterDialog] = useState<boolean>(false)
     const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false)
     const [proposals, setProposals] = useState<ProposalInterface[]>([])
     const [proposal, setProposal] = useState(ProposalRecordInterface)
@@ -170,6 +172,23 @@ const Proposals: React.FC<Props> = (props) => {
 
     useEffect(() => {}, [globalFilter])
 
+    const addVoter = async () => {
+        await connectToMetaMask()
+        setSubmitted(true)
+        setAddVoterDialog(false)
+        if (isMetaMaskConnected && voterAddress && voterAddress != '') {
+            try {
+                const addressObject = ethers.utils.getAddress(voterAddress)
+                await DAOContract.functions.addVoter(addressObject)
+                return 'Voter has been added!'
+            } catch (error) {
+                console.log(error.message)
+                throw new Error(error.message)
+            }
+        }
+        setVoterAddress('')
+    }
+
     const addProposal = async () => {
         await connectToMetaMask()
         setSubmitted(true)
@@ -241,9 +260,19 @@ const Proposals: React.FC<Props> = (props) => {
         setAddProposalDialog(true)
     }
 
+    const openAddVoterDialog = () => {
+        setSubmitted(false)
+        setAddVoterDialog(true)
+    }
+
     const hideAddProposalDialog = async () => {
         setSubmitted(false)
         setAddProposalDialog(false)
+    }
+
+    const hideAddVoterDialog = async () => {
+        setSubmitted(false)
+        setAddVoterDialog(false)
     }
 
     const idBodyTemplate = (rowData) => {
@@ -351,7 +380,11 @@ const Proposals: React.FC<Props> = (props) => {
     const onInputChange = (e, name) => {
         const val = (e.target && e.target.value) || ''
         let _proposal = { ...proposal }
-        if (name != '') {
+        if (name == 'address') {
+            setVoterAddress(val)
+            console.log(val)
+            return
+        } else if (name != '') {
             _proposal[`${name}`] = val
             setProposal(_proposal)
             console.log(proposal)
@@ -377,6 +410,33 @@ const Proposals: React.FC<Props> = (props) => {
                 onClick={() => {
                     toast.promise(addProposal, {
                         loading: 'Proposal is being added...',
+                        success: (data) => {
+                            return data
+                        },
+                        error: (error) => {
+                            return error.message
+                        },
+                    })
+                }}
+            />
+        </>
+    )
+
+    const voterDialogFooter = (
+        <>
+            <Button
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideAddVoterDialog}
+            />
+            <Button
+                label="Save"
+                icon="pi pi-check"
+                className="p-button-text"
+                onClick={() => {
+                    toast.promise(addVoter, {
+                        loading: 'Voter is being added...',
                         success: (data) => {
                             return data
                         },
@@ -428,10 +488,17 @@ const Proposals: React.FC<Props> = (props) => {
                                     }}
                                 >
                                     <Button
-                                        label="New"
+                                        label="New Proposal"
                                         icon="pi pi-plus"
                                         className="p-button-success mr-2"
                                         onClick={openAddProposalDialog}
+                                        disabled={isButtonDisabled}
+                                    />
+                                    <Button
+                                        label="New Voter"
+                                        icon="pi pi-plus"
+                                        className="p-button-warning mr-2"
+                                        onClick={openAddVoterDialog}
                                         disabled={isButtonDisabled}
                                     />
                                     <Button
@@ -571,6 +638,47 @@ const Proposals: React.FC<Props> = (props) => {
                                     {submitted && !proposal.description && (
                                         <small className="p-invalid">
                                             Proposal description is required.
+                                        </small>
+                                    )}
+                                </span>
+                            </div>
+                        </Dialog>
+                        <Dialog
+                            visible={addVoterDialog}
+                            style={{ width: '450px' }}
+                            header="Confirm"
+                            modal
+                            className="p-fluid"
+                            footer={voterDialogFooter}
+                            onHide={hideAddVoterDialog}
+                        >
+                            <div className="field">
+                                <label htmlFor="address">
+                                    Validator Address
+                                </label>
+                                <span className="p-input-icon-right">
+                                    <InputText
+                                        id="address"
+                                        value={voterAddress}
+                                        onChange={(e) => {
+                                            onInputChange(e, 'address')
+                                        }}
+                                        required
+                                        autoFocus
+                                        className={classNames(
+                                            {
+                                                'p-invalid':
+                                                    submitted && !voterAddress,
+                                            },
+                                            {
+                                                'p-invalid1':
+                                                    submitted && voterAddress,
+                                            }
+                                        )}
+                                    />
+                                    {submitted && !voterAddress && (
+                                        <small className="p-invalid">
+                                            Validator address is required.
                                         </small>
                                     )}
                                 </span>
