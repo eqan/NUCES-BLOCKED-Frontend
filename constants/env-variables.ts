@@ -1,0 +1,6 @@
+export const NFT_STORAGE_TOKEN =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDEzNzY2YkZjNUY4NjRhNjFmYTEzOGFkN0EyN0E1NDgxMGMyYzI5NGMiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY3NzA5Mzc3ODMzMCwibmFtZSI6Ik5VQ0VTIEJMT0NLRUQifQ.1TjcDSvnNEDdiOou_CweWwQ8UFCKLLDoknKpOA2e3IU'
+export const JWT_SECRET = 'secretkey'
+export const EMAIL_JS_SERVICE_ID = 'service_j0q5w2d'
+export const EMAIL_JS_TEMPLATE_ID = 'template_cd8qn4s'
+export const EMAIL_JS_USER_ID = 'DgOS-LMG3_W6jujL0'
