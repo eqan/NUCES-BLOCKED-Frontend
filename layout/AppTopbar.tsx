@@ -35,7 +35,7 @@ interface AppTopbarProps {
     userimg: string | null
 }
 
-const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
+const AppTopbar = forwardRef((props: any, ref) => {
     const {
         layoutConfig,
         setLayoutConfig,
@@ -55,11 +55,11 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     useEffect(() => {
         async function setInitialStates() {
             // Check if MetaMask is installed
-            if (window.ethereum) {
-                const accounts = await window.ethereum.request({
+            if (window['ethereum']) {
+                const accounts = await window['ethereum'].request({
                     method: 'eth_accounts',
                 })
-                const chainId = await window.ethereum.request({
+                const chainId = await window['ethereum'].request({
                     method: 'eth_chainId',
                 })
 
@@ -89,10 +89,10 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
     }))
 
     const connectToMetaMask = async (event) => {
-        if (window.ethereum) {
+        if (window['ethereum']) {
             try {
                 const provider = new ethers.providers.Web3Provider(
-                    window.ethereum,
+                    window['ethereum'],
                     'any'
                 )
                 await provider.send('eth_requestAccounts', [])
@@ -251,7 +251,7 @@ const AppTopbar = forwardRef((props: AppTopbarProps, ref) => {
                     size={30}
                     title="Theme"
                 />
-                {props.userType === 'ADMIN' && !isMetaMaskConnected ? (
+                {props?.userType === 'ADMIN' && !isMetaMaskConnected ? (
                     <>
                         <Button
                             className="p-link layout-topbar-button"

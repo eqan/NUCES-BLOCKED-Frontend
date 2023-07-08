@@ -49,9 +49,7 @@ const CertificateRecords: React.FC<Props> = (props) => {
         url: '',
     }
 
-    const mapCertificateToCertificateRecord = (
-        certificate: CertificateInterface
-    ) => {
+    const mapCertificateToCertificateRecord = (certificate: any) => {
         return {
             id: certificate.id,
             name: certificate.student.name,
@@ -291,9 +289,11 @@ const CertificateRecords: React.FC<Props> = (props) => {
     }, [certificatesRefetchHook, router.events])
 
     useEffect(() => {
-        if (window.ethereum !== 'undefined') {
+        if (window['ethereum'] !== 'undefined') {
             const abiArray = ABI.abi as any[]
-            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const provider = new ethers.providers.Web3Provider(
+                window['ethereum']
+            )
             const signer = provider.getSigner()
             const contractInstance = new ethers.Contract(
                 DeployedContracts.CertificateStore,

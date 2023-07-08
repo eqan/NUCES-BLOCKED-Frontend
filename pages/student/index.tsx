@@ -45,7 +45,7 @@ const StudentRecords: React.FC<Props> = (props) => {
         eligibilityStatus: '',
     }
 
-    const mapStudentToStudentRecord = (student: StudentInterface) => {
+    const mapStudentToStudentRecord = (student: any) => {
         return {
             id: student.id,
             name: student.name,
@@ -203,7 +203,7 @@ const StudentRecords: React.FC<Props> = (props) => {
                 const index = findIndexById(_student.id)
                 if (index == -1) {
                     _students[_student.rollno] = _student
-                    let newStudent = await createStudentFunction({
+                    let newStudent: any = await createStudentFunction({
                         variables: {
                             CreateStudentInput: {
                                 id: _student.rollno,

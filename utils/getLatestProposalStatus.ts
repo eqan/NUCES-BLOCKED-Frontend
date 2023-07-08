@@ -5,7 +5,7 @@ import { DeployedContracts } from '../contracts/deployedAddresses'
 export const checkIfEligibleToDeploy = async (): Promise<boolean> => {
     try {
         const abiArrayForDAO = DAOContractABI.abi as any[]
-        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const provider = new ethers.providers.Web3Provider(window['ethereum'])
         const signer = provider.getSigner()
         const DAOContract = new ethers.Contract(
             DeployedContracts.DAO,

@@ -47,7 +47,7 @@ const SemesterResult: React.FC<Props> = (props) => {
         date: '',
     }
 
-    const mapSemesterToSemesterRecord = (result: ResultsInterface) => {
+    const mapSemesterToSemesterRecord = (result: any) => {
         return {
             id: result.id,
             url: result.url,
@@ -142,9 +142,11 @@ const SemesterResult: React.FC<Props> = (props) => {
     }
 
     useEffect(() => {
-        if (window.ethereum !== 'undefined') {
+        if (window['ethereum'] !== 'undefined') {
             const abiArray = ABI.abi as any[]
-            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const provider = new ethers.providers.Web3Provider(
+                window['ethereum']
+            )
             const signer = provider.getSigner()
             const contractInstance = new ethers.Contract(
                 DeployedContracts.SemesterStore,

@@ -84,7 +84,7 @@ const LoginPage = () => {
                                             token['access_token'],
                                             { expires: 1 }
                                         )
-                                        router.push('/')
+                                        router.push('/users')
                                     })
                                 } catch (e) {
                                     console.log(e)

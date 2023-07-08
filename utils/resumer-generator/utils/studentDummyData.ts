@@ -8,18 +8,18 @@ import {
     SubContributions,
 } from '../interfaces/interfaces'
 
-export const studentHeading: StudentHeading = {
+export const studentHeading: any = {
     studentName: 'Eqan Ahmad',
     degreeName: 'Bachelors in Computer Science',
     degreeProvider: 'National University Of Computer & Emerging Sciences',
 }
 
-export const studentMetaDataInfo: StudentMetaDataDetails = {
+export const studentMetaDataInfo: any = {
     degreeId: '32dsj3',
     rollNumber: '19F0256',
 }
 
-export const studentTopPriorityInformation: StudentTopSectionInformation = {
+export const studentTopPriorityInformation: any = {
     cgpa: 3.3,
     honors: '4x Gold Medals, 3x Silver Medals',
 }

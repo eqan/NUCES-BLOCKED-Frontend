@@ -14,14 +14,8 @@ interface Props {
 }
 
 class MyDocument extends Document<Props> {
-    static async getInitialProps(
-        ctx: DocumentContext
-    ): Promise<DocumentInitialProps & Props> {
-        let userData = '',
-            userType = null,
-            userName = null,
-            userEmail = null,
-            userimg = null
+    static async getInitialProps(ctx: DocumentContext): Promise<any> {
+        let userData: any = null
         const { req } = ctx
         try {
             if (req.headers.cookie) {
@@ -32,18 +26,14 @@ class MyDocument extends Document<Props> {
                 if (token) {
                     const userEmail = jwt.decode(
                         token.split('=')[1]?.toString()
-                    ).email
+                    )['email']
                     await apolloClient
                         .query({
                             query: GET_USER_DATA,
                             variables: { userEmail },
                         })
-                        .then((result) => {
+                        .then((result: any) => {
                             userData = result.data.GetUserDataByUserEmail
-                            userType: userData?.type
-                            userName: userData?.name
-                            userEmail: userData?.email
-                            userimg: userData?.imgUrl
                         })
                         .catch((error) => {
                             console.log(error)
@@ -61,7 +51,13 @@ class MyDocument extends Document<Props> {
         }
         return {
             ...initialProps,
-            props: { userType, userName, userEmail, userimg },
+            props: {
+                userData,
+                type: userData?.type,
+                name: userData?.name,
+                email: userData?.email,
+                imgUrl: userData?.imgUrl,
+            },
         }
     }
 

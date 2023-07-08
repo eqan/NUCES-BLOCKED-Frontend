@@ -36,7 +36,7 @@ export default function CVGenerator() {
                 document={<CV student={student} />}
                 fileName="example.pdf"
             >
-                {({ blob, url, loading, error }) => {
+                {({ blob, url, loading, error }): any => {
                     if (!loading && blob) {
                         console.log(blob)
                         actualFileUploadRef.current = blob

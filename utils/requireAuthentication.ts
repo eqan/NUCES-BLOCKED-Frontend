@@ -10,11 +10,11 @@ export const serverSideProps: GetServerSideProps = requireAuthentication(
         if (req.headers.cookie) {
             const tokens = req.headers.cookie.split(';')
             const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
+            let userData: any = null
             if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
+                const userEmail = jwt.decode(token.split('=')[1]?.toString())[
+                    'email'
+                ]
                 await apolloClient
                     .query({
                         query: GET_USER_DATA,

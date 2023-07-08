@@ -1,5 +1,5 @@
 import { Font } from '@react-pdf/renderer'
-import WorkSansLight from './fonts/WorkSans-Light.ttf'
+import WorkSansLight from './fonts/WorkSansLight.ttf'
 import WorkSansRegular from './fonts/WorkSans-Regular.ttf'
 import WorkSansMedium from './fonts/WorkSans-Medium.ttf'
 import WorkSansSemiBold from './fonts/WorkSans-SemiBold.ttf'

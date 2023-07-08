@@ -3,14 +3,14 @@
 
 // First expand this to header then the subrow
 
-interface HeadRowInterface {
+export interface HeadRowInterface {
     studentId: string
     name: string
     email: string
     subRows: SubRowInterface[]
 }
 
-interface SubRowInterface {
+export interface SubRowInterface {
     _id: string
     id: string
     title: string
@@ -20,7 +20,7 @@ interface SubRowInterface {
     studentId: string
 }
 
-interface AddContributionDialogInterface {
+export interface AddContributionDialogInterface {
     _id: string
     id: string
     studentId: string
