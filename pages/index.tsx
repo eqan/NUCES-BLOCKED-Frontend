@@ -16,6 +16,7 @@ interface Props {
 const dashboard: React.FC<Props> = (props) => {
     const router = useRouter()
     useEffect(() => {
+        console.log(props.userType)
         if (
             props.userType !== 'TEACHER' &&
             props.userType !== 'CAREER_COUNSELLOR' &&
@@ -241,11 +242,12 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         if (req.rawHeaders) {
             const tokens = req.rawHeaders
             const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
+            let userData: any = null
             if (token) {
-                const userEmail = jwt.decode(
-                    token.split('=')[1]?.toString()
-                ).email
+                const userEmail = jwt.decode(token.split('=')[1]?.toString())[
+                    'email'
+                ]
+                console.log(userEmail)
                 await apolloClient
                     .query({
                         query: GET_USER_DATA,
@@ -253,6 +255,7 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
                     })
                     .then((result) => {
                         userData = result.data.GetUserDataByUserEmail
+                        console.log(userData)
                     })
                     .catch((error) => {
                         console.log(error)

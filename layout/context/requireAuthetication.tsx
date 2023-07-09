@@ -11,9 +11,9 @@ export function requireAuthentication(gssp: GetServerSideProps) {
                     token.includes('access_token')
                 )
                 // console.log(token)
-                const expiryDate = jwt.decode(
-                    token.split('=')[1].toString()
-                )?.exp
+                const expiryDate = jwt.decode(token.split('=')[1].toString())[
+                    'exp'
+                ]
                 const validateToken = Date.now() <= expiryDate * 1000
                 if (!token || !validateToken) {
                     return {

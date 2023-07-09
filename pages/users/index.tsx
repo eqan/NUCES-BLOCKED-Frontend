@@ -49,7 +49,7 @@ const UserRecords: React.FC<Props> = (props) => {
         subType: '',
     }
 
-    const mapUserToUserRecord = (user: UserInterface) => {
+    const mapUserToUserRecord = (user: any) => {
         return {
             id: user.id,
             name: user.name,
@@ -256,7 +256,7 @@ const UserRecords: React.FC<Props> = (props) => {
                 }
                 if (index == -1) {
                     _users[user.id] = _user
-                    let newUser = await createuserFunction({
+                    let newUser: any = await createuserFunction({
                         variables: {
                             CreateUserInput: {
                                 name: _user.name,
@@ -1048,7 +1048,7 @@ const UserRecords: React.FC<Props> = (props) => {
                                                     zoomSrc={`${previewimg}`}
                                                     width="250"
                                                     style={{
-                                                        align: 'center',
+                                                        alignContent: 'center',
                                                     }}
                                                 />
                                             ) : (
@@ -1057,7 +1057,7 @@ const UserRecords: React.FC<Props> = (props) => {
                                                     zoomSrc={`${previewimg}`}
                                                     width="250"
                                                     style={{
-                                                        align: 'center',
+                                                        alignContent: 'center',
                                                     }}
                                                     preview
                                                 />

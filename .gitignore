@@ -3,7 +3,7 @@
 /node_modules
 .next
 
-constants/env-variables.ts
+# constants/env-variables.ts
 
 # Logs
 logs

@@ -51,11 +51,10 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
     const [contributionEnums, setContributionEnums] = useState([])
     const [contributionEnumsForDialog, setContributionEnumsForDialog] =
         useState([])
-    const [headers, setHeaders] = useState<HeadRowInterface[]>(
-        [] as HeadRowInterface[]
+    const [headers, setHeaders] = useState<any>()
+    const [addContributionData, setAddContributionData] = useState<any>(
+        AddContributionDialogInterface
     )
-    const [addContributionData, setAddContributionData] =
-        useState<AddContributionDialogInterface>(AddContributionDialogInterface)
     const [expandedRows, setExpandedRows] =
         useState<DataTableExpandedRows>(null)
     const [addContributionDialog, setAddContributionDialog] = useState(false)
@@ -64,15 +63,13 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         useState(false)
     const [deleteContributionsDialog, setDeleteContributionsDialog] =
         useState(false)
-    const [selectedHeadRowRecord, setSelectedHeadRowRecord] = useState(
+    const [selectedHeadRowRecord, setSelectedHeadRowRecord] = useState<any>(
         HeaderRowRecordInterface
     )
-    const [selectedHeadRecords, setSelectedSubRecords] = useState<
-        HeadRowInterface[]
-    >([])
+    const [selectedHeadRecords, setSelectedSubRecords] = useState<any>([])
     const [submitted, setSubmitted] = useState(false)
     const [fetchStudentDataId, setFetchStudentDataId] = useState<string>('')
-    const [fetchStudentData, setFetchStudentData] = useState<string>(null)
+    const [fetchStudentData, setFetchStudentData] = useState<any>(null)
     const [globalFilter, setGlobalFilter] = useState<string>('')
     const [page, setPage] = useState(0)
     const [pageLimit, setPageLimit] = useState(10)
@@ -198,7 +195,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         }
     }
 
-    const returnContributionType = (item) => {
+    const returnContributionType = (item: any) => {
         if (props) {
             switch (props.userType) {
                 case 'TEACHER':
@@ -229,27 +226,29 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                     return acc
                 }, {})
                 // Map each group to a HeadRowInterface object
-                const headRows = Object.values(groupedData).map((group) => {
-                    let index = -1
-                    // Map the sub-rows for this group
-                    const subRows = group.map((item) => ({
-                        _id: (index += 1),
-                        id: item.id,
-                        title: item.title,
-                        type: returnContributionType(item),
-                        contribution: item.contribution,
-                        date: item.updatedAt,
-                        studentId: item.studentId,
-                    }))
+                const headRows = Object.values(groupedData).map(
+                    (group: any) => {
+                        let index = -1
+                        // Map the sub-rows for this group
+                        const subRows = group?.map((item: any) => ({
+                            _id: (index += 1),
+                            id: item.id,
+                            title: item.title,
+                            type: returnContributionType(item),
+                            contribution: item.contribution,
+                            date: item.updatedAt,
+                            studentId: item.studentId,
+                        }))
 
-                    // Create a new object that matches the HeadRowInterface and include the mapped sub-rows
-                    return {
-                        studentId: group[0].studentId,
-                        name: group[0].student.name,
-                        email: group[0].student.email,
-                        subRows: subRows,
+                        // Create a new object that matches the HeadRowInterface and include the mapped sub-rows
+                        return {
+                            studentId: group[0].studentId,
+                            name: group[0].student.name,
+                            email: group[0].student.email,
+                            subRows: subRows,
+                        }
                     }
-                })
+                )
                 setHeaders(headRows)
                 setPageLimit(total)
                 setTotalRecords(total)
@@ -454,20 +453,20 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
             setAddContributionDialog(false)
             let _headers = [...headers]
 
-            const types = returnArrayOfType(addContributionData.type.type)
+            const types = returnArrayOfType(addContributionData.type?.type)
             let parentIndex = findIndexById(addContributionData.studentId)
 
             if (!_headers[parentIndex]) {
-                const headerRow: HeadRowInterface = {
+                const headerRow: any = {
                     studentId: addContributionData.studentId,
-                    name: fetchStudentData.name,
+                    name: fetchStudentData?.name,
                     email: fetchStudentData.email,
                     subRows: [],
                 }
                 parentIndex = _headers.push(headerRow) - 1
             }
 
-            let _subRows = _headers[parentIndex].subRows
+            let _subRows: any = _headers[parentIndex].subRows
             try {
                 let newContribution = await contributionAddFunction({
                     variables: {
@@ -489,7 +488,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                     },
                 })
                 newContribution = newContribution.data.CreateContribution
-                const mappedData: SubRowInterface = mapSubRowToSubRowRecord(
+                const mappedData = mapSubRowToSubRowRecord(
                     newContribution,
                     addContributionData?.type?.type,
                     addContributionData.studentId,
@@ -577,7 +576,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
             const parentIndex = findIndexById(selectedHeadRowRecord.studentId)
             let _subRows = _headers[parentIndex].subRows
             _subRows = _subRows.filter(
-                (val) => val.id !== selectedHeadRowRecord.id
+                (val) => val.id !== selectedHeadRowRecord?.id
             )
             await contributionDeleteFunction({
                 variables: {
@@ -608,13 +607,13 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
         setDeleteContributionsDialog(false)
         let _headers = [...headers]
         let _subRowsToDelete: { id: string; studentId: string }[] = []
-        selectedHeadRecords.forEach((record) => {
+        selectedHeadRecords.forEach((record: any) => {
             const parentIndex = findIndexById(record.studentId)
-            const subRows = _headers[parentIndex].subRows
+            const subRows: any = _headers[parentIndex].subRows
             _subRowsToDelete.push(
                 ...subRows
-                    .filter((val) => val.id === record.id)
-                    .map((val) => ({
+                    .filter((val: any) => val.id === record.id)
+                    .map((val: any) => ({
                         contributionId: val.id,
                         studentId: record.studentId,
                         contributionType: props.userType,
@@ -1063,7 +1062,7 @@ const AcademicContributionsRecords: React.FC<Props> = (props) => {
                             header={header}
                             rowExpansionTemplate={rowExpansionTemplate}
                             expandedRows={expandedRows}
-                            onRowToggle={(e) => setExpandedRows(e?.data)}
+                            onRowToggle={(e: any) => setExpandedRows(e?.data)}
                             totalRecords={totalRecords}
                             loading={isLoading}
                             globalFilter={globalFilter}
@@ -1284,11 +1283,11 @@ export const getServerSideProps: GetServerSideProps = requireAuthentication(
         if (req.headers.cookie) {
             const tokens = req.headers.cookie.split(';')
             const token = tokens.find((token) => token.includes('access_token'))
-            let userData = ''
+            let userData: any = null
             if (token) {
-                const userEmail = jwt.decode(
+                const userEmail: string = jwt?.decode(
                     token.split('=')[1]?.toString()
-                ).email
+                )['email']
                 await apolloClient
                     .query({
                         query: GET_USER_DATA,

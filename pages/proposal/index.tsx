@@ -8,7 +8,7 @@ import { DataTable } from 'primereact/datatable'
 import { Column } from 'primereact/column'
 import { InputText } from 'primereact/inputtext'
 import { Skeleton } from 'primereact/skeleton'
-import { Tag } from 'primereact/tag'
+import { Tag, TagProps } from 'primereact/tag'
 import { ThemeContext } from '../../utils/customHooks/themeContextProvider'
 import useMetaMask from '../../utils/customHooks/useMetaMask'
 import { DeployedContracts } from '../../contracts/deployedAddresses'
@@ -124,9 +124,11 @@ const Proposals: React.FC<Props> = (props) => {
     }
 
     useEffect(() => {
-        if (window.ethereum !== 'undefined') {
+        if (window['ethereum'] !== 'undefined') {
             const abiArrayForDAO = DAOContractABI.abi as any[]
-            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const provider = new ethers.providers.Web3Provider(
+                window['ethereum']
+            )
             const signer = provider.getSigner()
             const daoContractInstance = new ethers.Contract(
                 DeployedContracts.DAO,
@@ -203,7 +205,7 @@ const Proposals: React.FC<Props> = (props) => {
                     if (validateTransactionBalance(provider)) {
                         _proposals[id] = _proposal
 
-                        let newProposal = await addProposalFunction({
+                        let newProposal: any = await addProposalFunction({
                             variables: {
                                 CreateProposalInput: {
                                     id: _proposal.id,
@@ -293,16 +295,16 @@ const Proposals: React.FC<Props> = (props) => {
         )
     }
 
-    const getSeverity = (status) => {
+    const getSeverity = (status): any => {
         switch (status) {
             case 'NOT_STARTED':
                 return 'warning'
             case 'IN_PROGRESS':
                 return 'info'
             case 'COMPLETED':
-                return 'Primary'
+                return 'primary'
             default:
-                return null
+                return 'primary'
         }
     }
 
@@ -340,7 +342,7 @@ const Proposals: React.FC<Props> = (props) => {
                 <i className="pi pi-search" />
                 <InputText
                     type="search"
-                    onInput={(e) => setGlobalFilter(e.target.value)}
+                    onInput={(e: any) => setGlobalFilter(e.target.value)}
                     placeholder="Search..."
                 />
             </span>

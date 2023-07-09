@@ -48,7 +48,7 @@ import { sendMail } from '../../../../utils/mailService'
 import { checkIfEligibleToDeploy } from '../../../../utils/getLatestProposalStatus'
 
 const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
-    const mapStudentToStudentRecord = (student: StudentInterface) => {
+    const mapStudentToStudentRecord = (student: any) => {
         return {
             id: student.id,
             name: student.name,
@@ -166,7 +166,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         }
     }
 
-    const mapUserToUserRecord = (user: UserInterface) => {
+    const mapUserToUserRecord = (user: any) => {
         return {
             id: user.id,
             name: user.name,
@@ -323,9 +323,11 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
     }
 
     useEffect(() => {
-        if (window.ethereum !== 'undefined') {
+        if (window['ethereum'] !== 'undefined') {
             const abiArrayForCertificate = CertificateContractABI.abi as any[]
-            const provider = new ethers.providers.Web3Provider(window.ethereum)
+            const provider = new ethers.providers.Web3Provider(
+                window['ethereum']
+            )
             const signer = provider.getSigner()
             const certificateContractInstance = new ethers.Contract(
                 DeployedContracts.CertificateStore,
@@ -658,7 +660,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
         )
     }
 
-    const getSeverity = (status) => {
+    const getSeverity = (status): any => {
         switch (status) {
             case 'NOT_ELIGIBLE':
                 return 'warning'
@@ -725,7 +727,7 @@ const AutomaticeCertificateGenerator: React.FC<Props> = (props) => {
                 <i className="pi pi-search" />
                 <InputText
                     type="search"
-                    onInput={(e) => setGlobalFilter(e.target.value)}
+                    onInput={(e: any) => setGlobalFilter(e.target.value)}
                     placeholder="Search..."
                 />
             </span>

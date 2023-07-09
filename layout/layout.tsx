@@ -19,7 +19,7 @@ interface ButtonMenu {
     topbarmenubutton: HTMLButtonElement
 }
 
-const Layout: React.FC<Props> = (props) => {
+const Layout: React.FC<Props> = (props: any) => {
     const { layoutConfig, layoutState, setLayoutState } = useContext(
         LayoutContext
     ) as LayoutContextValue

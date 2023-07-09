@@ -6,7 +6,7 @@ const useMetaMask = () => {
 
     const connectToMetaMask = useCallback(async () => {
         try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' })
+            await window['ethereum'].request({ method: 'eth_requestAccounts' })
             setIsMetaMaskConnected(true)
         } catch (error) {
             console.error(error)
@@ -15,9 +15,9 @@ const useMetaMask = () => {
 
     useEffect(() => {
         async function getAccount() {
-            if (typeof window.ethereum !== 'undefined') {
+            if (typeof window['ethereum'] !== 'undefined') {
                 try {
-                    const accounts = await window.ethereum.request({
+                    const accounts = await window['ethereum'].request({
                         method: 'eth_accounts',
                     })
                     if (accounts.length > 0) {
@@ -28,6 +28,7 @@ const useMetaMask = () => {
                     }
                 } catch (error) {
                     console.error(error)
+                    console.log(error)
                     setIsMetaMaskConnected(false)
                 }
             } else {
