@@ -1,70 +1,37 @@
 import { Font } from '@react-pdf/renderer'
-import WorkSansLight from './fonts/WorkSansLight.ttf'
-import WorkSansRegular from './fonts/WorkSans-Regular.ttf'
-import WorkSansMedium from './fonts/WorkSans-Medium.ttf'
-import WorkSansSemiBold from './fonts/WorkSans-SemiBold.ttf'
-import WorkSansBold from './fonts/WorkSans-Bold.ttf'
-import RaleWayRegular from './fonts/Raleway-Regular.ttf'
-import RaleWayRegularItalic from './fonts/Raleway-RegularItalic.ttf'
-import RaleWayBold from './fonts/Raleway-Bold.ttf'
-import FontAwesome from './fonts/fa-regular-400.ttf'
-import FontAwesomeSolid from './fonts/fa-solid-900.ttf'
-import FontAwesomeBrands from './fonts/fa-brands-400.ttf'
+
+const fontLinks = {
+    Title: 'https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap',
+    Content:
+        'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+    FontAwesome: 'https://kit.fontawesome.com/your-kit-id.js',
+    'FontAwesome-Solid':
+        'https://fonts.googleapis.com/css2?family=Font Awesome+Solid:wght@400;500;600;700;900&display=swap',
+    'FontAwesome-Brands':
+        'https://fonts.googleapis.com/css2?family=Font Awesome+Brands:wght@400;500;600;700&display=swap',
+    WorkSansLight:
+        'https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap',
+    WorkSansRegular:
+        'https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap',
+    WorkSansMedium:
+        'https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap',
+    WorkSansSemiBold:
+        'https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap',
+    WorkSansBold:
+        'https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap',
+    RaleWayRegular:
+        'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+    RaleWayRegularItalic:
+        'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+    RaleWayBold:
+        'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+}
 
 export const registerFonts = (): void => {
-    Font.register({
-        family: 'Title',
-        fonts: [
-            {
-                fontWeight: 'light',
-                src: WorkSansLight,
-            },
-            {
-                fontWeight: 'normal',
-                src: WorkSansRegular,
-            },
-            {
-                fontWeight: 'medium',
-                src: WorkSansMedium,
-            },
-            {
-                fontWeight: 'semibold',
-                src: WorkSansSemiBold,
-            },
-            {
-                fontWeight: 'bold',
-                src: WorkSansBold,
-            },
-        ],
-    })
-    Font.register({
-        family: 'Content',
-        fonts: [
-            {
-                fontWeight: 'normal',
-                src: RaleWayRegular,
-            },
-            {
-                fontWeight: 'normal',
-                fontStyle: 'italic',
-                src: RaleWayRegularItalic,
-            },
-            {
-                fontWeight: 'bold',
-                src: RaleWayBold,
-            },
-        ],
-    })
-    Font.register({
-        family: 'FontAwesome',
-        src: FontAwesome,
-    })
-    Font.register({
-        family: 'FontAwesome-Solid',
-        src: FontAwesomeSolid,
-    })
-    Font.register({
-        family: 'FontAwesome-Brands',
-        src: FontAwesomeBrands,
+    Object.entries(fontLinks).forEach(([family, src]) => {
+        Font.register({
+            family,
+            src,
+        })
     })
 }
